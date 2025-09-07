@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Escort Directory App
 
-## Getting Started
+Questa è un'applicazione Next.js per la directory di escort, ottimizzata per web e mobile, con interfaccia completamente in italiano. Utilizza shadcn/ui e Tailwind CSS per uno stile moderno e accessibile.
 
-First, run the development server:
+## Funzionalità principali
+
+- Griglia di escort con dati dettagliati
+- Navbar con pulsante "Autenticazione"
+- Organizzazione scalabile di pagine e componenti
+- Compatibilità mobile e desktop
+
+## Struttura del progetto
+
+- `/src/app` — Pagine principali
+- `/src/components` — Componenti riutilizzabili
+- `/src/lib` — Funzioni e utilità
+
+## Avvio rapido
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configurazione ambiente
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Imposta la variabile `NEXT_PUBLIC_API_BASE_URL` nel file `.env` con il link base delle API.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Sviluppato con Next.js, shadcn/ui e Tailwind CSS.
