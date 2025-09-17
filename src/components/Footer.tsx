@@ -27,7 +27,7 @@ export default function Footer() {
             <a href="#" className="underline hover:text-black">Privacy</a>
             <a href="#" className="underline hover:text-black">Cookie</a>
           </div>
-          <p className="text-xs">Tutte le escorts avevano 18 anni al momento dell'inserimento dell'annuncio.</p>
+          <p className="text-xs">Tutte le escorts avevano 18 anni al momento dell&apos;inserimento dell&apos;annuncio.</p>
         </div>
         
       </div>

@@ -5,7 +5,8 @@ import { hashPassword, validateEmail } from '@/lib/auth'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    let { nome, email, password, ruolo = 'user' } = body
+    const { email, password, ruolo = 'user' } = body
+    let nome = body.nome
 
     // Validazione input
     if (!email || !password) {

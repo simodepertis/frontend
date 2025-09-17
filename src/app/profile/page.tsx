@@ -13,11 +13,17 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 
+type UserShape = {
+  name: string;
+  email: string;
+  role?: string;
+  isModel?: boolean;
+};
+
 export default function ProfilePage() {
   const [tab, setTab] = useState("utente");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserShape | null>(null);
   const [loading, setLoading] = useState(true);
-  const [openSheet, setOpenSheet] = useState(false);
 
   useEffect(() => {
     const jwt = typeof window !== "undefined" ? localStorage.getItem("jwt") : null;

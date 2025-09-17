@@ -29,8 +29,9 @@ export default function Autenticazione() {
       } else {
         throw new Error("Token non ricevuto");
       }
-    } catch (err: any) {
-      alert(err.message || "Errore di autenticazione");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Errore di autenticazione";
+      alert(message);
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { faCrown, faIdBadge, faStar, faUser, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button } from "@/components/ui/button";
 import EscortCard from "@/components/EscortCard";
@@ -24,21 +23,11 @@ const cittaOptions = ["Milano", "Roma", "Firenze"];
 const capelliOptions = ["Biondi", "Castani", "Neri"];
 
 // Nuove iscritte (mock): prendi alcune escort e marca come NEW
-const recentEscorts = escorts.slice(0, 10).map((e, idx) => ({
+const recentEscorts = escorts.slice(0, 10).map((e) => ({
   ...e,
   isNew: true,
   slug: `${e.nome}-${e.citta}`.toLowerCase().replace(/\s+/g, '-'),
 }));
-
-const getRankDetails = (rank: string) => {
-  switch (rank) {
-    case "VIP": return { color: "bg-yellow-500 text-black", icon: faCrown, borderColor: "border-yellow-500" };
-    case "ORO": return { color: "bg-amber-400 text-black", icon: faStar, borderColor: "border-amber-400" };
-    case "ARGENTO": return { color: "bg-slate-300 text-black", icon: faIdBadge, borderColor: "border-slate-300" };
-    case "TITANIUM": return { color: "bg-slate-600 text-white", icon: faUser, borderColor: "border-slate-600" };
-    default: return { color: "bg-gray-200 text-black", icon: faUser, borderColor: "border-gray-200" };
-  }
-}
 
 export default function Home() {
   const [filtroCitta, setFiltroCitta] = useState("");

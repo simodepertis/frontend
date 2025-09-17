@@ -8,30 +8,24 @@ import SectionHeader from "@/components/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { escorts as allEscorts } from "@/lib/mock";
 
-const escortImgs = [
-  "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-  "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/376078/profile/190aa487-a2dd-43ee-a4c2-5dff8c5fab49_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/703461/profile/28a91e4c-c6c3-4639-bae9-aeab4cbad15c_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/686141/profile/80cb7136-bcc1-4c01-9430-b8cbedd43a21_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/708057/profile/7040775e-d371-48b6-b310-6424e5ed3cd6_thumb_750.jpg?v=1",
-];
-
-const data = Array.from({ length: 12 }).map((_, i) => ({
-  id: i + 1,
-  name: ["Miss Julia", "Masha_New", "Brunna", "Selena", "Alina", "Vika", "Diana", "Nina", "Sofi", "Luna", "Maya", "Giorgia"][i % 12],
-  city: ["Milano", "Padova", "Roma", "Bari"][i % 4],
-  photo: escortImgs[i % escortImgs.length],
-  rank: i + 1,
-  metrics: {
-    video: (i * 2) % 5,
-    photo: (i * 3) % 9,
-    reviews: (i * 5) % 12,
-  },
-  badge: i < 3 ? ["#1", "#2", "#3"][i] : "#Top 10",
-  subtitle: i % 3 === 0 ? `In tour a ${["Roma", "Napoli", "Firenze"][i % 3]} fino al ${(10 + i)} set` : `Escort ${["Milano", "Roma", "Bari"][i % 3]}`,
-}));
+const data = allEscorts
+  .filter(e => typeof e.top10Rank === "number")
+  .map(e => ({
+    id: e.id,
+    name: e.nome,
+    city: e.city,
+    photo: e.photo,
+    rank: e.top10Rank as number,
+    metrics: {
+      video: e.metrics.videosCount,
+      photo: e.metrics.photosCount,
+      reviews: e.metrics.reviewsCount,
+    },
+    badge: (e.top10Rank ?? 99) <= 3 ? `#${e.top10Rank}` : "#Top 10",
+    subtitle: e.inTour && e.tourUntil ? `In tour a ${e.city} fino al ${e.tourUntil}` : `Escort ${e.city}`,
+  }));
 
 export default function Top10Page() {
   const [city, setCity] = useState("");

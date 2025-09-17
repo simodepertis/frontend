@@ -4,25 +4,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faCocktail, faGlobe, faPhone, faSearch
+  faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faPhone, faSearch
 } from "@fortawesome/free-solid-svg-icons";
-import { useEffect, useState } from "react";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 
 export default function Navbar() {
-  const [user, setUser] = useState<null | { name: string }>(null);
-
-  // La tua logica per il login rimane invariata
-  useEffect(() => { 
-    // Qui puoi inserire la logica per controllare se l'utente è loggato
-  }, []);
-
-  const handleLogout = () => { 
-    // Qui puoi inserire la logica per il logout
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white text-black">
       {/* BARRA PRINCIPALE */}
@@ -38,9 +23,9 @@ export default function Navbar() {
 
         {/* COLONNA CENTRALE: Logo */}
         <div className="w-1/3 text-center">
-            <a href="/" className="text-2xl font-bold tracking-wider">
+            <Link href="/" className="text-2xl font-bold tracking-wider">
                 INCONTRIESCORT.ORG
-            </a>
+            </Link>
         </div>
 
         {/* COLONNA DESTRA: Azioni e Contatti - MODIFICATO justify-start */}
@@ -65,13 +50,13 @@ export default function Navbar() {
       {/* BARRA SECONDARIA DELLE CATEGORIE */}
       <nav className="w-full bg-neutral-100 border-y">
         <ul className="container flex flex-wrap justify-center gap-x-4 gap-y-2 py-2 text-sm font-medium text-neutral-600">
-          <li><a href="/video" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVideo} /> Video</a></li>
-          <li><a href="/foto" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faImages} /> Foto</a></li>
-          <li><a href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</a></li>
-          <li><a href="/commenti" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faComments} /> Commenti</a></li>
-          <li><a href="/top10" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faTrophy} /> Top 10</a></li>
-          <li><a href="/annunci" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faBullhorn} /> Annunci</a></li>
-          <li><a href="/virtuali" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faLaptop} /> Virtuali</a></li>
+          <li><Link href="/video" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVideo} /> Video</Link></li>
+          <li><Link href="/foto" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faImages} /> Foto</Link></li>
+          <li><Link href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</Link></li>
+          <li><Link href="/commenti" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faComments} /> Commenti</Link></li>
+          <li><Link href="/top10" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faTrophy} /> Top 10</Link></li>
+          <li><Link href="/annunci" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faBullhorn} /> Annunci</Link></li>
+          <li><Link href="/virtuali" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faLaptop} /> Virtuali</Link></li>
         </ul>
       </nav>
     </header>

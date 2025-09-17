@@ -7,28 +7,19 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay, faSearch } from "@fortawesome/free-solid-svg-icons";
 import SectionHeader from "@/components/SectionHeader";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { videos as allVideos } from "@/lib/mock";
 
-const escortThumbs = [
-  "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-  "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/376078/profile/190aa487-a2dd-43ee-a4c2-5dff8c5fab49_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/703461/profile/28a91e4c-c6c3-4639-bae9-aeab4cbad15c_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/686141/profile/80cb7136-bcc1-4c01-9430-b8cbedd43a21_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/708057/profile/7040775e-d371-48b6-b310-6424e5ed3cd6_thumb_750.jpg?v=1",
-];
-
-const mockVideos = Array.from({ length: 12 }).map((_, i) => ({
-  id: i + 1,
-  thumb: escortThumbs[i % escortThumbs.length],
-  title: `Anteprima Video #${i + 1}`,
-  duration: `${2 + (i % 6)}:${(10 + i) % 60}`,
-  city: ["Milano", "Roma", "Firenze"][i % 3],
-}));
+const mockVideos = allVideos;
 
 export default function VideoPage() {
   const [city, setCity] = useState("");
+  const [tag, setTag] = useState("");
+  const [page, setPage] = useState(1);
+  const perPage = 12;
 
-  const filtered = mockVideos.filter((v) => (!city || v.city === city));
+  const filtered = mockVideos.filter((v) => (!city || v.city === city) && (!tag || (tag === "HD" ? v.hd : tag === "Nuova" ? v.isNew : tag === "Verificata" ? v.verified : true)));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pageItems = filtered.slice((page - 1) * perPage, page * perPage);
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -36,44 +27,55 @@ export default function VideoPage() {
       <SectionHeader title="Video" subtitle="Anteprime e clip recenti" />
 
       {/* Filtri */}
-      <div className="mb-8 p-6 bg-neutral-100 rounded-lg shadow-md border">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-neutral-600">Città</label>
-            <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={city} onChange={(e)=>setCity(e.target.value)}>
-              <option value="">Tutte</option>
-              <option>Milano</option>
-              <option>Roma</option>
-              <option>Firenze</option>
-            </select>
-          </div>
-          <div className="hidden md:block" />
-          <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-10">
-            <FontAwesomeIcon icon={faSearch} className="mr-2"/>
-            Cerca
-          </Button>
+      <div className="mb-6 p-4 bg-neutral-100 rounded-lg border shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={city} onChange={(e)=>{setCity(e.target.value); setPage(1);}}>
+            <option value="">Tutte le città</option>
+            {Array.from(new Set(allVideos.map(v=>v.city))).map(c=> <option key={c}>{c}</option>)}
+          </select>
+          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={tag} onChange={(e)=>{setTag(e.target.value); setPage(1);}}>
+            <option value="">Tutti i tag</option>
+            <option value="HD">HD</option>
+            <option value="Nuova">Nuova</option>
+            <option value="Verificata">Verificata</option>
+          </select>
+          <div className="md:col-span-2" />
         </div>
       </div>
 
-      {/* Griglia video */}
+      {/* Video Grid UI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filtered.map((v) => (
-          <div key={v.id} className="group bg-white border rounded-xl shadow-sm hover:shadow-lg transition-shadow overflow-hidden">
+        {pageItems.map((video) => (
+          <div key={video.id} className="relative bg-white border rounded-lg shadow overflow-hidden group">
             <div className="relative w-full aspect-video">
-              <Image src={v.thumb} alt={v.title} fill className="object-cover group-hover:scale-105 transition-transform" />
-              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                <div className="w-12 h-12 bg-red-600 text-white rounded-full grid place-items-center shadow">
-                  <FontAwesomeIcon icon={faPlay} />
-                </div>
+              <Image src={video.thumb} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow">
+                  <FontAwesomeIcon icon={faPlay} className="text-neutral-800" />
+                </span>
               </div>
-              <span className="absolute bottom-2 right-2 text-[11px] bg-black/70 text-white rounded px-2 py-0.5">{v.duration}</span>
+              <div className="absolute top-2 left-2 flex gap-1">
+                {video.verified && <span className="text-[10px] font-bold bg-green-600 text-white rounded px-1.5 py-0.5">Verificato</span>}
+                {video.hd && <span className="text-[10px] font-bold bg-black/70 text-white rounded px-1.5 py-0.5">HD</span>}
+                {video.isNew && <span className="text-[10px] font-bold bg-red-600 text-white rounded px-1.5 py-0.5">Nuovo</span>}
+              </div>
+              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-[11px] text-white">
+                <span className="bg-black/60 rounded px-1.5 py-0.5">{video.city}</span>
+                <span className="bg-black/60 rounded px-1.5 py-0.5">{video.duration}</span>
+              </div>
             </div>
-            <div className="px-3 py-2 text-sm">
-              <div className="font-semibold text-neutral-800 truncate">{v.title}</div>
-              <div className="text-neutral-500 text-xs">{v.city}</div>
+            <div className="p-3">
+              <div className="text-sm font-semibold text-neutral-800 line-clamp-1">{video.title}</div>
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Paginazione finta */}
+      <div className="mt-6 flex items-center justify-center gap-3">
+        <Button variant="outline" disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Precedente</Button>
+        <span className="text-sm text-neutral-600">Pagina {page} di {totalPages}</span>
+        <Button variant="outline" disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))}>Successiva</Button>
       </div>
     </main>
   );
