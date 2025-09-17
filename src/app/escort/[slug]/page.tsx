@@ -8,11 +8,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationDot, faBirthdayCake, faEuroSign, faShieldHeart, faStar } from "@fortawesome/free-solid-svg-icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-export default function EscortDetailPage({ params }: { params: { slug: string } }) {
+export default function EscortDetailPage(props: any) {
+  const slug: string = props?.params?.slug ?? "modella";
   // Mock detail by slug (in futuro: fetch server/data)
   const escort = {
-    slug: params.slug,
-    nome: params.slug.split("-")[0]?.toUpperCase() || "Modella",
+    slug,
+    nome: slug.split("-")[0]?.toUpperCase() || "Modella",
     eta: 25,
     citta: "Milano",
     prezzo: 150,
