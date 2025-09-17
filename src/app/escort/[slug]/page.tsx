@@ -11,8 +11,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 export default function EscortDetailPage(props: unknown) {
   type Params = { slug: string };
   const maybeParams = (props as { params: Params } | { params: Promise<Params> } | undefined)?.params;
+  const isPromise = <T,>(val: unknown): val is Promise<T> =>
+    typeof val === "object" && val !== null && typeof (val as Promise<T>).then === "function";
   let slug = "modella";
-  if (maybeParams && typeof (maybeParams as any).then !== "function") {
+  if (maybeParams && !isPromise<Params>(maybeParams)) {
     slug = (maybeParams as Params).slug ?? "modella";
   }
   // Mock detail by slug (in futuro: fetch server/data)
