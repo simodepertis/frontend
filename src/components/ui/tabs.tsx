@@ -22,7 +22,7 @@ const TabsContext = React.createContext<{
 
 export function TabsList({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("flex border-b border-neutral-200", className)}>{children}</div>
+    <div role="tablist" className={cn("flex border-b border-neutral-200", className)}>{children}</div>
   );
 }
 
@@ -33,6 +33,7 @@ export function TabsTrigger({ value, className, children }: { value: string; cla
   return (
     <button
       type="button"
+      role="tab"
       className={cn(
         "px-6 py-2 text-lg font-medium transition-colors border-b-2 focus:outline-none",
         isActive ? "border-blue-600 text-blue-700 bg-blue-50" : "border-transparent text-neutral-600 hover:bg-neutral-100",
