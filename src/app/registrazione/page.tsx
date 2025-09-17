@@ -2,164 +2,80 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-export default function Registrazione() {
-  const [tab, setTab] = useState("utente");
+export default function RegistrazionePage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}/user/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, name: nome, ruolo: tab }),
-        }
-      );
-      if (!res.ok) throw new Error("Registrazione fallita");
-      alert("Registrazione avvenuta con successo! Ora puoi accedere.");
-      window.location.href = "/autenticazione";
-    } catch (err: any) {
-      alert(err.message || "Errore di registrazione");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const type = tab === "utente" ? "user" : "model";
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || ""}/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, type }),
-        }
-      );
-      if (!res.ok) throw new Error("Credenziali non valide");
-      const data = await res.json();
-      if (data.access_token) {
-        localStorage.setItem("jwt", data.access_token);
-        alert("Accesso effettuato con successo!");
-        // window.location.href = "/";
-      } else {
-        throw new Error("Token non ricevuto");
-      }
-    } catch (err: any) {
-      alert(err.message || "Errore di autenticazione");
-    } finally {
-      setLoading(false);
-    }
+    // Logica di invio...
+    console.log("Submit per:", { email, password, nome });
+    alert(`Registrazione inviata!`);
+    setLoading(false);
   };
 
   return (
-    <main className="max-w-4xl mx-auto w-full px-2 py-10">
-      <h1 className="text-4xl font-bold mb-8 text-center">Registrazione</h1>
-      <Tabs value={tab} onValueChange={setTab} className="mb-8 w-full">
-        <TabsList className="w-full flex justify-center">
-          <TabsTrigger value="utente" className="flex-1">
-            Utente
-          </TabsTrigger>
-          <TabsTrigger value="modella" className="flex-1">
-            Modella
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="utente">
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full"
-          >
+    <main className="container mx-auto px-4 py-12 flex justify-center">
+      <div className="w-full max-w-md p-8 bg-neutral-100 rounded-lg shadow-md border">
+        <h1 className="text-3xl font-bold mb-6 text-center text-neutral-800">Crea il tuo Account</h1>
+        
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="nome" className="text-sm font-medium text-neutral-600">
+              Nome / Nickname
+            </label>
             <input
+              id="nome"
               type="text"
-              placeholder="Nome"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              placeholder="Come ti chiami?"
+              className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
               required
               value={nome}
               onChange={(e) => setNome(e.target.value)}
             />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="email" className="text-sm font-medium text-neutral-600">Email</label>
             <input
+              id="email"
               type="email"
-              placeholder="Email"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              placeholder="tua@email.com"
+              className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="password" className="text-sm font-medium text-neutral-600">Password</label>
             <input
+              id="password"
               type="password"
-              placeholder="Password"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              placeholder="••••••••"
+              className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <Button
-              type="submit"
-              className="w-full py-3 text-xl"
-              style={{ color: "#f3d074" }}
-              disabled={loading}
-            >
-              {loading ? "Registrazione..." : "Registrati"}
-            </Button>
-          </form>
-        </TabsContent>
-        <TabsContent value="modella">
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full"
+          </div>
+          <Button
+            type="submit"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-3 mt-4 rounded-md"
+            disabled={loading}
           >
-            <input
-              type="text"
-              placeholder="Nome"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
-              required
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              type="password"
-              placeholder="Password"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <Button
-              type="submit"
-              className="w-full py-3 text-xl"
-              style={{ color: "#f3d074" }}
-              disabled={loading}
-            >
-              {loading ? "Registrazione..." : "Registrati"}
-            </Button>
-          </form>
-        </TabsContent>
-      </Tabs>
-      <div className="text-center mt-6">
-        <a
-          href="/autenticazione"
-          className="text-blue-600 hover:underline text-lg"
-        >
-          Hai già un account? Accedi
-        </a>
+            {loading ? "Registrazione in corso..." : "Registrati"}
+          </Button>
+        </form>
+
+        <div className="text-center mt-6">
+          <a href="/autenticazione" className="text-red-600 hover:underline">
+            Hai già un account? Accedi
+          </a>
+        </div>
       </div>
     </main>
   );

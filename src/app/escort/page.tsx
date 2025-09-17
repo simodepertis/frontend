@@ -3,14 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { faCrown, faIdBadge, faStar, faUser, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button } from "@/components/ui/button";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
 import FilterBar from "@/components/FilterBar";
 
-// Dati di esempio (mock data) per i profili
+// Dati mock allineati alla home
 const escorts = [
   { id: 1, nome: "Giulia", eta: 25, citta: "Milano", capelli: "Biondi", prezzo: 150, foto: "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5", rank: "VIP" },
   { id: 2, nome: "Martina", eta: 28, citta: "Roma", capelli: "Castani", prezzo: 200, foto: "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1", rank: "ORO" },
@@ -23,24 +22,7 @@ const escorts = [
 const cittaOptions = ["Milano", "Roma", "Firenze"];
 const capelliOptions = ["Biondi", "Castani", "Neri"];
 
-// Nuove iscritte (mock): prendi alcune escort e marca come NEW
-const recentEscorts = escorts.slice(0, 10).map((e, idx) => ({
-  ...e,
-  isNew: true,
-  slug: `${e.nome}-${e.citta}`.toLowerCase().replace(/\s+/g, '-'),
-}));
-
-const getRankDetails = (rank: string) => {
-  switch (rank) {
-    case "VIP": return { color: "bg-yellow-500 text-black", icon: faCrown, borderColor: "border-yellow-500" };
-    case "ORO": return { color: "bg-amber-400 text-black", icon: faStar, borderColor: "border-amber-400" };
-    case "ARGENTO": return { color: "bg-slate-300 text-black", icon: faIdBadge, borderColor: "border-slate-300" };
-    case "TITANIUM": return { color: "bg-slate-600 text-white", icon: faUser, borderColor: "border-slate-600" };
-    default: return { color: "bg-gray-200 text-black", icon: faUser, borderColor: "border-gray-200" };
-  }
-}
-
-export default function Home() {
+export default function EscortListPage() {
   const [filtroCitta, setFiltroCitta] = useState("");
   const [filtroCapelli, setFiltroCapelli] = useState("");
 
@@ -49,9 +31,10 @@ export default function Home() {
   });
 
   return (
-    <main className="flex flex-col min-h-[calc(100vh-80px)] container mx-auto px-4 py-8">
-      
-      {/* SEZIONE FILTRI DI RICERCA */}
+    <main className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-neutral-800">Escort</h1>
+
+      {/* Filtro stile home con FilterBar */}
       <FilterBar title="Trova la tua compagnia ideale" actions={
         <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-2 h-auto rounded-md">
           <FontAwesomeIcon icon={faSearch} className="mr-2"/>
@@ -84,35 +67,7 @@ export default function Home() {
         </div>
       </FilterBar>
 
-      {/* STRIP NUOVE ISCRITTE */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-neutral-800">Nuove iscritte</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <div className="flex gap-4 pb-2">
-            {recentEscorts.map((p) => (
-            <Link key={p.slug} href={`/escort/${p.slug}`} className="shrink-0">
-              <div className="w-16">
-                <div className="relative w-16 h-16 rounded-full ring-2 ring-red-200 hover:ring-red-400 transition overflow-hidden">
-                  <Image src={p.foto} alt={p.nome} fill className="object-cover" />
-                </div>
-                {p.isNew && (
-                  <div className="mt-1 w-full flex justify-center">
-                    <span className="inline-flex items-center justify-center px-2 h-5 text-[10px] font-extrabold leading-none tracking-tight bg-red-600 text-white rounded-full shadow">
-                      NEW
-                    </span>
-                  </div>
-                )}
-                <div className="w-16 truncate text-[11px] text-center mt-1 text-neutral-700">{p.nome}</div>
-              </div>
-            </Link>
-          ))}
-          </div>
-        </div>
-      </div>
-
-      {/* GRIGLIA PROFILI */}
+      {/* Griglia risultati */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 flex-grow">
         {escortsFiltrate.length === 0 && (
           <div className="col-span-full text-center text-neutral-500 py-10">
@@ -123,7 +78,7 @@ export default function Home() {
           <EscortCard key={escort.id} escort={escort} />
         ))}
       </div>
-
     </main>
   );
 }
+
