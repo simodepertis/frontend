@@ -8,8 +8,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationDot, faBirthdayCake, faEuroSign, faShieldHeart, faStar } from "@fortawesome/free-solid-svg-icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-export default function EscortDetailPage(props: any) {
-  const slug: string = props?.params?.slug ?? "modella";
+export default function EscortDetailPage(props: unknown) {
+  type Params = { slug: string };
+  const maybeParams = (props as { params: Params } | { params: Promise<Params> } | undefined)?.params;
+  let slug = "modella";
+  if (maybeParams && typeof (maybeParams as any).then !== "function") {
+    slug = (maybeParams as Params).slug ?? "modella";
+  }
   // Mock detail by slug (in futuro: fetch server/data)
   const escort = {
     slug,
