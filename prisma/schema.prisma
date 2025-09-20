@@ -1,6 +1,171 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum ReviewStatus {
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id            Int          @id @default(autoincrement())
+  authorId      Int
+  targetUserId  Int
+  rating        Int
+  title         String
+  body          String
+  status        ReviewStatus @default(IN_REVIEW)
+  createdAt     DateTime     @default(now())
+
+  author User @relation("ReviewsAuthored", fields: [authorId], references: [id])
+  target User @relation("ReviewsReceived", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId, status, createdAt])
+}
+
+enum CommentStatus {
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Comment {
+  id           Int           @id @default(autoincrement())
+  authorId     Int
+  targetUserId Int
+  body         String
+  status       CommentStatus @default(IN_REVIEW)
+  createdAt    DateTime      @default(now())
+
+  author User @relation("CommentsAuthored", fields: [authorId], references: [id])
+  target User @relation("CommentsReceived", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId, status, createdAt])
+}
+
+enum ListingType {
+  PHYSICAL
+  VIRTUAL
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Listing {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  type      ListingType   @default(PHYSICAL)
+  title     String
+  city      String
+  price     Int?
+  status    ListingStatus @default(PUBLISHED)
+  createdAt DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([city, status, type])
+  @@index([userId, status])
+}
+
+enum Tier {
+  STANDARD
+  ARGENTO
+  ORO
+  TITANIO
+  VIP
+}
+
+model AdminSettings {
+  id               Int     @id @default(autoincrement())
+  creditValueCents Int     @default(100) // default 1.00 EUR per credito
+  currency         String  @default("EUR")
+  updatedAt        DateTime @updatedAt
+}
+
+enum CreditTransactionType {
+  PURCHASE
+  SPEND
+  REFUND
+  ADJUST
+}
+
+model CreditWallet {
+  id       Int    @id @default(autoincrement())
+  userId   Int    @unique
+  balance  Int    @default(0)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model CreditTransaction {
+  id        Int    @id @default(autoincrement())
+  userId    Int
+  amount    Int // positive for add, negative for spend
+  type      CreditTransactionType
+  reference String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId, createdAt])
+}
+
+model CreditProduct {
+  id           Int     @id @default(autoincrement())
+  code         String  @unique
+  label        String
+  creditsCost  Int
+  durationDays Int
+  active       Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum CreditOrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
+
+model CreditOrder {
+  id         Int               @id @default(autoincrement())
+  userId     Int
+  credits    Int               // credits to purchase
+  method     String            // 'skrill' | 'manual_bonifico' | 'manual_bollettino'
+  status     CreditOrderStatus @default(PENDING)
+  phone      String?           // reference phone for manual payments
+  receiptUrl String?           // uploaded receipt path
+  meta       Json?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId, status, createdAt])
+}
+
+enum EventType {
+  VIEW
+  CONTACT_CLICK
+  SAVE
+  BOOKING_CONFIRMED
+}
+
+model ProfileEvent {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  type      EventType
+  meta      Json?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  @@index([userId, type, createdAt])
 }
 
 generator client {
@@ -10,8 +175,153 @@ generator client {
 model User {
   id       Int     @id @default(autoincrement())
   nome     String
+  slug     String? @unique
   email    String  @unique
   password String
   ruolo    String
   createdAt DateTime @default(now())
+
+  // Relation: one user can have one escort profile
+  escortProfile EscortProfile?
+
+  // Relations: photos and bookings
+  photos           Photo[]
+  videos           Video[]
+  bookingSettings  BookingSettings?
+  bookingRequests  BookingRequest[]
+
+  // Relation: one user can have one agency profile
+  agencyProfile AgencyProfile?
+
+  // Relation: an agency (User) can have many escort profiles linked
+  agencyEscorts EscortProfile[] @relation("AgencyEscorts")
+
+  // Analytics events
+  events ProfileEvent[]
+
+  // Credits relations
+  creditWallet       CreditWallet?
+  creditTransactions CreditTransaction[]
+  creditOrders       CreditOrder[]
+
+  // Reviews & Comments
+  reviewsAuthored  Review[]      @relation("ReviewsAuthored")
+  reviewsReceived  Review[]      @relation("ReviewsReceived")
+  commentsAuthored Comment[]     @relation("CommentsAuthored")
+  commentsReceived Comment[]     @relation("CommentsReceived")
+
+  // Listings (Annunci)
+  listings Listing[]
+}
+
+model EscortProfile {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  agencyId  Int?
+  bioIt     String?
+  bioEn     String?
+  languages Json?
+  cities    Json?
+  services  Json?
+  rates     Json?
+  contacts  Json?
+  tier      Tier     @default(STANDARD)
+  tierExpiresAt DateTime?
+  girlOfTheDayDate DateTime?
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  agency User? @relation("AgencyEscorts", fields: [agencyId], references: [id])
+
+  @@index([agencyId])
+}
+
+enum PhotoStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Photo {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  url       String
+  name      String
+  size      Int
+  status    PhotoStatus @default(DRAFT)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum VideoStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Video {
+  id        Int         @id @default(autoincrement())
+  userId    Int
+  url       String      // video file or external link
+  thumb     String?     // thumbnail URL
+  title     String
+  duration  String?     // e.g. "00:30"
+  hd        Boolean     @default(false)
+  status    VideoStatus @default(DRAFT)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model BookingSettings {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique
+  enabled          Boolean  @default(false)
+  minNotice        String   @default("1 ora")
+  allowedDurations Json
+  prices           Json
+  schedule         Json
+  updatedAt        DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+enum BookingStatus {
+  NEW
+  ACCEPTED
+  DECLINED
+}
+
+model BookingRequest {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  name      String
+  when      String
+  duration  String
+  note      String?
+  status    BookingStatus  @default(NEW)
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model AgencyProfile {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  name      String?
+  description String?
+  languages Json?
+  cities    Json?
+  services  Json?
+  contacts  Json?
+  website   String?
+  socials   Json?
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }
