@@ -205,19 +205,27 @@ export default function VerificaFotoPage() {
         </div>
 
         {/* Linee guida documenti */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <div className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <div className="font-medium text-red-900 mb-2 flex items-center gap-2">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
-            Documenti Accettati
+            CARTA D'IDENTITÀ OBBLIGATORIA
           </div>
-          <ul className="text-sm text-blue-800 list-disc pl-5 space-y-1">
-            <li>Carta d'identità (fronte e retro)</li>
-            <li>Patente di guida (fronte e retro)</li>
-            <li>Passaporto (pagina con foto)</li>
+          <div className="bg-white border border-red-300 rounded p-3 mb-3">
+            <p className="text-red-800 font-semibold text-sm mb-2">⚠️ DOCUMENTO RICHIESTO</p>
+            <p className="text-red-700 text-xs">
+              È OBBLIGATORIO caricare la carta d'identità (fronte e retro) per poter utilizzare il sito.
+              Senza questo documento non potrai pubblicare annunci o accedere alle funzionalità avanzate.
+            </p>
+          </div>
+          <ul className="text-sm text-red-800 list-disc pl-5 space-y-1">
+            <li><strong>CARTA D'IDENTITÀ (fronte e retro) - OBBLIGATORIO</strong></li>
+            <li>Patente di guida (fronte e retro) - opzionale</li>
+            <li>Passaporto (pagina con foto) - opzionale</li>
             <li>Formato: JPG/PNG, massimo 5MB per file</li>
-            <li>Immagini nitide e leggibili</li>
+            <li>Immagini nitide e leggibili, senza riflessi</li>
+            <li>Tutti i dati devono essere chiaramente visibili</li>
           </ul>
         </div>
 

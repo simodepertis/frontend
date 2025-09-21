@@ -33,7 +33,7 @@ export default function Navbar() {
     }
   };
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white text-black">
+    <header className="sticky top-0 z-50 w-full border-b bg-black text-white border-gray-800">
       {/* BARRA PRINCIPALE */}
       <div className="container flex h-16 max-w-screen-2xl items-center">
         
@@ -86,15 +86,15 @@ export default function Navbar() {
       </div>
       
       {/* BARRA SECONDARIA DELLE CATEGORIE */}
-      <nav className="w-full bg-neutral-100 border-y">
-        <ul className="container flex flex-wrap justify-center gap-x-4 gap-y-2 py-2 text-sm font-medium text-neutral-600">
-          <li><Link href="/video" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVideo} /> Video</Link></li>
-          <li><Link href="/foto" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faImages} /> Foto</Link></li>
-          <li><Link href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</Link></li>
-          <li><Link href="/commenti" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faComments} /> Commenti</Link></li>
-          <li><Link href="/top10" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faTrophy} /> Top 10</Link></li>
-          <li><Link href="/annunci" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faBullhorn} /> Annunci</Link></li>
-          <li><Link href="/virtuali" className="px-3 py-1.5 rounded-md hover:bg-neutral-200 flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faLaptop} /> Virtuali</Link></li>
+      <nav className="w-full bg-gray-900 border-y border-gray-700">
+        <ul className="container flex flex-wrap justify-center gap-x-4 gap-y-2 py-2 text-sm font-medium text-gray-300">
+          <li><Link href="/video" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVideo} /> Video</Link></li>
+          <li><Link href="/foto" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faImages} /> Foto</Link></li>
+          <li><Link href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</Link></li>
+          <li><Link href="/commenti" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faComments} /> Commenti</Link></li>
+          <li><Link href="/top10" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faTrophy} /> Top 10</Link></li>
+          <li><Link href="/annunci" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faBullhorn} /> Annunci</Link></li>
+          <li><Link href="/virtuali" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faLaptop} /> Virtuali</Link></li>
         </ul>
       </nav>
     </header>
