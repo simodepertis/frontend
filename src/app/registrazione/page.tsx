@@ -14,7 +14,7 @@ export default function RegistrazionePage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/API/register', {
+      const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, nome, ruolo })

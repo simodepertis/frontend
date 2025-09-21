@@ -18,7 +18,7 @@ function AuthContent() {
     setLoading(true);
     try {
       // Login contro la nostra API Next
-      const res = await fetch(`/API/login`, {
+      const res = await fetch(`/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

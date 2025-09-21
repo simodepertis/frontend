@@ -104,10 +104,10 @@ export default function CreditiPage() {
     setLoading(true);
     try {
       const [w, t, c, o] = await Promise.all([
-        fetch('/API/credits/wallet'),
-        fetch('/API/credits/transactions'),
-        fetch('/API/credits/catalog'),
-        fetch('/API/credits/orders'),
+        fetch('/api/credits/wallet'),
+        fetch('/api/credits/transactions'),
+        fetch('/api/credits/catalog'),
+        fetch('/api/credits/orders'),
       ]);
       if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); }
       if (t.ok) { const { transactions } = await t.json(); setTx(transactions || []); }
@@ -133,7 +133,7 @@ export default function CreditiPage() {
 
   async function spend(code: string) {
     try {
-      const res = await fetch('/API/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
       const data = await res.json();
       if (!res.ok) {
         show({ variant: "error", title: "Errore spesa crediti", description: data?.error || 'Operazione non riuscita' });
@@ -217,8 +217,8 @@ export default function CreditiPage() {
       )}
 
       {tab === 'crediti' && (
-      <>
-      {/* Hero saldo + acquisto */}
+        <>
+          {/* Hero saldo + acquisto */}
       <div className="rounded-xl border bg-white p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="text-sm text-neutral-600">Saldo attuale</div>
@@ -324,7 +324,7 @@ export default function CreditiPage() {
                   <Button onClick={async ()=>{
                     setCreatingOrder(true);
                     try {
-                      const res = await fetch('/API/credits/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderForm) });
+                      const res = await fetch('/api/credits/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderForm) });
                       const data = await res.json();
                       if (!res.ok) {
                         show({ variant: "error", title: "Errore creazione ordine", description: data?.error || 'Riprova più tardi' });
@@ -389,7 +389,7 @@ export default function CreditiPage() {
             </div>
           )}
         </div>
-      </>
+        </>
       )}
     </div>
   );

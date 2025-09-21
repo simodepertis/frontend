@@ -14,7 +14,7 @@ export default function Navbar() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/API/user/me");
+        const res = await fetch("/api/user/me");
         if (!res.ok) return;
         const data = await res.json();
         setUserName(data?.user?.nome || "");
@@ -26,7 +26,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/API/logout", { method: "POST" });
+      await fetch("/api/logout", { method: "POST" });
       window.location.href = "/";
     } catch {
       window.location.href = "/";
