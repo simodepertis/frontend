@@ -1,6 +1,9 @@
 # Escort Directory App
 
-Questa è un'applicazione Next.js per la directory di escort, ottimizzata per web e mobile, con interfaccia completamente in italiano. Utilizza shadcn/ui e Tailwind CSS per uno stile moderno e accessibile.
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Deploy Status
+Last updated: 2025-01-21 - All API endpoints fixed
 
 ## Funzionalità principali
 
