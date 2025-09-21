@@ -192,6 +192,159 @@ export default function VerificaFotoPage() {
         )}
       </div>
 
+      {/* Sezione Documenti di Identità */}
+      <div className="rounded-lg border bg-white p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="font-semibold text-lg">Documenti di Identità</div>
+            <div className="text-sm text-neutral-600">Carica i tuoi documenti per la verifica dell'identità</div>
+          </div>
+          <div className="text-xs text-neutral-500 bg-neutral-50 px-3 py-1 rounded-full">
+            Obbligatorio per la verifica
+          </div>
+        </div>
+
+        {/* Linee guida documenti */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <div className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            Documenti Accettati
+          </div>
+          <ul className="text-sm text-blue-800 list-disc pl-5 space-y-1">
+            <li>Carta d'identità (fronte e retro)</li>
+            <li>Patente di guida (fronte e retro)</li>
+            <li>Passaporto (pagina con foto)</li>
+            <li>Formato: JPG/PNG, massimo 5MB per file</li>
+            <li>Immagini nitide e leggibili</li>
+          </ul>
+        </div>
+
+        {/* Upload documenti */}
+        <div className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center hover:border-red-400 transition-colors">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-medium text-neutral-900">Carica i tuoi documenti</div>
+              <div className="text-sm text-neutral-600">Clicca per selezionare i file o trascinali qui</div>
+            </div>
+            <input 
+              type="file" 
+              accept="image/*" 
+              multiple 
+              className="hidden" 
+              id="document-upload"
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                
+                for (const file of Array.from(files)) {
+                  if (!file.type.startsWith("image/")) continue;
+                  
+                  try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    fd.append('type', 'identity'); // Tipo documento
+                    
+                    const res = await fetch('/API/escort/documents/upload', { 
+                      method: 'POST', 
+                      body: fd 
+                    });
+                    
+                    if (res.ok) {
+                      const { document } = await res.json();
+                      const newDoc: DocItem = {
+                        id: String(document.id),
+                        type: document.type || 'Documento di Identità',
+                        url: document.url,
+                        status: 'in_review'
+                      };
+                      setDocs(prev => [...prev, newDoc]);
+                    }
+                  } catch (error) {
+                    console.error('Errore upload documento:', error);
+                  }
+                }
+                
+                // Reset input
+                e.target.value = '';
+              }}
+            />
+            <label 
+              htmlFor="document-upload" 
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg cursor-pointer transition-colors font-medium"
+            >
+              Seleziona Documenti
+            </label>
+          </div>
+        </div>
+
+        {/* Lista documenti caricati */}
+        {docs.length > 0 && (
+          <div className="mt-4">
+            <div className="font-medium mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Documenti Caricati ({docs.length})
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {docs.map((doc) => (
+                <div key={doc.id} className="border rounded-lg p-3 bg-neutral-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">{doc.type}</div>
+                        <div className="text-xs text-neutral-600">Documento di identità</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        doc.status === 'approvato' ? 'bg-green-100 text-green-700' : 
+                        doc.status === 'rifiutato' ? 'bg-red-100 text-red-700' : 
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {doc.status === 'approvato' ? 'Approvato' : doc.status === 'rifiutato' ? 'Rifiutato' : 'In Revisione'}
+                      </span>
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Messaggio se nessun documento */}
+        {docs.length === 0 && (
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-800">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">Documenti richiesti</span>
+            </div>
+            <p className="text-sm text-amber-700 mt-1">
+              Devi caricare almeno un documento di identità per poter inviare le foto a verifica.
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Consenso legale (obbligatorio) - in fondo */}
       <div className="rounded-lg border bg-white p-4">
         <div className="font-semibold mb-2">Consenso legale all'utilizzo di immagini e video</div>
