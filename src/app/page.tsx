@@ -27,7 +27,7 @@ export default function Home() {
     (async () => {
       setLoading(true); setError(undefined);
       try {
-        const res = await fetch('/api/public/annunci');
+        const res = await fetch('/API/public/annunci');
         if (!res.ok) throw new Error('Errore caricamento annunci');
         const json = await res.json();
         setItems(json.items || []);
