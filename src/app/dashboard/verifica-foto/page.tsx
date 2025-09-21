@@ -244,30 +244,64 @@ export default function VerificaFotoPage() {
                 if (!files || files.length === 0) return;
                 
                 for (const file of Array.from(files)) {
-                  if (!file.type.startsWith("image/")) continue;
+                  // Validazione lato client
+                  if (!file.type.startsWith("image/")) {
+                    alert(`File "${file.name}" non è un'immagine valida. Solo JPG e PNG sono accettati.`);
+                    continue;
+                  }
+                  
+                  if (file.size > 5 * 1024 * 1024) {
+                    alert(`File "${file.name}" è troppo grande. Massimo 5MB.`);
+                    continue;
+                  }
+                  
+                  if (file.size < 10 * 1024) {
+                    alert(`File "${file.name}" è troppo piccolo. Minimo 10KB.`);
+                    continue;
+                  }
+                  
+                  // Mostra preview temporaneo
+                  const tempUrl = URL.createObjectURL(file);
+                  const tempDoc: DocItem = {
+                    id: `temp-${Date.now()}`,
+                    type: 'ID_CARD_FRONT', // Tipo temporaneo
+                    url: tempUrl,
+                    status: 'in_review'
+                  };
+                  setDocs(prev => [...prev, tempDoc]);
                   
                   try {
                     const fd = new FormData();
                     fd.append('file', file);
-                    fd.append('type', 'identity'); // Tipo documento
+                    fd.append('type', 'identity');
                     
                     const res = await fetch('/API/escort/documents/upload', { 
                       method: 'POST', 
                       body: fd 
                     });
                     
+                    const data = await res.json();
+                    
                     if (res.ok) {
-                      const { document } = await res.json();
-                      const newDoc: DocItem = {
-                        id: String(document.id),
-                        type: document.type || 'Documento di Identità',
-                        url: document.url,
-                        status: 'in_review'
-                      };
-                      setDocs(prev => [...prev, newDoc]);
+                      // Sostituisci il documento temporaneo con quello reale
+                      setDocs(prev => prev.map(doc => 
+                        doc.id === tempDoc.id ? {
+                          id: String(data.document.id),
+                          type: 'ID_CARD_FRONT' as const,
+                          url: data.document.url,
+                          status: 'in_review' as const
+                        } : doc
+                      ));
+                    } else {
+                      // Rimuovi il documento temporaneo e mostra errore
+                      setDocs(prev => prev.filter(doc => doc.id !== tempDoc.id));
+                      alert(`Errore caricamento "${file.name}": ${data.error || 'Errore sconosciuto'}`);
                     }
                   } catch (error) {
+                    // Rimuovi il documento temporaneo e mostra errore
+                    setDocs(prev => prev.filter(doc => doc.id !== tempDoc.id));
                     console.error('Errore upload documento:', error);
+                    alert(`Errore di rete durante il caricamento di "${file.name}"`);
                   }
                 }
                 
