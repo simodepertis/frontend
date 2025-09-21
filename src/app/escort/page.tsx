@@ -30,20 +30,20 @@ export default function EscortListPage() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-neutral-800">Escort</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white">Escort</h1>
 
       {/* Filtro stile home con FilterBar */}
       <FilterBar title="Trova la tua compagnia ideale" actions={
-        <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg py-2 h-auto rounded-md">
+        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-2 h-auto rounded-md">
           <FontAwesomeIcon icon={faSearch} className="mr-2"/>
           Cerca
         </Button>
       }>
         <div className="flex flex-col gap-1">
-          <label htmlFor="citta" className="text-sm font-medium text-neutral-600">Città</label>
+          <label htmlFor="citta" className="text-sm font-medium text-white">Città</label>
           <select
             id="citta"
-            className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filtroCitta}
             onChange={(e) => setFiltroCitta(e.target.value)}
           >
@@ -52,10 +52,10 @@ export default function EscortListPage() {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="capelli" className="text-sm font-medium text-neutral-600">Colore Capelli</label>
+          <label htmlFor="capelli" className="text-sm font-medium text-white">Colore Capelli</label>
           <select
             id="capelli"
-            className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={filtroCapelli}
             onChange={(e) => setFiltroCapelli(e.target.value)}
           >
@@ -68,7 +68,7 @@ export default function EscortListPage() {
       {/* Griglia risultati */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 flex-grow">
         {escortsFiltrate.length === 0 && (
-          <div className="col-span-full text-center text-neutral-500 py-10">
+          <div className="col-span-full text-center text-gray-400 py-10">
             Nessun risultato trovato. Prova a modificare i filtri.
           </div>
         )}
