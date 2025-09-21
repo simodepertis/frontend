@@ -58,10 +58,12 @@ export async function POST(request: NextRequest) {
     // Hash
     const hashedPassword = await hashPassword(password)
 
-    // Ruolo consentito
-    const allowed = ['user','escort','agenzia']
+    // Ruolo consentito - fix per compatibilità
+    const allowed = ['user','escort','agency','agenzia']
     const ruoloClean = (typeof ruolo === 'string' ? ruolo.toLowerCase() : 'user')
-    const finalRole = allowed.includes(ruoloClean) ? ruoloClean : 'user'
+    // Normalizza 'agency' a 'agenzia' per compatibilità
+    const normalizedRole = ruoloClean === 'agency' ? 'agenzia' : ruoloClean
+    const finalRole = allowed.includes(normalizedRole) ? normalizedRole : 'user'
 
     // Crea utente
     const finalNome = String(nome || email.split('@')[0])
