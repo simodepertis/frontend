@@ -16,7 +16,7 @@ export default function MioProfiloPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/user/me");
+        const res = await fetch("/API/user/me");
         if (!res.ok) throw new Error("Non autenticato");
         const data = await res.json();
         setNome(data?.user?.nome ?? "");
@@ -35,7 +35,7 @@ export default function MioProfiloPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch("/api/user/me", {
+      const res = await fetch("/API/user/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nome, email }),
@@ -55,7 +55,7 @@ export default function MioProfiloPage() {
     e.preventDefault();
     setChanging(true);
     try {
-      const res = await fetch("/api/user/password", {
+      const res = await fetch("/API/user/password", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ oldPassword, newPassword }),

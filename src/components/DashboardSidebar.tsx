@@ -37,7 +37,7 @@ export default function DashboardSidebar() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/user/me");
+        const res = await fetch("/API/user/me");
         if (res.ok) {
           const data = await res.json();
           setRole(data?.user?.ruolo || "");

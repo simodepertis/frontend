@@ -60,7 +60,7 @@ export default function PrenotazioniIstantaneePage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/escort/booking/settings');
+        const res = await fetch('/API/escort/booking/settings');
         if (res.ok) {
           const { settings } = await res.json();
           if (settings) {
@@ -79,7 +79,7 @@ export default function PrenotazioniIstantaneePage() {
   async function saveSettings() {
     setSaving(true);
     try {
-      const res = await fetch('/api/escort/booking/settings', {
+      const res = await fetch('/API/escort/booking/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled, minNotice, allowedDurations, prices, schedule })
@@ -123,7 +123,7 @@ export default function PrenotazioniIstantaneePage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/escort/booking/requests');
+        const res = await fetch('/API/escort/booking/requests');
         if (res.ok) {
           const { requests: list } = await res.json();
           if (Array.isArray(list)) {
@@ -144,16 +144,16 @@ export default function PrenotazioniIstantaneePage() {
 
   async function accept(id: string) {
     setRequests((rs) => rs.map(r => r.id === id ? { ...r, status: "accepted" } : r));
-    try { await fetch('/api/escort/booking/requests', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(id), action: 'accept' }) }); } catch {}
+    try { await fetch('/API/escort/booking/requests', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(id), action: 'accept' }) }); } catch {}
   }
   async function decline(id: string) {
     setRequests((rs) => rs.map(r => r.id === id ? { ...r, status: "declined" } : r));
-    try { await fetch('/api/escort/booking/requests', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(id), action: 'decline' }) }); } catch {}
+    try { await fetch('/API/escort/booking/requests', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(id), action: 'decline' }) }); } catch {}
   }
 
   async function generateMock() {
     try {
-      const res = await fetch('/api/escort/booking/requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Cliente Test', when: 'Oggi 19:00', duration: '1 ora', note: 'Hotel Centro' }) });
+      const res = await fetch('/API/escort/booking/requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Cliente Test', when: 'Oggi 19:00', duration: '1 ora', note: 'Hotel Centro' }) });
       if (res.ok) {
         const { request } = await res.json();
         setRequests((rs) => [{ id: String(request.id), name: request.name, when: request.when, duration: request.duration, note: request.note || undefined, status: 'new' }, ...rs]);

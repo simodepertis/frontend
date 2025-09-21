@@ -72,7 +72,7 @@ export default function EscortOnboardingPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/escort/profile');
+        const res = await fetch('/API/escort/profile');
         if (res.ok) {
           const { profile } = await res.json();
           if (profile) {
@@ -150,7 +150,7 @@ export default function EscortOnboardingPage() {
   const saveToServer = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/api/escort/profile', {
+      const res = await fetch('/API/escort/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

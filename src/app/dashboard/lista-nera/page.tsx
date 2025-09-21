@@ -15,7 +15,7 @@ export default function ListaNeraClientiPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch('/api/me/blacklist');
+      const res = await fetch('/API/me/blacklist');
       if (res.ok) { const j = await res.json(); setItems(j.items || []); }
       else setItems([]);
     } finally { setLoading(false); }
@@ -26,7 +26,7 @@ export default function ListaNeraClientiPage() {
   async function addItem() {
     setSubmitting(true);
     try {
-      const res = await fetch('/api/me/blacklist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, note }) });
+      const res = await fetch('/API/me/blacklist', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, note }) });
       const j = await res.json();
       if (!res.ok) { alert(j?.error || 'Errore inserimento'); return; }
       setName(""); setPhone(""); setNote("");
@@ -35,7 +35,7 @@ export default function ListaNeraClientiPage() {
   }
 
   async function removeItem(id: string) {
-    const res = await fetch('/api/me/blacklist', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    const res = await fetch('/API/me/blacklist', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
     const j = await res.json();
     if (!res.ok) { alert(j?.error || 'Errore cancellazione'); return; }
     await load();

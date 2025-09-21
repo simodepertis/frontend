@@ -95,10 +95,10 @@ export default function CreditiPage() {
     setLoading(true);
     try {
       const [w, t, c, o] = await Promise.all([
-        fetch('/api/credits/wallet'),
-        fetch('/api/credits/transactions'),
-        fetch('/api/credits/catalog'),
-        fetch('/api/credits/orders'),
+        fetch('/API/credits/wallet'),
+        fetch('/API/credits/transactions'),
+        fetch('/API/credits/catalog'),
+        fetch('/API/credits/orders'),
       ]);
       if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); }
       if (t.ok) { const { transactions } = await t.json(); setTx(transactions || []); }
@@ -121,7 +121,7 @@ export default function CreditiPage() {
 
   async function spend(code: string) {
     try {
-      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+      const res = await fetch('/API/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
       const data = await res.json();
       if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
       await loadAll();
@@ -300,7 +300,7 @@ export default function CreditiPage() {
               <Button onClick={async ()=>{
                 setCreatingOrder(true);
                 try {
-                  const res = await fetch('/api/credits/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderForm) });
+                  const res = await fetch('/API/credits/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderForm) });
                   const data = await res.json();
                   if (!res.ok) { alert(data?.error || 'Errore creazione ordine'); return; }
                   setOrderInstructions(data.istruzioni || null);
@@ -337,7 +337,7 @@ export default function CreditiPage() {
                         fd.set('orderId', String(o.id));
                         setUploadingOrderId(o.id);
                         try {
-                          const res = await fetch('/api/credits/orders/receipt', { method: 'POST', body: fd });
+                          const res = await fetch('/API/credits/orders/receipt', { method: 'POST', body: fd });
                           const data = await res.json();
                           if (!res.ok) { alert(data?.error || 'Errore upload'); return; }
                           setNotice({ type: 'success', msg: 'Ricevuta caricata. Crediti accreditati (preview).' });

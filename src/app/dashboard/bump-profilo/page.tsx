@@ -12,13 +12,13 @@ export default function BumpProfiloPage() {
   useEffect(() => {
     (async () => {
       try {
-        const me = await fetch('/api/user/me');
+        const me = await fetch('/API/user/me');
         if (me.ok) {
           const j = await me.json();
           const s = j?.user?.slug;
           if (s) {
             setSlug(s);
-            const pub = await fetch(`/api/public/escort/${s}`);
+            const pub = await fetch(`/API/public/escort/${s}`);
             if (pub.ok) { const pj = await pub.json(); setUpdatedAt(pj?.updatedAt || null); }
           }
         }
@@ -29,7 +29,7 @@ export default function BumpProfiloPage() {
   async function doBump() {
     setLoading(true);
     try {
-      const res = await fetch('/api/me/profile/bump', { method: 'PATCH' });
+      const res = await fetch('/API/me/profile/bump', { method: 'PATCH' });
       const j = await res.json();
       if (!res.ok) { alert(j?.error || 'Errore bump'); return; }
       setUpdatedAt(j.updatedAt || new Date().toISOString());

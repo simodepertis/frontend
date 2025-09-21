@@ -15,7 +15,7 @@ export default function LuiCercaPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/escort/booking/requests');
+        const res = await fetch('/API/escort/booking/requests');
         if (res.ok) {
           const { requests } = await res.json();
           const mapped: FeedItem[] = (requests || []).map((r: any) => ({ id: String(r.id), name: r.name, when: r.when, duration: r.duration, note: r.note || undefined, status: r.status === 'ACCEPTED' ? 'accepted' : r.status === 'DECLINED' ? 'declined' : 'new' }));

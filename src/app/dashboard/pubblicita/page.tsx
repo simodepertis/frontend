@@ -16,8 +16,8 @@ export default function PubblicitaPage() {
     (async () => {
       try {
         const [c, w] = await Promise.all([
-          fetch('/api/credits/catalog'),
-          fetch('/api/credits/wallet'),
+          fetch('/API/credits/catalog'),
+          fetch('/API/credits/wallet'),
         ]);
         if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
         if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); }
@@ -28,11 +28,11 @@ export default function PubblicitaPage() {
   async function spend(code: string) {
     setSpending(code);
     try {
-      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+      const res = await fetch('/API/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
       const data = await res.json();
       if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
       // refresh balance
-      try { const w = await fetch('/api/credits/wallet'); if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } } catch {}
+      try { const w = await fetch('/API/credits/wallet'); if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } } catch {}
       alert(`Attivato ${data?.activated?.tier} fino al ${new Date(data?.activated?.expiresAt).toLocaleDateString()}`);
     } finally {
       setSpending("");
