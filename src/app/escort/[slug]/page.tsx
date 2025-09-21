@@ -1,38 +1,212 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import SectionHeader from "@/components/SectionHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLocationDot, faBirthdayCake, faEuroSign, faShieldHeart, faStar } from "@fortawesome/free-solid-svg-icons";
+import { faLocationDot, faBirthdayCake, faEuroSign, faShieldHeart, faStar, faComments } from "@fortawesome/free-solid-svg-icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 
-export default function EscortDetailPage(props: unknown) {
-  type Params = { slug: string };
-  const maybeParams = (props as { params: Params } | { params: Promise<Params> } | undefined)?.params;
-  const isPromise = <T,>(val: unknown): val is Promise<T> =>
-    typeof val === "object" && val !== null && typeof (val as Promise<T>).then === "function";
-  let slug = "modella";
-  if (maybeParams && !isPromise<Params>(maybeParams)) {
-    slug = (maybeParams as Params).slug ?? "modella";
-  }
-  // Mock detail by slug (in futuro: fetch server/data)
-  const escort = {
-    slug,
-    nome: slug.split("-")[0]?.toUpperCase() || "Modella",
-    eta: 25,
-    citta: "Milano",
-    prezzo: 150,
-    descrizione: "Descrizione di esempio della modella, preferenze e disponibilità.",
-    foto: [
-      "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-      "https://i.escortforumit.xxx/708057/profile/7040775e-d371-48b6-b310-6424e5ed3cd6_thumb_750.jpg?v=1",
-    ],
+export default function EscortDetailPage() {
+  type EscortView = {
+    slug: string;
+    nome: string;
+    eta: number;
+    citta: string;
+    prezzo: number;
+    descrizione: string;
+    foto: string[];
+    tier?: string;
+    tierExpiresAt?: string | null;
+    girlOfTheDay?: boolean;
   };
+  const { slug } = useParams<{ slug: string }>();
+  const [data, setData] = useState<any | null>(null);
+  const [me, setMe] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const escort: EscortView = useMemo<EscortView>(() => {
+    const fallback: EscortView = {
+      slug,
+      nome: slug.split("-")[0]?.toUpperCase() || "Modella",
+      eta: 25,
+      citta: "Milano",
+      prezzo: 150,
+      descrizione: "",
+      foto: ["/placeholder.svg"],
+      tier: undefined,
+      tierExpiresAt: null,
+      girlOfTheDay: false,
+    };
+    if (!data) return fallback;
+    return {
+      ...fallback,
+      nome: data.nome || fallback.nome,
+      citta: Array.isArray(data.cities) && data.cities.length ? String(data.cities[0]) : fallback.citta,
+      foto: Array.isArray(data.photos) && data.photos.length ? data.photos : [data.coverUrl || '/placeholder.svg'],
+      prezzo: (() => {
+        try {
+          const r = (data.rates || []) as any[];
+          if (Array.isArray(r) && r.length) {
+            const first = r.find((x:any)=> typeof x?.price === 'number') || r[0];
+            return Number(first?.price) || fallback.prezzo;
+          }
+        } catch {}
+        return fallback.prezzo;
+      })(),
+      descrizione: typeof (data as any)?.bio === 'string' ? (data as any).bio : "",
+      tier: data.tier,
+      tierExpiresAt: data.tierExpiresAt,
+      girlOfTheDay: data.girlOfTheDay,
+    };
+  }, [data, slug]);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/public/escort/${slug}`);
+        if (res.ok) {
+          const json = await res.json();
+          setData(json);
+        }
+        // fetch current user for owner-only actions
+        try {
+          const meRes = await fetch('/api/user/me');
+          if (meRes.ok) { const j = await meRes.json(); setMe(j?.user || null); }
+        } catch {}
+      } finally { setLoading(false); }
+    })();
+  }, [slug]);
 
   const [active, setActive] = useState(0);
   const [tab, setTab] = useState<string>("descrizione");
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
+  const [revTitle, setRevTitle] = useState("");
+  const [revRating, setRevRating] = useState<number>(5);
+  const [revBody, setRevBody] = useState("");
+  const [commentBody, setCommentBody] = useState("");
+  const [submittingRev, setSubmittingRev] = useState(false);
+  const [submittingCom, setSubmittingCom] = useState(false);
+
+  // Normalize services to array<string>
+  const servicesList = useMemo<string[]>(() => {
+    const raw = (data as any)?.services;
+    if (!raw) return [];
+    try {
+      if (Array.isArray(raw)) {
+        // Could be array of strings or objects
+        return raw.map((it:any) => typeof it === 'string' ? it : (it?.label || it?.name || JSON.stringify(it)) ).filter(Boolean);
+      }
+      if (typeof raw === 'object') {
+        // Support wizard shape: { orientation, for: {...}, categories: { general:[], extra:[], fetish:[], virtual:[] }, notes }
+        const out: string[] = [];
+        if (raw.categories && typeof raw.categories === 'object') {
+          const cat = raw.categories as any;
+          ['general','extra','fetish','virtual'].forEach((k) => {
+            if (Array.isArray(cat?.[k])) out.push(...cat[k].map((s:any)=> String(s)));
+          });
+        }
+        if (raw.for && typeof raw.for === 'object') {
+          // Map targets to human labels
+          const map: Record<string,string> = { women: 'Donne', men: 'Uomini', couples: 'Coppie', trans: 'Trans', gays: 'Gays', group: 'Gruppi / 2+' };
+          Object.keys(raw.for).forEach((k) => { if (raw.for[k]) out.push(map[k] || k); });
+        }
+        if (raw.orientation) out.push(String(raw.orientation));
+        if (raw.notes && String(raw.notes).trim()) out.push(String(raw.notes));
+        // Also support flat boolean map fallback: { serviceName: true }
+        const flat = Object.keys(raw).filter((k)=> typeof raw[k] === 'boolean' && raw[k]).map((k)=>k);
+        out.push(...flat);
+        return out.filter(Boolean);
+      }
+      if (typeof raw === 'string') {
+        // Comma separated fallback
+        return raw.split(',').map((s)=>s.trim()).filter(Boolean);
+      }
+    } catch {}
+    return [];
+  }, [data]);
+
+  const countdown = useMemo(() => {
+    if (!escort.tierExpiresAt) return null;
+    const end = new Date(escort.tierExpiresAt).getTime();
+    const now = Date.now();
+    const diff = end - now;
+    if (diff <= 0) return "scaduto";
+    const days = Math.floor(diff / (1000*60*60*24));
+    const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+    return days > 0 ? `${days}g ${hours}h` : `${hours}h`;
+  }, [escort.tierExpiresAt]);
+
+  const tierClasses = useMemo(() => {
+    switch (escort.tier) {
+      case 'VIP':
+        return 'bg-yellow-400 text-black';
+      case 'TITANIO':
+        return 'bg-sky-700 text-white';
+      case 'ORO':
+        return 'bg-amber-300 text-black';
+      case 'ARGENTO':
+        return 'bg-zinc-300 text-neutral-900';
+      default:
+        return 'bg-neutral-200 text-neutral-800';
+    }
+  }, [escort.tier]);
+
+  const tierClass = useMemo(() => {
+    const t = escort.tier;
+    switch (t) {
+      case 'VIP': return 'bg-yellow-300 text-black border-yellow-400';
+      case 'TITANIO': return 'bg-blue-700 text-white border-blue-800';
+      case 'ORO': return 'bg-amber-400 text-black border-amber-500';
+      case 'ARGENTO': return 'bg-gray-300 text-gray-900 border-gray-400';
+      default: return 'bg-neutral-200 text-neutral-800 border-neutral-300';
+    }
+  }, [ escort.tier ]);
+
+  // Load public reviews and comments for this profile
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`/api/public/recensioni/${slug}`);
+        if (r.ok) { const j = await r.json(); setReviews(j.items || []); }
+      } catch {}
+      try {
+        const c = await fetch(`/api/public/commenti/${slug}`);
+        if (c.ok) { const j = await c.json(); setComments(j.items || []); }
+      } catch {}
+    })();
+  }, [slug]);
+
+  async function submitReview() {
+    if (!data?.userId) { alert('Profilo non caricato'); return; }
+    setSubmittingRev(true);
+    try {
+      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, rating: revRating, title: revTitle, body: revBody }) });
+      const j = await res.json();
+      if (res.status === 401) { window.location.href = `/autenticazione?redirect=/escort/${slug}`; return; }
+      if (!res.ok) { alert(j?.error || 'Errore invio recensione'); return; }
+      // In dev viene approvata: ricarico lista
+      try { const r = await fetch(`/api/public/recensioni/${slug}`); if (r.ok) { const jr = await r.json(); setReviews(jr.items || []); } } catch {}
+      setRevTitle(""); setRevBody(""); setRevRating(5);
+    } finally { setSubmittingRev(false); }
+  }
+
+  async function submitComment() {
+    if (!data?.userId) { alert('Profilo non caricato'); return; }
+    setSubmittingCom(true);
+    try {
+      const res = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, body: commentBody }) });
+      const j = await res.json();
+      if (res.status === 401) { window.location.href = `/autenticazione?redirect=/escort/${slug}`; return; }
+      if (!res.ok) { alert(j?.error || 'Errore invio commento'); return; }
+      try { const c = await fetch(`/api/public/commenti/${slug}`); if (c.ok) { const jc = await c.json(); setComments(jc.items || []); } } catch {}
+      setCommentBody("");
+    } finally { setSubmittingCom(false); }
+  }
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -43,7 +217,14 @@ export default function EscortDetailPage(props: unknown) {
         {/* Galleria */}
         <div className="md:col-span-2 bg-white rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
-            <Image src={escort.foto[active]} alt={`${escort.nome} principale`} fill className="object-cover" />
+            <Image src={escort.foto[active] || '/placeholder.svg'} alt={`${escort.nome} principale`} fill className="object-cover" />
+            {escort.girlOfTheDay && (
+              <div className="absolute top-3 right-3 rotate-3">
+                <span className="bg-rose-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
+                  Ragazza del Giorno
+                </span>
+              </div>
+            )}
           </div>
           <div className="mt-3 grid grid-cols-4 sm:grid-cols-6 gap-2">
             {escort.foto.map((src, idx) => (
@@ -52,7 +233,7 @@ export default function EscortDetailPage(props: unknown) {
                 onClick={() => setActive(idx)}
                 className={`relative w-full aspect-square rounded-md overflow-hidden border ${active === idx ? 'ring-2 ring-red-500' : 'border-neutral-200'}`}
               >
-                <Image src={src} alt={`${escort.nome} thumb ${idx+1}`} fill className="object-cover" />
+                <Image src={src || '/placeholder.svg'} alt={`${escort.nome} thumb ${idx+1}`} fill className="object-cover" />
               </button>
             ))}
           </div>
@@ -67,57 +248,42 @@ export default function EscortDetailPage(props: unknown) {
             <span className="inline-flex items-center gap-2 bg-neutral-100 border rounded-full px-3 py-1">
               <FontAwesomeIcon icon={faEuroSign} className="text-neutral-600" /> € {escort.prezzo}
             </span>
+            {escort.tier && escort.tier !== 'STANDARD' && (
+              <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${tierClasses}`}>
+                <FontAwesomeIcon icon={faStar} /> {escort.tier}
+                {escort.tierExpiresAt && <span className="ml-1 opacity-90">fino al {new Date(escort.tierExpiresAt).toLocaleDateString()} {countdown && `(${countdown})`}</span>}
+              </span>
+            )}
           </div>
 
-          <div className="mt-5">
-            <Tabs value={tab} onValueChange={setTab} className="w-full">
-              <TabsList className="grid grid-cols-4 md:w-2/3">
-                <TabsTrigger value="descrizione">Descrizione</TabsTrigger>
-                <TabsTrigger value="servizi">Servizi</TabsTrigger>
-                <TabsTrigger value="disponibilita">Disponibilità</TabsTrigger>
-                <TabsTrigger value="recensioni">Recensioni</TabsTrigger>
-              </TabsList>
-              <TabsContent value="descrizione">
-                <div className="mt-4">
-                  <p className="text-neutral-700 leading-7">{escort.descrizione}</p>
-                </div>
-              </TabsContent>
-              <TabsContent value="servizi">
-                <div className="mt-4">
-                  <ul className="list-disc list-inside text-neutral-700 space-y-1">
-                    <li>Incontri in hotel</li>
-                    <li>Accompagnamento eventi</li>
-                    <li>Disponibilità su appuntamento</li>
-                  </ul>
-                </div>
-              </TabsContent>
-              <TabsContent value="disponibilita">
-                <div className="mt-4 text-neutral-700">Lun–Ven 10:00–20:00 · Sab 12:00–18:00 · Dom chiuso</div>
-              </TabsContent>
-              <TabsContent value="recensioni">
-                <div className="mt-4 space-y-3 text-sm">
-                  <div className="p-3 border rounded-lg bg-neutral-50">
-                    <div className="font-semibold text-neutral-800">Ottima esperienza</div>
-                    <div className="text-xs text-neutral-500 mb-1">Alessio · Milano</div>
-                    <p className="text-neutral-700">Gentile e puntuale, servizio come da descrizione.</p>
-                  </div>
-                  <div className="p-3 border rounded-lg bg-neutral-50">
-                    <div className="font-semibold text-neutral-800">Professionale</div>
-                    <div className="text-xs text-neutral-500 mb-1">Giorgia · Monza</div>
-                    <p className="text-neutral-700">Ambiente riservato, tutto perfetto.</p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+          {/* Rimosso blocco Tabs per evitare duplicazioni e sfasamenti con il nuovo layout */}
         </div>
 
         {/* Sidebar */}
         <aside className="bg-neutral-50 rounded-xl border shadow-sm p-4 h-fit">
           <div className="text-2xl font-bold">€ {escort.prezzo}</div>
           <div className="mt-2 text-xs text-neutral-500">Tariffa indicativa</div>
-          <button className="mt-4 w-full bg-red-600 hover:bg-red-700 text-white rounded-md py-2.5 font-semibold">Contatta</button>
+          {/* Contatti */}
+          {data?.contacts && (
+            <div className="mt-4 space-y-2">
+              {data.contacts.whatsapp && (
+                <a href={`https://wa.me/${String(data.contacts.whatsapp).replace(/\D/g,'')}`} target="_blank" className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2.5 font-semibold text-center">WhatsApp</a>
+              )}
+              {data.contacts.phone && (
+                <a href={`tel:${data.contacts.phone}`} className="block w-full bg-red-600 hover:bg-red-700 text-white rounded-md py-2.5 font-semibold text-center">Chiama</a>
+              )}
+            </div>
+          )}
           <button className="mt-2 w-full bg-neutral-200 hover:bg-neutral-300 text-neutral-800 rounded-md py-2">Salva profilo</button>
+          {me && data && me.id === data.userId && (
+            <a href="/dashboard/crediti" className="mt-2 block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center rounded-md py-2 font-semibold">Promuovi</a>
+          )}
+          {escort.tier && escort.tier !== 'STANDARD' && (
+            <div className="mt-4 border-t pt-4 text-sm">
+              <div className="font-semibold">Promozione attiva</div>
+              <div className="text-neutral-700">{escort.tier} {escort.tierExpiresAt ? `fino al ${new Date(escort.tierExpiresAt).toLocaleDateString()}${countdown ? ` (${countdown})` : ''}` : ''}</div>
+            </div>
+          )}
           <div className="mt-4 border-t pt-4 space-y-2 text-sm">
             <div className="flex items-center gap-2 text-neutral-700">
               <FontAwesomeIcon icon={faShieldHeart} className="text-green-600" /> Verificata manualmente
@@ -127,6 +293,176 @@ export default function EscortDetailPage(props: unknown) {
             </div>
           </div>
         </aside>
+      </div>
+      {/* Quick Access + Content */}
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-6" id="quick-access">
+        <aside className="md:col-span-1 bg-white border rounded-xl shadow-sm p-4 h-fit sticky top-24">
+          <div className="text-sm font-semibold mb-2 text-neutral-700">Quick Access</div>
+          <nav className="space-y-1 text-sm">
+            <a href="#bio" className="block px-2 py-1 rounded hover:bg-neutral-100">Bio</a>
+            <a href="#lingue" className="block px-2 py-1 rounded hover:bg-neutral-100">Lingue</a>
+            <a href="#su-di-me" className="block px-2 py-1 rounded hover:bg-neutral-100">Su di me</a>
+            <a href="#servizi" className="block px-2 py-1 rounded hover:bg-neutral-100">Servizi</a>
+            <a href="#tariffe" className="block px-2 py-1 rounded hover:bg-neutral-100">Orari e Tariffe</a>
+            <a href="#recensioni" className="block px-2 py-1 rounded hover:bg-neutral-100">Recensioni</a>
+            <a href="#commenti" className="block px-2 py-1 rounded hover:bg-neutral-100">Commenti</a>
+          </nav>
+        </aside>
+        <section className="md:col-span-3 space-y-6">
+          {/* Bio */}
+          <div id="bio" className="bg-white border rounded-xl shadow-sm p-4">
+            <div className="text-lg font-semibold mb-2">Bio</div>
+            {escort.descrizione ? (
+              <div className="grid md:grid-cols-2 gap-4 text-sm text-neutral-800">
+                <div className="whitespace-pre-wrap break-words leading-6">{escort.descrizione}</div>
+                <div className="text-neutral-600">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div className="font-medium">Città</div><div>{escort.citta}</div>
+                    {typeof (data as any)?.contacts?.website === 'string' && (
+                      <>
+                        <div className="font-medium">Sito</div><div className="truncate">{(data as any)?.contacts?.website}</div>
+                      </>
+                    )}
+                    <div className="font-medium">Promozione</div><div>{escort.tier || 'STANDARD'}</div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-500">Nessuna bio disponibile.</div>
+            )}
+          </div>
+
+          {/* Lingue */}
+          <div id="lingue" className="bg-white border rounded-xl shadow-sm p-4">
+            <div className="text-lg font-semibold mb-2">Lingue</div>
+            {Array.isArray((data as any)?.languages) && (data as any).languages.length ? (
+              <div className="flex flex-wrap gap-2">
+                {((data as any).languages as any[]).map((l:any,idx:number)=> {
+                  const label = typeof l === 'string'
+                    ? l
+                    : (typeof l === 'object' && (l.lang || l.level)
+                        ? [l.lang, l.level].filter(Boolean).join(' — ')
+                        : (l?.label || l?.name || l?.code || JSON.stringify(l)));
+                  return (
+                    <span key={idx} className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-neutral-100 border">{label}</span>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-500">Lingue non specificate.</div>
+            )}
+          </div>
+
+          {/* Su di me */}
+          <div id="su-di-me" className="bg-white border rounded-xl shadow-sm p-4">
+            <div className="text-lg font-semibold mb-2">Su di me</div>
+            {escort.descrizione ? (
+              <div className="text-sm text-neutral-800 whitespace-pre-line leading-6">{escort.descrizione}</div>
+            ) : (
+              <div className="text-sm text-neutral-500">Nessuna descrizione aggiuntiva.</div>
+            )}
+          </div>
+
+          {/* Servizi */}
+          <div id="servizi" className="bg-white border rounded-xl shadow-sm p-4">
+            <div className="text-lg font-semibold mb-2">Servizi</div>
+            {servicesList.length ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+                {servicesList.map((s:string,idx:number)=> (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="mt-[6px] inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>{s}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-500">Servizi non specificati.</div>
+            )}
+          </div>
+
+          {/* Orari e Tariffe */}
+          <div id="tariffe" className="bg-white border rounded-xl shadow-sm p-4">
+            <div className="text-lg font-semibold mb-2">Orari e Tariffe</div>
+            {Array.isArray((data as any)?.rates) && (data as any).rates.length ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                {((data as any).rates as any[]).map((r:any,idx:number)=> (
+                  <div key={idx} className="border rounded-md p-2 flex items-center justify-between">
+                    <div className="text-neutral-700">{r?.label || r?.type || 'Sessione'}</div>
+                    <div className="font-semibold">€ {r?.price ?? '-'}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-500">Tariffe non specificate.</div>
+            )}
+          </div>
+        </section>
+      </div>
+      {/* Sezioni in fondo: Recensioni e Commenti */}
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6" id="recensioni">
+        <section className="bg-white border rounded-xl shadow-sm p-4" id="commenti">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold">Recensioni</h2>
+            <div className="text-xs text-neutral-500">{reviews.length} recensioni</div>
+          </div>
+          <div className="space-y-3">
+            {reviews.length === 0 ? (
+              <div className="text-sm text-neutral-500">Nessuna recensione, scrivi la prima.</div>
+            ) : reviews.map((r: any) => (
+              <div key={r.id} className="border rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-medium">{r.title}</div>
+                  <div className="text-xs text-neutral-500">{new Date(r.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div className="mt-1 flex items-center gap-1 text-amber-500 text-xs">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <FontAwesomeIcon key={i} icon={faStar} className={i < (r.rating ?? 0) ? '' : 'text-neutral-300'} />
+                  ))}
+                  <span className="ml-2 text-neutral-600">da {r.author?.nome || 'Utente'}</span>
+                </div>
+                <div className="mt-1 text-sm text-neutral-700">{r.body}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 border-t pt-4">
+            <div className="text-sm font-semibold mb-2">Lascia una recensione</div>
+            <div className="grid gap-2">
+              <input className="border rounded-md px-3 py-2" placeholder="Titolo" value={revTitle} onChange={e=>setRevTitle(e.target.value)} />
+              <select className="border rounded-md px-3 py-2 w-32" value={revRating} onChange={e=>setRevRating(Number(e.target.value))}>
+                {[5,4,3,2,1].map(v => <option key={v} value={v}>{v} stelle</option>)}
+              </select>
+              <textarea className="border rounded-md px-3 py-2 min-h-[100px]" placeholder="Scrivi la tua esperienza" value={revBody} onChange={e=>setRevBody(e.target.value)} />
+              <Button onClick={submitReview} disabled={submittingRev || !revTitle || !revBody} className="bg-red-600 hover:bg-red-700 text-white">{submittingRev ? 'Invio…' : 'Invia recensione'}</Button>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-white border rounded-xl shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><FontAwesomeIcon icon={faComments} /> Commenti</h2>
+            <div className="text-xs text-neutral-500">{comments.length} commenti</div>
+          </div>
+          <div className="space-y-3">
+            {comments.length === 0 ? (
+              <div className="text-sm text-neutral-500">Nessun commento, scrivi il primo.</div>
+            ) : comments.map((c: any) => (
+              <div key={c.id} className="border rounded-lg p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-neutral-700">{c.body}</div>
+                  <div className="text-xs text-neutral-500">{new Date(c.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div className="text-xs text-neutral-500 mt-1">da {c.author?.nome || 'Utente'}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 border-t pt-4">
+            <div className="text-sm font-semibold mb-2">Aggiungi un commento</div>
+            <div className="grid gap-2">
+              <textarea className="border rounded-md px-3 py-2 min-h-[80px]" placeholder="Scrivi un commento" value={commentBody} onChange={e=>setCommentBody(e.target.value)} />
+              <Button onClick={submitComment} disabled={submittingCom || !commentBody} className="bg-neutral-900 hover:bg-black text-white">{submittingCom ? 'Invio…' : 'Invia commento'}</Button>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   );

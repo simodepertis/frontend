@@ -52,7 +52,9 @@ enum ListingType {
 
 enum ListingStatus {
   DRAFT
+  IN_REVIEW
   PUBLISHED
+  REJECTED
   ARCHIVED
 }
 
@@ -63,7 +65,7 @@ model Listing {
   title     String
   city      String
   price     Int?
-  status    ListingStatus @default(PUBLISHED)
+  status    ListingStatus @default(IN_REVIEW)
   createdAt DateTime      @default(now())
 
   user User @relation(fields: [userId], references: [id])
@@ -172,6 +174,32 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum DocumentType {
+  ID_CARD_FRONT
+  ID_CARD_BACK
+  SELFIE_WITH_ID
+}
+
+enum DocumentStatus {
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model Document {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  type      DocumentType
+  status    DocumentStatus @default(IN_REVIEW)
+  url       String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status, createdAt])
+}
+
 model User {
   id       Int     @id @default(autoincrement())
   nome     String
@@ -228,6 +256,7 @@ model EscortProfile {
   tier      Tier     @default(STANDARD)
   tierExpiresAt DateTime?
   girlOfTheDayDate DateTime?
+  consentAcceptedAt DateTime?
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])

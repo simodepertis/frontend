@@ -1,12 +1,13 @@
 import { EscortProfile, Gender, PhotoItem, VideoItem, VirtualServiceItem } from "./types";
 
+// Demo-friendly image sources (allow hotlinking)
 export const escortImgs: string[] = [
-  "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-  "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/376078/profile/190aa487-a2dd-43ee-a4c2-5dff8c5fab49_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/703461/profile/28a91e4c-c6c3-4639-bae9-aeab4cbad15c_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/686141/profile/80cb7136-bcc1-4c01-9430-b8cbedd43a21_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/708057/profile/7040775e-d371-48b6-b310-6424e5ed3cd6_thumb_750.jpg?v=1",
+  "https://picsum.photos/id/1011/800/1200",
+  "https://picsum.photos/id/1012/800/1200",
+  "https://picsum.photos/id/1015/800/1200",
+  "https://picsum.photos/id/1027/800/1200",
+  "https://picsum.photos/id/1035/800/1200",
+  "https://picsum.photos/id/1043/800/1200",
 ];
 
 const cities = ["Milano", "Roma", "Firenze", "Napoli", "Bologna"];
@@ -72,3 +73,40 @@ export const virtualServices: VirtualServiceItem[] = Array.from({ length: 18 }).
   price: 20 + (i % 4) * 5,
   duration: 15 + (i % 3) * 15,
 }));
+
+// Dashboard extras (mock)
+export const stories = Array.from({ length: 10 }).map((_, i) => ({
+  id: i + 1,
+  name: escorts[i % escorts.length].nome,
+  avatar: escortImgs[i % escortImgs.length],
+  unread: (i % 3) === 0 ? (i % 5) + 1 : 0,
+}));
+
+export const forumActivities = [
+  {
+    id: 1,
+    title: "Heading to Naples this weekend. Any good recommendations for clubs/bars?",
+    author: "stpc10",
+    date: "28 ago, 2025",
+    url: "/forum",
+  },
+];
+
+export const notifications = [
+  { id: 1, text: "Nuovo profilo consigliato nella tua città", time: "1h fa" },
+  { id: 2, text: "Una modella che segui è in tour vicino a te", time: "ieri" },
+];
+
+export function pickHappyHour() {
+  const e = escorts[3];
+  const basePrice: number = typeof (e as any).prezzo === 'number' ? (e as any).prezzo : 140;
+  return {
+    name: e.nome,
+    city: e.city,
+    photo: e.photo,
+    oldPrice: `${basePrice + 20} EUR`,
+    newPrice: `${Math.max(20, basePrice - 20)} EUR`,
+    duration: "30 minutes",
+    url: `/escort/${e.slug}`,
+  };
+}

@@ -1,24 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faComments } from "@fortawesome/free-solid-svg-icons";
-
-const threads = Array.from({ length: 6 }).map((_, i) => ({
-  id: i + 1,
-  title: `Discussione #${i + 1}`,
-  author: ["Alessio", "Giada", "Marta", "Luca"][i % 4],
-  city: ["Milano", "Roma", "Firenze"][i % 3],
-  preview: "Commenti recenti sulla qualità del servizio e consigli tra utenti.",
-  replies: 2 + (i % 7),
-  updatedAt: `2025-09-${12 + i}`,
-}));
+import Link from "next/link";
 
 export default function CommentiPage() {
   const [city, setCity] = useState("");
+  const [items, setItems] = useState<any[]>([]);
 
-  const filtered = threads.filter(t => (!city || t.city === city));
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/public/commenti-feed');
+        if (!res.ok) throw new Error('Errore');
+        const { items } = await res.json();
+        setItems(items || []);
+      } catch {
+        setItems([]);
+      }
+    })();
+  }, []);
+
+  const filtered = items; // il feed non contiene la città; filtrare per città non è applicabile qui
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -44,20 +49,29 @@ export default function CommentiPage() {
         </div>
       </div>
 
-      {/* Lista discussioni */}
+      {/* Lista commenti reali */}
       <div className="bg-white border rounded-lg shadow divide-y">
-        {filtered.map((t) => (
-          <div key={t.id} className="px-4 py-3 flex items-start gap-3">
+        {filtered.length === 0 ? (
+          <div className="px-4 py-6 text-sm text-neutral-500">Nessun commento disponibile.</div>
+        ) : filtered.map((c: any) => (
+          <div key={c.id} className="px-4 py-3 flex items-start gap-3">
             <div className="w-8 h-8 rounded-full bg-red-100 text-red-700 grid place-items-center mt-0.5">
               <FontAwesomeIcon icon={faComments} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <div className="font-semibold text-neutral-800 truncate">{t.title}</div>
-                <div className="text-xs text-neutral-500">{t.updatedAt}</div>
+                <div className="font-semibold text-neutral-800 truncate">
+                  <span className="text-neutral-600 font-normal">da</span> {c.author?.nome || 'Utente'}
+                  <span className="text-neutral-600 font-normal"> su </span>
+                  {c.target?.slug ? (
+                    <Link href={`/escort/${c.target.slug}`} className="text-blue-700 hover:underline">{c.target?.nome || 'Profilo'}</Link>
+                  ) : (
+                    <span>{c.target?.nome || 'Profilo'}</span>
+                  )}
+                </div>
+                <div className="text-xs text-neutral-500">{new Date(c.createdAt).toLocaleDateString()}</div>
               </div>
-              <div className="text-sm text-neutral-600 truncate">{t.preview}</div>
-              <div className="mt-1 text-xs text-neutral-500">{t.author} · {t.city} · {t.replies} risposte</div>
+              <div className="text-sm text-neutral-700 truncate">{c.body}</div>
             </div>
           </div>
         ))}

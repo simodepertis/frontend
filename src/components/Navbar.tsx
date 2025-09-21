@@ -6,8 +6,32 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faPhone, faSearch
 } from "@fortawesome/free-solid-svg-icons";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
+  const [userName, setUserName] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/user/me");
+        if (!res.ok) return;
+        const data = await res.json();
+        setUserName(data?.user?.nome || "");
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/";
+    } catch {
+      window.location.href = "/";
+    }
+  };
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white text-black">
       {/* BARRA PRINCIPALE */}
@@ -34,12 +58,26 @@ export default function Navbar() {
                 <FontAwesomeIcon icon={faPhone} />
                 <span>Contatti</span>
             </Link>
-            <Link href="/autenticazione">
-                <Button className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
+            {userName ? (
+              <div className="flex items-center gap-2">
+                <Link href="/dashboard">
+                  <Button className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
                     <FontAwesomeIcon icon={faUser} />
-                    <span>Accedi</span>
+                    <span>Area Privata</span>
+                  </Button>
+                </Link>
+                <button onClick={handleLogout} className="underline text-neutral-700 hover:text-red-700">
+                  Esci
+                </button>
+              </div>
+            ) : (
+              <Link href="/autenticazione">
+                <Button className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
+                  <FontAwesomeIcon icon={faUser} />
+                  <span>Accedi</span>
                 </Button>
-            </Link>
+              </Link>
+            )}
             <Link href="/cerca" className="hover:text-red-600 transition-colors">
                 <FontAwesomeIcon icon={faSearch} size="lg" />
             </Link>

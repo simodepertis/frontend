@@ -7,23 +7,68 @@ export default function RegistrazionePage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
+  const [ruolo, setRuolo] = useState("user");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Logica di invio...
-    console.log("Submit per:", { email, password, nome });
-    alert(`Registrazione inviata!`);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, nome, ruolo })
+      });
+
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Registrazione fallita');
+        alert('Registrazione completata!');
+        const r = (data?.user?.ruolo || ruolo);
+        window.location.href = r === 'escort'
+          ? '/autenticazione?redirect=/dashboard/escort/compila'
+          : r === 'agency'
+          ? '/autenticazione?redirect=/dashboard/agenzia/compila'
+          : '/autenticazione';
+      } else {
+        // Non-JSON (probabilmente HTML d'errore): leggi testo per mostrare il motivo
+        const txt = await res.text();
+        if (!res.ok) throw new Error(txt || 'Registrazione fallita');
+        alert('Registrazione completata!');
+        window.location.href = ruolo === 'escort'
+          ? '/autenticazione?redirect=/dashboard/escort/compila'
+          : ruolo === 'agency'
+          ? '/autenticazione?redirect=/dashboard/agenzia/compila'
+          : '/autenticazione';
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Errore di registrazione';
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <main className="container mx-auto px-4 py-12 flex justify-center">
       <div className="w-full max-w-md p-8 bg-neutral-100 rounded-lg shadow-md border">
         <h1 className="text-3xl font-bold mb-6 text-center text-neutral-800">Crea il tuo Account</h1>
-        
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="ruolo" className="text-sm font-medium text-neutral-600">Ruolo</label>
+            <select
+              id="ruolo"
+              className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+              value={ruolo}
+              onChange={(e) => setRuolo(e.target.value)}
+            >
+              <option value="user">Utente</option>
+              <option value="escort">Escort</option>
+              <option value="agency">Agenzia</option>
+            </select>
+          </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="nome" className="text-sm font-medium text-neutral-600">
               Nome / Nickname

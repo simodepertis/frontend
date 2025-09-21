@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faSearch, faHeart, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "@/components/ui/button";
@@ -10,27 +10,28 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import SectionHeader from "@/components/SectionHeader";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-const mockReviews = Array.from({ length: 8 }).map((_, i) => ({
-  id: i + 1,
-  modelName: ["Eva Paradise", "TATI", "Malli", "Rodrigues", "Angelica Bianchi"][i % 5],
-  modelCity: ["Sassari", "Milano", "Napoli", "Napoli", "Bologna"][i % 5],
-  modelType: ["Indipendente", "Indipendente", "Indipendente", "Indipendente", "Indipendente"][i % 5],
-  avatar: `https://picsum.photos/seed/rev-${i+1}/96/96`,
-  look: 5 - (i % 3),
-  service: 3 + (i % 3),
-  user: ["Lonimi", "Posteur95", "dsarfil", "Rebosco77", "Supermetrum95"][i % 5],
-  userCount: 1 + (i % 6),
-  date: `16 set 2025`,
-}));
-
 export default function RecensioniPage() {
   const [tab, setTab] = useState("recensioni");
   const [city, setCity] = useState("");
   const [genre, setGenre] = useState("");
   const [dateOrder, setDateOrder] = useState("Più recenti");
   const [q, setQ] = useState("");
+  const [items, setItems] = useState<any[]>([]);
 
-  const filtered = mockReviews.filter(r => (!city || r.modelCity === city) && (!q || r.modelName.toLowerCase().includes(q.toLowerCase())));
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/public/recensioni-feed');
+        if (!res.ok) throw new Error('Errore');
+        const { items } = await res.json();
+        setItems(items || []);
+      } catch {
+        setItems([]);
+      }
+    })();
+  }, []);
+
+  const filtered = items.filter(r => (!q || String(r.target?.nome || '').toLowerCase().includes(q.toLowerCase())));
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -68,41 +69,36 @@ export default function RecensioniPage() {
             <Button className="bg-red-600 hover:bg-red-700 text-white font-bold h-10 px-5">Filtra</Button>
           </div>
 
-          {/* Tab Recensioni: lista */}
+          {/* Tab Recensioni: lista reale dal feed */}
           <TabsContent value="recensioni">
             <div className="mt-4 bg-white border rounded-lg shadow-sm divide-y">
-              {filtered.map((r) => (
+              {filtered.length === 0 ? (
+                <div className="p-4 text-sm text-neutral-500">Nessuna recensione disponibile.</div>
+              ) : filtered.map((r: any) => (
                 <div key={r.id} className="p-3 md:p-4 flex items-center gap-3">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden border">
-                    <Image src={r.avatar} alt={r.modelName} fill className="object-cover" />
+                    <Image src={r.target?.coverUrl || '/placeholder.jpg'} alt={r.target?.nome || 'Profilo'} fill className="object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Link href="#" className="text-blue-700 hover:underline font-semibold truncate">{r.modelName}</Link>
-                      <span className="text-neutral-500 text-sm truncate">{r.modelCity}, {r.modelType}</span>
+                      {r.target?.slug ? (
+                        <Link href={`/escort/${r.target.slug}`} className="text-blue-700 hover:underline font-semibold truncate">{r.target?.nome || 'Profilo'}</Link>
+                      ) : (
+                        <span className="font-semibold truncate">{r.target?.nome || 'Profilo'}</span>
+                      )}
                     </div>
-                    <div className="mt-1 grid grid-cols-2 gap-2 md:gap-6 items-center">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-neutral-600">Aspetto</span>
-                        <div className="flex items-center gap-1 text-amber-500">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <FontAwesomeIcon key={i} icon={faStar} className={i < r.look ? "" : "text-neutral-300"} />
-                          ))}
-                        </div>
+                    <div className="mt-1 flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-1 text-amber-500">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <FontAwesomeIcon key={i} icon={faStar} className={i < (r.rating ?? 0) ? "" : "text-neutral-300"} />
+                        ))}
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-neutral-600">Servizi</span>
-                        <div className="flex items-center gap-1 text-red-500">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <FontAwesomeIcon key={i} icon={faHeart} className={i < r.service ? "" : "text-neutral-300"} />
-                          ))}
-                        </div>
-                      </div>
+                      <div className="text-neutral-700 truncate">{r.title}</div>
                     </div>
                   </div>
                   <div className="hidden md:flex flex-col items-end gap-1 text-right">
-                    <div className="text-sm text-neutral-600">{r.date}</div>
-                    <Link href="#" className="text-xs text-blue-700 hover:underline">da {r.user} ({r.userCount})</Link>
+                    <div className="text-sm text-neutral-600">{new Date(r.createdAt).toLocaleDateString()}</div>
+                    <span className="text-xs text-neutral-500">da {r.author?.nome || 'Utente'}</span>
                   </div>
                   <FontAwesomeIcon icon={faArrowRight} className="text-neutral-400" />
                 </div>

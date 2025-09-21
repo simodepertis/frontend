@@ -1,34 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useSearchParams } from "next/navigation";
 
-export default function Autenticazione() {
+function AuthContent() {
   const [tab, setTab] = useState("utente");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const search = useSearchParams();
+  const redirect = search.get("redirect") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const type = tab === "utente" ? "user" : "model";
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || ""}/auth/login`, {
+      // Login contro la nostra API Next
+      const res = await fetch(`/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, type }),
+        body: JSON.stringify({ email, password }),
       });
       if (!res.ok) throw new Error("Credenziali non valide");
-      const data = await res.json();
-      if (data.access_token) {
-        localStorage.setItem("jwt", data.access_token);
-        alert("Accesso effettuato con successo!");
-        window.location.href = "/";
-      } else {
-        throw new Error("Token non ricevuto");
-      }
+      // Il cookie httpOnly viene impostato dalla API. Basta reindirizzare.
+      window.location.href = redirect;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
       alert(message);
@@ -41,9 +38,10 @@ export default function Autenticazione() {
     <main className="max-w-4xl mx-auto w-full px-2 py-10">
       <h1 className="text-4xl font-bold mb-8 text-center">Autenticazione</h1>
       <Tabs value={tab} onValueChange={setTab} className="mb-8 w-full">
-        <TabsList className="w-full flex justify-center">
+        <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="utente" className="flex-1">Utente</TabsTrigger>
-          <TabsTrigger value="modella" className="flex-1">Modella</TabsTrigger>
+          <TabsTrigger value="escort" className="flex-1">Escort</TabsTrigger>
+          <TabsTrigger value="agenzia" className="flex-1">Agenzia</TabsTrigger>
         </TabsList>
         <TabsContent value="utente">
           <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full">
@@ -68,7 +66,30 @@ export default function Autenticazione() {
             </Button>
           </form>
         </TabsContent>
-        <TabsContent value="modella">
+        <TabsContent value="escort">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full">
+            <input
+              type="email"
+              placeholder="Email"
+              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
+            <Button type="submit" className="w-full py-3 text-xl" style={{ color: '#f3d074' }} disabled={loading}>
+              {loading ? "Accesso..." : "Accedi"}
+            </Button>
+          </form>
+        </TabsContent>
+        <TabsContent value="agenzia">
           <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full">
             <input
               type="email"
@@ -96,5 +117,13 @@ export default function Autenticazione() {
         <a href="/registrazione" className="text-blue-600 hover:underline text-lg">Non hai un account? Registrati</a>
       </div>
     </main>
+  );
+}
+
+export default function Autenticazione() {
+  return (
+    <Suspense fallback={<main className="max-w-4xl mx-auto w-full px-2 py-10">Caricamento…</main>}>
+      <AuthContent />
+    </Suspense>
   );
 }

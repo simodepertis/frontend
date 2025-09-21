@@ -1,49 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faVideo, faPhone, faComments } from "@fortawesome/free-solid-svg-icons";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import SectionHeader from "@/components/SectionHeader";
 import Image from "next/image";
 import Link from "next/link";
 
-const escortImgs = [
-  "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-  "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/376078/profile/190aa487-a2dd-43ee-a4c2-5dff8c5fab49_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/703461/profile/28a91e4c-c6c3-4639-bae9-aeab4cbad15c_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/686141/profile/80cb7136-bcc1-4c01-9430-b8cbedd43a21_thumb_750.jpg?v=1",
-  "https://i.escortforumit.xxx/708057/profile/7040775e-d371-48b6-b310-6424e5ed3cd6_thumb_750.jpg?v=1",
-];
-
-const services = Array.from({ length: 8 }).map((_, i) => ({
-  id: i + 1,
-  model: ["Giulia", "Sara", "Elena", "Sofia"][i % 4],
-  city: ["Milano", "Roma", "Firenze"][i % 3],
-  type: ["Chat", "Videochiamata", "Chiamata"][i % 3],
-  price: 20 + (i % 4) * 5,
-  duration: 15 + (i % 3) * 15,
-  note: "Disponibile su appuntamento. Pagamento anticipato.",
-  photo: escortImgs[i % escortImgs.length],
-  tier: ["Diamond", "Top", "Diamond"][i % 3],
-  metrics: {
-    video: (i * 2) % 5,
-    reviews: (i * 3) % 7,
-    comments: (i * 5) % 9,
-  }
-}));
-
 export default function VirtualiPage() {
   const [city, setCity] = useState("");
-  const [type, setType] = useState("");
+  const [type, setType] = useState("Videochiamata");
   const [verified, setVerified] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
   const [hasReviews, setHasReviews] = useState(false);
   const [q, setQ] = useState("");
+  const [items, setItems] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const perPage = 24;
 
-  const filtered = services.filter(s => (!city || s.city === city) && (!type || s.type === type) && (!q || s.model.toLowerCase().includes(q.toLowerCase())));
+  useEffect(() => {
+    (async () => {
+      const params = new URLSearchParams();
+      params.set('type','VIRTUAL');
+      if (city) params.set('citta', city);
+      params.set('page', String(page));
+      const res = await fetch(`/api/public/annunci?${params.toString()}`);
+      if (res.ok) {
+        const j = await res.json();
+        setItems(j.items || []);
+        setTotal(j.total || 0);
+      } else {
+        setItems([]); setTotal(0);
+      }
+    })();
+  }, [city, page]);
+
+  const filtered = useMemo(() => {
+    // Filtrini client per demo (q, flags)
+    return items.filter((it) => (!q || String(it.name).toLowerCase().includes(q.toLowerCase())));
+  }, [items, q]);
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -87,34 +85,27 @@ export default function VirtualiPage() {
         </div>
       </div>
 
-      {/* Cards servizi con badge viola e metriche */}
+      {/* Cards servizi con badge e metriche; ora da API */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map((s) => (
-          <Link key={s.id} href="#" className="group block">
+        {filtered.map((s: any) => (
+          <Link key={s.id} href={`/escort/${s.slug}`} className="group block">
             <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border shadow-sm bg-white">
-              <Image src={s.photo} alt={s.model} fill className="object-cover group-hover:scale-105 transition-transform" />
+              <Image src={s.coverUrl || '/placeholder.svg'} alt={s.name} fill className="object-cover group-hover:scale-105 transition-transform" />
               <div className="absolute top-2 left-2">
-                <span className="text-xs font-bold bg-purple-600 text-white rounded px-2 py-0.5">{s.tier}</span>
+                <span className="text-xs font-bold bg-purple-600 text-white rounded px-2 py-0.5">VIRTUALE</span>
               </div>
               <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
-                <span className="text-[10px] bg-black/70 text-white rounded px-1.5 py-0.5">📹 {s.metrics.video}</span>
-                <span className="text-[10px] bg-black/70 text-white rounded px-1.5 py-0.5">⭐ {s.metrics.reviews}</span>
-                <span className="text-[10px] bg-black/70 text-white rounded px-1.5 py-0.5">💬 {s.metrics.comments}</span>
+                <span className="text-[10px] bg-black/70 text-white rounded px-1.5 py-0.5">{Array.isArray(s.cities)&&s.cities[0]?s.cities[0]:'Online'}</span>
               </div>
             </div>
             <div className="px-1.5 mt-2">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-neutral-800 truncate group-hover:underline">{s.model}</div>
-                <div className="text-xs text-neutral-500">{s.city}</div>
+                <div className="text-sm font-semibold text-neutral-800 truncate group-hover:underline">{s.name}</div>
+                <div className="text-xs text-neutral-500">{Array.isArray(s.cities)&&s.cities[0]?s.cities[0]:'—'}</div>
               </div>
-              <div className="mt-1 text-xs text-neutral-600 flex items-center gap-2">
-                {s.type === 'Videochiamata' && <><FontAwesomeIcon icon={faVideo} className="text-neutral-600" /><span>Videochiamata</span></>}
-                {s.type === 'Chat' && <><FontAwesomeIcon icon={faComments} className="text-neutral-600" /><span>Chat</span></>}
-                {s.type === 'Chiamata' && <><FontAwesomeIcon icon={faPhone} className="text-neutral-600" /><span>Chiamata</span></>}
-                <span className="text-neutral-500">· {s.duration} min</span>
-              </div>
+              <div className="mt-1 text-xs text-neutral-600 flex items-center gap-2" />
               <div className="mt-2 flex items-center justify-between">
-                <div className="text-lg font-semibold">€ {s.price}</div>
+                <div className="text-lg font-semibold">&nbsp;</div>
                 <button className="bg-red-600 hover:bg-red-700 text-white rounded-md px-3 py-1.5 text-sm font-semibold">Prenota</button>
               </div>
             </div>

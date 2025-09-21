@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faStar, faIdBadge, faUser } from "@fortawesome/free-solid-svg-icons";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
@@ -29,9 +28,8 @@ function getRankDetails(rank?: string) {
 
 export default function EscortCard({ escort }: { escort: Escort }) {
   const rankDetails = getRankDetails(escort.rank);
-  const slug = `${escort.nome}-${escort.citta}`.toLowerCase().replace(/\s+/g, "-");
   return (
-    <Link href={`/escort/${slug}`} className={`bg-white rounded-lg shadow-lg overflow-hidden border-2 ${rankDetails.borderColor} flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1`}>
+    <div className={`bg-white rounded-lg shadow-lg overflow-hidden border-2 ${rankDetails.borderColor} flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1`}>
       <div className="w-full h-80 relative">
         <div className={`absolute top-2 left-2 z-10 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 ${rankDetails.color}`}>
           <FontAwesomeIcon icon={rankDetails.icon} />
@@ -47,6 +45,6 @@ export default function EscortCard({ escort }: { escort: Escort }) {
           <span className="text-lg font-semibold text-neutral-800">€ {escort.prezzo}</span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
