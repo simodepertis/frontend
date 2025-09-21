@@ -32,6 +32,10 @@ function PaymentInstructions({ instructions, order }: { instructions: any; order
   const intestatario = instructions?.intestatario || instructions?.beneficiario || '';
   const banca = instructions?.banca || instructions?.istituto || '';
   const causale = instructions?.causale || `Acquisto crediti – Tel: ${order.phone || '—'}`;
+  
+  // Calcolo prezzo in euro (€0.50 per credito)
+  const prezzoCreditoEuro = 0.50;
+  const prezzoTotaleEuro = order.credits * prezzoCreditoEuro;
 
   return (
     <div className="rounded-xl border bg-white p-5">
@@ -40,7 +44,10 @@ function PaymentInstructions({ instructions, order }: { instructions: any; order
           <div className="text-sm text-neutral-600">Istruzioni di pagamento</div>
           <div className="text-lg font-semibold">{metodo}</div>
         </div>
-        <div className="text-sm text-neutral-600">Importo: <span className="font-semibold">{order.credits} crediti</span></div>
+        <div className="text-sm text-neutral-600">
+          <div>Importo: <span className="font-semibold text-lg text-green-700">€{prezzoTotaleEuro.toFixed(2)}</span></div>
+          <div className="text-xs text-neutral-500">({order.credits} crediti × €{prezzoCreditoEuro.toFixed(2)})</div>
+        </div>
       </div>
 
       <div className="mt-4 divide-y">
@@ -279,7 +286,13 @@ export default function CreditiPage() {
       <>
         {/* Crea ordine manuale */}
         <div className="rounded-xl border bg-white p-5 space-y-4">
-          <div className="font-semibold">Crea nuovo ordine</div>
+          <div className="flex items-center justify-between">
+            <div className="font-semibold">Crea nuovo ordine</div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-green-700">€{(orderForm.credits * 0.50).toFixed(2)}</div>
+              <div className="text-xs text-neutral-500">{orderForm.credits} crediti × €0.50</div>
+            </div>
+          </div>
           <div className="grid md:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1">
               <label className="text-sm text-neutral-600">Crediti</label>
@@ -327,7 +340,9 @@ export default function CreditiPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">Ordine #{o.id} · {o.method}</div>
-                      <div className="text-xs text-neutral-600">Crediti: {o.credits} · Stato: {o.status}</div>
+                      <div className="text-xs text-neutral-600">
+                        €{(o.credits * 0.50).toFixed(2)} ({o.credits} crediti) · Stato: {o.status}
+                      </div>
                       {o.receiptUrl && <a className="text-xs text-blue-600 underline" href={o.receiptUrl} target="_blank">Vedi ricevuta</a>}
                     </div>
                     {o.status === 'PENDING' && (
