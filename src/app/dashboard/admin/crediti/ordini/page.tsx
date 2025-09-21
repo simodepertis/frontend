@@ -14,7 +14,7 @@ export default function AdminOrdiniCreditiPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/credits/orders?status=${status}`);
+      const res = await fetch(`/API/admin/credits/orders?status=${status}`);
       if (res.ok) {
         const { orders } = await res.json();
         setOrders(orders || []);
@@ -28,7 +28,7 @@ export default function AdminOrdiniCreditiPage() {
   async function act(id: number, action: 'approve'|'reject') {
     setActingId(id);
     try {
-      const res = await fetch('/api/admin/credits/orders', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
+      const res = await fetch('/API/admin/credits/orders', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
       const data = await res.json();
       if (!res.ok) { alert(data?.error || 'Errore operazione'); return; }
       await load();

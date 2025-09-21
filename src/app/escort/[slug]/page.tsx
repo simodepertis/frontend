@@ -67,14 +67,14 @@ export default function EscortDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/public/escort/${slug}`);
+        const res = await fetch(`/API/public/escort/${slug}`);
         if (res.ok) {
           const json = await res.json();
           setData(json);
         }
         // fetch current user for owner-only actions
         try {
-          const meRes = await fetch('/api/user/me');
+          const meRes = await fetch('/API/user/me');
           if (meRes.ok) { const j = await meRes.json(); setMe(j?.user || null); }
         } catch {}
       } finally { setLoading(false); }
@@ -171,11 +171,11 @@ export default function EscortDetailPage() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`/api/public/recensioni/${slug}`);
+        const r = await fetch(`/API/public/recensioni/${slug}`);
         if (r.ok) { const j = await r.json(); setReviews(j.items || []); }
       } catch {}
       try {
-        const c = await fetch(`/api/public/commenti/${slug}`);
+        const c = await fetch(`/API/public/commenti/${slug}`);
         if (c.ok) { const j = await c.json(); setComments(j.items || []); }
       } catch {}
     })();
@@ -185,12 +185,12 @@ export default function EscortDetailPage() {
     if (!data?.userId) { alert('Profilo non caricato'); return; }
     setSubmittingRev(true);
     try {
-      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, rating: revRating, title: revTitle, body: revBody }) });
+      const res = await fetch('/API/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, rating: revRating, title: revTitle, body: revBody }) });
       const j = await res.json();
       if (res.status === 401) { window.location.href = `/autenticazione?redirect=/escort/${slug}`; return; }
       if (!res.ok) { alert(j?.error || 'Errore invio recensione'); return; }
       // In dev viene approvata: ricarico lista
-      try { const r = await fetch(`/api/public/recensioni/${slug}`); if (r.ok) { const jr = await r.json(); setReviews(jr.items || []); } } catch {}
+      try { const r = await fetch(`/API/public/recensioni/${slug}`); if (r.ok) { const jr = await r.json(); setReviews(jr.items || []); } } catch {}
       setRevTitle(""); setRevBody(""); setRevRating(5);
     } finally { setSubmittingRev(false); }
   }
@@ -199,11 +199,11 @@ export default function EscortDetailPage() {
     if (!data?.userId) { alert('Profilo non caricato'); return; }
     setSubmittingCom(true);
     try {
-      const res = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, body: commentBody }) });
+      const res = await fetch('/API/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, body: commentBody }) });
       const j = await res.json();
       if (res.status === 401) { window.location.href = `/autenticazione?redirect=/escort/${slug}`; return; }
       if (!res.ok) { alert(j?.error || 'Errore invio commento'); return; }
-      try { const c = await fetch(`/api/public/commenti/${slug}`); if (c.ok) { const jc = await c.json(); setComments(jc.items || []); } } catch {}
+      try { const c = await fetch(`/API/public/commenti/${slug}`); if (c.ok) { const jc = await c.json(); setComments(jc.items || []); } } catch {}
       setCommentBody("");
     } finally { setSubmittingCom(false); }
   }

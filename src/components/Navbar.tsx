@@ -40,8 +40,8 @@ export default function Navbar() {
         {/* COLONNA SINISTRA: Link di navigazione - MODIFICATO justify-end */}
         <div className="w-1/3 flex justify-end items-center gap-4 text-sm font-medium">
             <Link href="/escort" className="hover:text-red-600 transition-colors">Nuove Escort</Link>
-            <Link href="/escort" className="hover:text-red-600 transition-colors">Escorts Indipendenti</Link>
-            <Link href="/citta/milano" className="hover:text-red-600 transition-colors">Tours</Link>
+            <Link href="/foto" className="hover:text-red-600 transition-colors">Foto</Link>
+            <Link href="/video" className="hover:text-red-600 transition-colors">Video</Link>
             <Link href="/agenzie" className="hover:text-red-600 transition-colors">Agenzie</Link>
         </div>
 

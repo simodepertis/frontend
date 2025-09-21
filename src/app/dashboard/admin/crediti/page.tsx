@@ -13,7 +13,7 @@ export default function AdminCreditiSettingsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/settings');
+      const res = await fetch('/API/admin/settings');
       if (res.ok) {
         const { settings } = await res.json();
         setCreditValueCents(settings?.creditValueCents ?? 100);
@@ -28,7 +28,7 @@ export default function AdminCreditiSettingsPage() {
   async function save() {
     setSaving(true);
     try {
-      const res = await fetch('/api/admin/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ creditValueCents, currency }) });
+      const res = await fetch('/API/admin/settings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ creditValueCents, currency }) });
       if (!res.ok) { const t = await res.text(); alert('Errore salvataggio: ' + t); }
       else alert('Impostazioni salvate');
     } finally {

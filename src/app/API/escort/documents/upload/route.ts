@@ -18,22 +18,62 @@ export async function POST(request: NextRequest) {
     if (!auth) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
 
     const form = await request.formData();
-    const url = String(form.get('url') || '').trim();
-    const type = String(form.get('type') || '').trim();
-    if (!url) return NextResponse.json({ error: 'Fornisci un URL valido del documento (immagine/pdf)' }, { status: 400 });
-    if (!['ID_CARD_FRONT','ID_CARD_BACK','SELFIE_WITH_ID'].includes(type)) return NextResponse.json({ error: 'Tipo documento non valido' }, { status: 400 });
+    const file = form.get('file') as File;
+    const type = String(form.get('type') || 'identity').trim();
+    
+    // Validazione file
+    if (!file) {
+      return NextResponse.json({ error: 'Nessun file caricato' }, { status: 400 });
+    }
+    
+    // Controllo tipo file
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'Solo immagini sono accettate (JPG, PNG)' }, { status: 400 });
+    }
+    
+    // Controllo dimensione file (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: 'File troppo grande. Massimo 5MB' }, { status: 400 });
+    }
+    
+    // Controllo dimensione minima (min 10KB per evitare file corrotti)
+    if (file.size < 10 * 1024) {
+      return NextResponse.json({ error: 'File troppo piccolo. Minimo 10KB' }, { status: 400 });
+    }
 
-    const doc = await prisma.document.create({
+    // Per ora salviamo come base64 (in produzione useresti un servizio di storage)
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
+
+    // Determina il tipo di documento
+    let docType = 'ID_CARD_FRONT';
+    if (type === 'identity') docType = 'ID_CARD_FRONT';
+    else if (type === 'passport') docType = 'PASSPORT';
+    else if (type === 'license') docType = 'DRIVER_LICENSE';
+
+    const doc = await (prisma as any).document.create({
       data: {
         userId: auth.userId,
-        url,
-        type: type as any,
+        url: dataUrl, // Salviamo come data URL per semplicità
+        type: docType as any,
         status: 'IN_REVIEW',
       }
     });
 
-    return NextResponse.json({ ok: true, document: doc });
+    return NextResponse.json({ 
+      ok: true, 
+      document: {
+        id: doc.id,
+        type: 'Documento di Identità',
+        url: doc.url,
+        status: 'IN_REVIEW'
+      }
+    });
   } catch (e) {
-    return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
+    console.error('Errore upload documento:', e);
+    return NextResponse.json({ error: 'Errore interno del server' }, { status: 500 });
   }
 }

@@ -15,7 +15,7 @@ export default function AdminMediaFotoPage() {
   async function load() {
     setLoading(true);
     try {
-      const r = await fetch(`/api/admin/media/photos?status=${status}`);
+      const r = await fetch(`/API/admin/media/photos?status=${status}`);
       if (r.ok) {
         const j = await r.json();
         setItems(j.items || []);
@@ -30,7 +30,7 @@ export default function AdminMediaFotoPage() {
   async function act(id: number, action: 'approve'|'reject') {
     setActingId(id);
     try {
-      const r = await fetch('/api/admin/media/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
+      const r = await fetch('/API/admin/media/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
       const j = await r.json();
       if (!r.ok) { alert(j?.error || 'Errore'); return; }
       await load();

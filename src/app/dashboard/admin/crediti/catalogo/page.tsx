@@ -15,7 +15,7 @@ export default function AdminCatalogoCreditiPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/credits/catalog");
+      const res = await fetch("/API/admin/credits/catalog");
       if (res.ok) {
         const { products } = await res.json();
         setList(products || []);
@@ -35,7 +35,7 @@ export default function AdminCatalogoCreditiPage() {
     }
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/credits/catalog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const res = await fetch("/API/admin/credits/catalog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       if (!res.ok) { const t = await res.text(); alert("Errore creazione: " + t); return; }
       setForm({ code: "", label: "", creditsCost: 0, durationDays: 0 });
       await load();
@@ -47,7 +47,7 @@ export default function AdminCatalogoCreditiPage() {
   async function updateProduct(id: number, patch: Partial<Product>) {
     setUpdatingId(id);
     try {
-      const res = await fetch("/api/admin/credits/catalog", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...patch }) });
+      const res = await fetch("/API/admin/credits/catalog", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, ...patch }) });
       if (!res.ok) { const t = await res.text(); alert("Errore aggiornamento: " + t); return; }
       await load();
     } finally {
