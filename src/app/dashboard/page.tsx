@@ -14,7 +14,7 @@ export default function DashboardHome() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/API/user/me");
+        const res = await fetch("/api/user/me");
         if (res.ok) {
           const data = await res.json();
           setName(data?.user?.nome ?? "");
@@ -28,7 +28,7 @@ export default function DashboardHome() {
     (async () => {
       setLoadingItems(true);
       try {
-        const res = await fetch('/API/public/annunci');
+        const res = await fetch('/api/public/annunci');
         if (res.ok) {
           const j = await res.json();
           setItems(j.items || []);

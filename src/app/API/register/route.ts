@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+
     // Validazione email
     if (!validateEmail(email)) {
       return NextResponse.json(

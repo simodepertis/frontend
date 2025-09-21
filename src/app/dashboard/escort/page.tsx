@@ -27,8 +27,8 @@ export default function EscortDashboardPage() {
     (async () => {
       try {
         const [w, c] = await Promise.all([
-          fetch('/API/credits/wallet'),
-          fetch('/API/credits/catalog'),
+          fetch('/api/credits/wallet'),
+          fetch('/api/credits/catalog'),
         ]);
         if (w.ok) { const { wallet } = await w.json(); setWallet(wallet?.balance ?? 0); }
         if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
@@ -39,11 +39,11 @@ export default function EscortDashboardPage() {
   async function spend(code: string) {
     setSpending(code);
     try {
-      const res = await fetch('/API/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
       const data = await res.json();
       if (!res.ok) { alert(data?.error || 'Crediti insufficienti'); return; }
       // reload wallet
-      try { const w = await fetch('/API/credits/wallet'); if (w.ok) { const { wallet } = await w.json(); setWallet(wallet?.balance ?? 0); } } catch {}
+      try { const w = await fetch('/api/credits/wallet'); if (w.ok) { const { wallet } = await w.json(); setWallet(wallet?.balance ?? 0); } } catch {}
       alert(`Attivato ${data?.activated?.tier} fino al ${new Date(data?.activated?.expiresAt).toLocaleDateString()}`);
     } finally { setSpending(""); }
   }
