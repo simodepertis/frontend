@@ -68,3 +68,9 @@ export function validatePassword(password: string): { isValid: boolean; errors: 
     errors
   }
 }
+
+export async function getAuth(request: NextRequest): Promise<{ userId: number; email: string } | null> {
+  const token = getTokenFromRequest(request)
+  if (!token) return null
+  return verifyToken(token)
+}
