@@ -41,12 +41,12 @@ export default function ProfilePage() {
     }
   }, []);
 
-  if (loading) return <div className="text-center py-10">Caricamento...</div>;
-  if (!user) return <div className="text-center py-10 text-red-500">Non autenticato.</div>;
+  if (loading) return <div className="text-center py-10 text-white">Caricamento...</div>;
+  if (!user) return <div className="text-center py-10 text-red-400">Non autenticato.</div>;
 
   return (
     <main className="max-w-3xl mx-auto w-full px-2 py-10">
-      <h1 className="text-3xl font-bold mb-8 text-center">Profilo</h1>
+      <h1 className="text-3xl font-bold mb-8 text-center text-white">Profilo</h1>
       <Tabs value={tab} onValueChange={setTab} className="mb-8 w-full">
         <TabsList className="w-full flex justify-center">
           <TabsTrigger value="utente" className="flex-1">Profilo Utente</TabsTrigger>
@@ -55,10 +55,10 @@ export default function ProfilePage() {
           ) : null}
         </TabsList>
         <TabsContent value="utente">
-          <div className="bg-white border rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Dati personali</h2>
-            <div className="mb-2"><b>Nome:</b> {user.name}</div>
-            <div className="mb-2"><b>Email:</b> {user.email}</div>
+          <div className="bg-gray-800 border border-gray-600 rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-white">Dati personali</h2>
+            <div className="mb-2 text-white"><b>Nome:</b> {user.name}</div>
+            <div className="mb-2 text-white"><b>Email:</b> {user.email}</div>
             {/* Qui puoi aggiungere la modifica dei dati utente */}
             <Sheet>
               <SheetTrigger asChild>
@@ -73,11 +73,11 @@ export default function ProfilePage() {
                 </SheetHeader>
                 <form className="flex flex-col gap-4 mt-4">
                   <div>
-                    <label className="block text-sm font-medium mb-1">Nome</label>
+                    <label className="block text-sm font-medium mb-1 text-white">Nome</label>
                     <Input type="text" defaultValue={user.name} />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1">Email</label>
+                    <label className="block text-sm font-medium mb-1 text-white">Email</label>
                     <Input type="email" defaultValue={user.email} />
                   </div>
                   <div className="flex gap-2 justify-end mt-6">
@@ -91,17 +91,17 @@ export default function ProfilePage() {
         </TabsContent>
         {(user.role === "modella" || user.isModel) && (
           <TabsContent value="modella">
-            <div className="bg-white border rounded-xl shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Profilo Modella</h2>
+            <div className="bg-gray-800 border border-gray-600 rounded-xl shadow p-6">
+              <h2 className="text-xl font-semibold mb-4 text-white">Profilo Modella</h2>
               {/* Qui puoi aggiungere la gestione del profilo modella, foto, descrizione, ecc. */}
-              <div className="mb-2"><b>Nome:</b> {user.name}</div>
-              <div className="mb-2"><b>Email:</b> {user.email}</div>
+              <div className="mb-2 text-white"><b>Nome:</b> {user.name}</div>
+              <div className="mb-2 text-white"><b>Email:</b> {user.email}</div>
               {/* Placeholder per gestione foto */}
               <div className="mt-4">
-                <h3 className="font-semibold mb-2">Le tue foto</h3>
+                <h3 className="font-semibold mb-2 text-white">Le tue foto</h3>
                 <div className="flex gap-2 flex-wrap">
                   {/* Qui andranno le foto caricate */}
-                  <div className="w-24 h-24 bg-neutral-200 rounded flex items-center justify-center text-neutral-400">Nessuna foto</div>
+                  <div className="w-24 h-24 bg-gray-700 rounded flex items-center justify-center text-gray-400">Nessuna foto</div>
                 </div>
                 <Button className="mt-4">Aggiungi foto</Button>
               </div>
@@ -118,11 +118,11 @@ export default function ProfilePage() {
                   </SheetHeader>
                   <form className="flex flex-col gap-4 mt-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Nome</label>
+                      <label className="block text-sm font-medium mb-1 text-white">Nome</label>
                       <Input type="text" defaultValue={user.name} />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Email</label>
+                      <label className="block text-sm font-medium mb-1 text-white">Email</label>
                       <Input type="email" defaultValue={user.email} />
                     </div>
                     <div className="flex gap-2 justify-end mt-6">

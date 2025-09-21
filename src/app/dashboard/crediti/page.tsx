@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faStar, faGem, faShieldHalved, faCircleCheck, faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { useToast } from "@/components/ui/toast";
 
 function Copy({ text, label }: { text: string; label?: string }) {
   return (
@@ -83,6 +84,7 @@ function PaymentInstructions({ instructions, order }: { instructions: any; order
 }
 
 export default function CreditiPage() {
+  const { show } = useToast();
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(0);
   const [tx, setTx] = useState<Array<{ id: number; amount: number; type: string; reference?: string; createdAt: string }>>([]);
@@ -119,7 +121,10 @@ export default function CreditiPage() {
 
   async function buyCredits() {
     const qty = Number(creditsToBuy);
-    if (!Number.isFinite(qty) || qty < minCredits) { alert(`Minimo ${minCredits} crediti`); return; }
+    if (!Number.isFinite(qty) || qty < minCredits) {
+      show({ variant: "warning", title: "Quantità non valida", description: `Minimo ${minCredits} crediti` });
+      return;
+    }
     // Porta l'utente nella scheda Ordini precompilando i crediti
     setOrderForm((p) => ({ ...p, credits: qty }));
     setOrderInstructions(null);
@@ -130,10 +135,16 @@ export default function CreditiPage() {
     try {
       const res = await fetch('/API/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
       const data = await res.json();
-      if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
+      if (!res.ok) {
+        show({ variant: "error", title: "Errore spesa crediti", description: data?.error || 'Operazione non riuscita' });
+        return;
+      }
       await loadAll();
       setNotice({ type: 'success', msg: `Tier attivato: ${data?.activated?.tier} fino a ${new Date(data?.activated?.expiresAt).toLocaleDateString()}` });
-    } catch (e) { alert('Errore spesa crediti'); }
+      show({ variant: "success", title: "Attivazione riuscita", description: `Tier attivato: ${data?.activated?.tier}` });
+    } catch (e) {
+      show({ variant: "error", title: "Errore spesa crediti", description: 'Problema di rete' });
+    }
   }
 
   const sortedTx = useMemo(() => tx.slice().sort((a,b) => a.id < b.id ? 1 : -1), [tx]);
@@ -309,24 +320,28 @@ export default function CreditiPage() {
               <label className="text-sm text-neutral-600">Telefono (in causale)</label>
               <input value={orderForm.phone} onChange={(e)=>setOrderForm(p=>({...p, phone: e.target.value}))} className="border rounded-md px-3 py-2" placeholder="es. 333 333 3333" />
             </div>
-            <div className="flex items-end">
-              <Button onClick={async ()=>{
-                setCreatingOrder(true);
-                try {
-                  const res = await fetch('/API/credits/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderForm) });
-                  const data = await res.json();
-                  if (!res.ok) { alert(data?.error || 'Errore creazione ordine'); return; }
-                  setOrderInstructions(data.istruzioni || null);
-                  await loadAll();
-                } finally { setCreatingOrder(false); }
-              }} disabled={creatingOrder}>{creatingOrder ? 'Creazione…' : 'Crea ordine'}</Button>
-            </div>
+                <div className="flex items-end">
+                  <Button onClick={async ()=>{
+                    setCreatingOrder(true);
+                    try {
+                      const res = await fetch('/API/credits/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderForm) });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        show({ variant: "error", title: "Errore creazione ordine", description: data?.error || 'Riprova più tardi' });
+                        return;
+                      }
+                      setOrderInstructions(data.istruzioni || null);
+                      await loadAll();
+                      show({ variant: "success", title: "Ordine creato", description: 'Segui le istruzioni di pagamento' });
+                    } finally { setCreatingOrder(false); }
+                  }} disabled={creatingOrder}>{creatingOrder ? 'Creazione…' : 'Crea ordine'}</Button>
+                </div>
           </div>
 
           {orderInstructions && (
             <PaymentInstructions instructions={orderInstructions} order={orderForm} />
           )}
-        </div>
+
 
         {/* Elenco ordini + upload ricevuta */}
         <div className="rounded-xl border bg-white p-5">
@@ -354,8 +369,12 @@ export default function CreditiPage() {
                         try {
                           const res = await fetch('/API/credits/orders/receipt', { method: 'POST', body: fd });
                           const data = await res.json();
-                          if (!res.ok) { alert(data?.error || 'Errore upload'); return; }
+                          if (!res.ok) {
+                            show({ variant: "error", title: "Errore upload ricevuta", description: data?.error || 'Riprova' });
+                            return;
+                          }
                           setNotice({ type: 'success', msg: 'Ricevuta caricata. Crediti accreditati (preview).' });
+                          show({ variant: "success", title: "Ricevuta caricata", description: 'In attesa di verifica' });
                           await loadAll();
                         } finally { setUploadingOrderId(null); }
                       }}>

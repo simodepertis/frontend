@@ -99,23 +99,23 @@ export default function EscortDashboardPage() {
       <SectionHeader title="Dashboard Escort" subtitle="Strumenti rapidi per la tua visibilità" />
 
       {/* Happy Hour */}
-      <div className="rounded-lg border bg-white p-4 flex items-center justify-between">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex items-center justify-between">
         <div>
-          <div className="text-sm uppercase font-semibold text-pink-600">Happy Hour</div>
-          <div className="text-neutral-700 text-sm">Ottieni più visualizzazioni con l'Happy Hour.</div>
+          <div className="text-sm uppercase font-semibold text-blue-400">Happy Hour</div>
+          <div className="text-gray-300 text-sm">Ottieni più visualizzazioni con l'Happy Hour.</div>
         </div>
 
       {/* Promuovi il profilo */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-lg font-semibold">Promuovi il tuo profilo</div>
-            <div className="text-xs text-neutral-600">Saldo: {wallet ?? '—'} crediti</div>
+            <div className="text-lg font-semibold text-white">Promuovi il tuo profilo</div>
+            <div className="text-xs text-gray-400">Saldo: {wallet ?? '—'} crediti</div>
           </div>
           <a href="/dashboard/crediti" className="text-sm text-blue-600 underline">Vedi tutti i pacchetti</a>
         </div>
         {catalog.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessun pacchetto disponibile al momento.</div>
+          <div className="text-sm text-gray-400">Nessun pacchetto disponibile al momento.</div>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
             {catalog.slice(0,3).map(p => {
@@ -145,11 +145,11 @@ export default function EscortDashboardPage() {
           </div>
         )}
       </div>
-        <Button className="bg-pink-600 hover:bg-pink-700">Attiva</Button>
+        <Button className="bg-blue-600 hover:bg-blue-700">Attiva</Button>
       </div>
 
       {/* Bot Telegram / Verifica impostazioni */}
-      <div className="rounded-lg border bg-white p-0 overflow-hidden">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-0 overflow-hidden">
         <div className="p-4 border-b">
           <div className="text-neutral-900 font-semibold">Ottieni più visualizzazioni con il bot</div>
           <div className="text-neutral-600 text-sm">Per verificare le impostazioni di condivisione del tuo contenuto, clicca qui.</div>
@@ -166,7 +166,7 @@ export default function EscortDashboardPage() {
       </div>
 
       {/* Lui Cerca */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-lg font-semibold">Lui Cerca</div>
@@ -195,7 +195,7 @@ export default function EscortDashboardPage() {
       </div>
 
       {/* Problemi e Suggerimenti */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="text-sm font-semibold mb-2">Problemi e Suggerimenti</div>
         <ul className="text-sm text-neutral-700 list-disc pl-5 space-y-1">
           <li>Aggiungi un video al tuo profilo per più visualizzazioni <Link href="/dashboard/escort/compila" className="text-blue-600 hover:underline">Carica</Link></li>
@@ -213,7 +213,7 @@ export default function EscortDashboardPage() {
       </div>
 
       {/* Promo banner */}
-      <div className="rounded-lg border bg-white p-0 overflow-hidden">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-0 overflow-hidden">
         <div className="p-4">
           <div className="text-neutral-900 font-semibold">1 GIORNO IN PRIMA POSIZIONE IN UNA CITTÀ A TUA SCELTA</div>
           <div className="text-neutral-600 text-sm">Aumenta la visibilità del tuo profilo con le promozioni.</div>

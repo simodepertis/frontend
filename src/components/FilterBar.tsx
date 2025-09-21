@@ -12,9 +12,9 @@ export default function FilterBar({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-10 p-6 bg-neutral-100 rounded-lg shadow-md border">
+    <div className="mb-10 p-6 bg-gray-900 rounded-lg shadow-md border border-gray-700">
       {title && (
-        <h2 className="text-xl font-bold text-neutral-800 mb-4 text-center">{title}</h2>
+        <h2 className="text-xl font-bold text-white mb-4 text-center">{title}</h2>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
         {children}

@@ -13,14 +13,14 @@ export default function SectionHeader({ title, subtitle, icon }: Props) {
     <div className="mb-6 flex items-center justify-between">
       <div className="flex items-center gap-3">
         {icon && (
-          <div className="w-9 h-9 rounded-full bg-red-50 text-red-600 grid place-items-center shadow-sm border border-red-100">
+          <div className="w-9 h-9 rounded-full bg-blue-900 text-blue-400 grid place-items-center shadow-sm border border-blue-800">
             {icon}
           </div>
         )}
         <div>
-          <h1 className="text-3xl font-bold text-neutral-800 leading-tight">{title}</h1>
+          <h1 className="text-3xl font-bold text-white leading-tight">{title}</h1>
           {subtitle && (
-            <p className="text-sm text-neutral-500 mt-0.5">{subtitle}</p>
+            <p className="text-sm text-gray-400 mt-0.5">{subtitle}</p>
           )}
         </div>
       </div>

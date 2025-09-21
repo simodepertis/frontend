@@ -65,41 +65,41 @@ export default function DashboardHome() {
     <div className="space-y-6">
       <SectionHeader title={loading ? "Area Privata" : `Ciao${name ? ", " + name : ""}!`} subtitle="Riepilogo rapido e novità" />
 
-      <div className="rounded-lg border bg-white p-4">
-        <div className="text-sm text-neutral-600">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="text-sm text-gray-300">
           Il tuo codice cliente: <span className="font-semibold">3579464</span>
         </div>
       </div>
 
       {/* Happy Hour */}
-      <div className="rounded-lg border bg-white p-4">
-        <h3 className="text-lg font-semibold mb-3">Happy Hour</h3>
-        <Link href={hh.url} className="flex items-center gap-4 border rounded-lg p-3 hover:border-red-400 transition-colors">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <h3 className="text-lg font-semibold mb-3 text-white">Happy Hour</h3>
+        <Link href={hh.url} className="flex items-center gap-4 border border-gray-600 rounded-lg p-3 hover:border-blue-400 transition-colors">
           <div className="relative w-20 h-20 rounded-md overflow-hidden">
             <Image src={hh.photo || '/placeholder.svg'} alt={hh.name} fill className="object-cover" />
           </div>
           <div className="flex-1">
-            <div className="font-semibold">{hh.name} <span className="text-neutral-500">— {hh.city}</span></div>
-            <div className="text-xs text-neutral-500">{hh.duration}</div>
+            <div className="font-semibold text-white">{hh.name} <span className="text-gray-400">— {hh.city}</span></div>
+            <div className="text-xs text-gray-400">{hh.duration}</div>
           </div>
           <div className="text-right">
-            <div className="text-xs line-through text-neutral-400">{hh.oldPrice}</div>
-            <div className="text-red-600 font-bold">{hh.newPrice}</div>
+            <div className="text-xs line-through text-gray-500">{hh.oldPrice}</div>
+            <div className="text-blue-400 font-bold">{hh.newPrice}</div>
           </div>
         </Link>
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold mb-3">Ultimi Profili Aggiornati</h3>
+        <h3 className="text-lg font-semibold mb-3 text-white">Ultimi Profili Aggiornati</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {(loadingItems ? [] : latest).map((e: any) => (
             <Link key={e.id} href={`/escort/${e.slug}`} className="block group">
-              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border shadow-sm bg-white">
+              <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border border-gray-600 shadow-sm bg-gray-700">
                 <Image src={e.coverUrl || '/placeholder.svg'} alt={e.name} fill className="object-cover group-hover:scale-105 transition-transform" />
               </div>
               <div className="mt-2 px-0.5">
-                <div className="text-sm font-semibold text-neutral-800 truncate group-hover:underline">{e.name}</div>
-                <div className="text-xs text-neutral-500 truncate">{Array.isArray(e.cities)&&e.cities[0]? String(e.cities[0]) : '—'}</div>
+                <div className="text-sm font-semibold text-white truncate group-hover:underline">{e.name}</div>
+                <div className="text-xs text-gray-400 truncate">{Array.isArray(e.cities)&&e.cities[0]? String(e.cities[0]) : '—'}</div>
               </div>
             </Link>
           ))}
@@ -107,34 +107,34 @@ export default function DashboardHome() {
       </div>
 
       {/* Ultime Storie Caricate */}
-      <div className="rounded-lg border bg-white p-4">
-        <h3 className="text-lg font-semibold mb-3">Ultime Storie Caricate</h3>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <h3 className="text-lg font-semibold mb-3 text-white">Ultime Storie Caricate</h3>
         <div className="flex gap-4 overflow-x-auto pb-2">
           {stories.map((s) => (
             <div key={s.id} className="flex flex-col items-center min-w-[72px]">
-              <div className="relative w-16 h-16 rounded-full border-2 border-red-400 overflow-hidden">
+              <div className="relative w-16 h-16 rounded-full border-2 border-blue-400 overflow-hidden">
                 <Image src={s.avatar} alt={s.name} fill className="object-cover" />
                 {s.unread > 0 && (
-                  <span className="absolute -bottom-1 -right-1 bg-red-600 text-white rounded-full text-[10px] px-1.5 py-0.5">
+                  <span className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full text-[10px] px-1.5 py-0.5">
                     {s.unread}
                   </span>
                 )}
               </div>
-              <div className="mt-1 text-xs text-neutral-700 max-w-[72px] truncate">{s.name}</div>
+              <div className="mt-1 text-xs text-gray-300 max-w-[72px] truncate">{s.name}</div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Ultima Attività del Forum */}
-      <div className="rounded-lg border bg-white p-4">
-        <h3 className="text-lg font-semibold mb-3">Ultima Attività del Forum</h3>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <h3 className="text-lg font-semibold mb-3 text-white">Ultima Attività del Forum</h3>
         {forumActivities.map((f) => (
-          <div key={f.id} className="flex items-center justify-between border rounded-md p-3">
+          <div key={f.id} className="flex items-center justify-between border border-gray-600 rounded-md p-3">
             <div>
-              <div className="text-sm font-semibold">{f.author}</div>
-              <div className="text-xs text-neutral-500">{f.date}</div>
-              <div className="text-sm mt-1 text-neutral-800">{f.title}</div>
+              <div className="text-sm font-semibold text-white">{f.author}</div>
+              <div className="text-xs text-gray-400">{f.date}</div>
+              <div className="text-sm mt-1 text-gray-300">{f.title}</div>
             </div>
             <Link href={f.url} className="text-blue-600 hover:underline text-sm font-semibold">RISpondi</Link>
           </div>
@@ -142,13 +142,13 @@ export default function DashboardHome() {
       </div>
 
       {/* Le tue Notifiche */}
-      <div className="rounded-lg border bg-white p-4">
-        <h3 className="text-lg font-semibold mb-3">Le tue Notifiche</h3>
-        <div className="divide-y">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <h3 className="text-lg font-semibold mb-3 text-white">Le tue Notifiche</h3>
+        <div className="divide-y divide-gray-600">
           {notifications.map((n) => (
             <div key={n.id} className="py-2 flex items-center justify-between">
-              <div className="text-sm text-neutral-800">{n.text}</div>
-              <div className="text-xs text-neutral-500">{n.time}</div>
+              <div className="text-sm text-white">{n.text}</div>
+              <div className="text-xs text-gray-400">{n.time}</div>
             </div>
           ))}
         </div>

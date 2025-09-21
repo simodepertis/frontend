@@ -43,7 +43,7 @@ function AuthContent() {
 
   return (
     <main className="max-w-4xl mx-auto w-full px-2 py-10">
-      <h1 className="text-4xl font-bold mb-8 text-center">Autenticazione</h1>
+      <h1 className="text-4xl font-bold mb-8 text-center text-white">Autenticazione</h1>
       <Tabs value={tab} onValueChange={setTab} className="mb-8 w-full">
         <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="utente" className="flex-1">Utente</TabsTrigger>
@@ -51,11 +51,11 @@ function AuthContent() {
           <TabsTrigger value="agenzia" className="flex-1">Agenzia</TabsTrigger>
         </TabsList>
         <TabsContent value="utente">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-gray-800 border border-gray-600 rounded-2xl shadow-lg p-8 w-full">
             <input
               type="email"
               placeholder="Email"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              className="bg-gray-700 border border-gray-600 text-white rounded-lg px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xl placeholder-gray-300"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -63,22 +63,22 @@ function AuthContent() {
             <input
               type="password"
               placeholder="Password"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              className="bg-gray-700 border border-gray-600 text-white rounded-lg px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xl placeholder-gray-300"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
-            <Button type="submit" className="w-full py-3 text-xl" style={{ color: '#f3d074' }} disabled={loading}>
+            <Button type="submit" className="w-full py-3 text-xl bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
               {loading ? "Accesso..." : "Accedi"}
             </Button>
           </form>
         </TabsContent>
         <TabsContent value="escort">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-gray-800 border border-gray-600 rounded-2xl shadow-lg p-8 w-full">
             <input
               type="email"
               placeholder="Email"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              className="bg-gray-700 border border-gray-600 text-white rounded-lg px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xl placeholder-gray-300"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -86,22 +86,22 @@ function AuthContent() {
             <input
               type="password"
               placeholder="Password"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              className="bg-gray-700 border border-gray-600 text-white rounded-lg px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xl placeholder-gray-300"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
-            <Button type="submit" className="w-full py-3 text-xl" style={{ color: '#f3d074' }} disabled={loading}>
+            <Button type="submit" className="w-full py-3 text-xl bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
               {loading ? "Accesso..." : "Accedi"}
             </Button>
           </form>
         </TabsContent>
         <TabsContent value="agenzia">
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-white border border-neutral-200 rounded-2xl shadow-lg p-8 w-full">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6 bg-gray-800 border border-gray-600 rounded-2xl shadow-lg p-8 w-full">
             <input
               type="email"
               placeholder="Email"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              className="bg-gray-700 border border-gray-600 text-white rounded-lg px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xl placeholder-gray-300"
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -109,12 +109,12 @@ function AuthContent() {
             <input
               type="password"
               placeholder="Password"
-              className="border rounded-lg px-6 py-3 focus:outline-none focus:ring text-xl"
+              className="bg-gray-700 border border-gray-600 text-white rounded-lg px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xl placeholder-gray-300"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
             />
-            <Button type="submit" className="w-full py-3 text-xl" style={{ color: '#f3d074' }} disabled={loading}>
+            <Button type="submit" className="w-full py-3 text-xl bg-blue-600 hover:bg-blue-700 text-white" disabled={loading}>
               {loading ? "Accesso..." : "Accedi"}
             </Button>
           </form>

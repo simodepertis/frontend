@@ -39,10 +39,10 @@ export default function Navbar() {
         
         {/* COLONNA SINISTRA: Link di navigazione - MODIFICATO justify-end */}
         <div className="w-1/3 flex justify-end items-center gap-4 text-sm font-medium">
-            <Link href="/escort" className="hover:text-red-600 transition-colors">Nuove Escort</Link>
-            <Link href="/foto" className="hover:text-red-600 transition-colors">Foto</Link>
-            <Link href="/video" className="hover:text-red-600 transition-colors">Video</Link>
-            <Link href="/agenzie" className="hover:text-red-600 transition-colors">Agenzie</Link>
+            <Link href="/escort" className="hover:text-blue-400 transition-colors">Nuove Escort</Link>
+            <Link href="/foto" className="hover:text-blue-400 transition-colors">Foto</Link>
+            <Link href="/video" className="hover:text-blue-400 transition-colors">Video</Link>
+            <Link href="/agenzie" className="hover:text-blue-400 transition-colors">Agenzie</Link>
         </div>
 
         {/* COLONNA CENTRALE: Logo */}
@@ -54,31 +54,31 @@ export default function Navbar() {
 
         {/* COLONNA DESTRA: Azioni e Contatti - MODIFICATO justify-start */}
         <div className="w-1/3 flex justify-start items-center gap-4 text-sm">
-            <Link href="/contatti" className="flex items-center gap-2 hover:text-red-600 transition-colors">
+            <Link href="/contatti" className="flex items-center gap-2 hover:text-blue-400 transition-colors">
                 <FontAwesomeIcon icon={faPhone} />
                 <span>Contatti</span>
             </Link>
             {userName ? (
               <div className="flex items-center gap-2">
                 <Link href="/dashboard">
-                  <Button className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
                     <FontAwesomeIcon icon={faUser} />
                     <span>Area Privata</span>
                   </Button>
                 </Link>
-                <button onClick={handleLogout} className="underline text-neutral-700 hover:text-red-700">
+                <button onClick={handleLogout} className="underline text-gray-400 hover:text-blue-400">
                   Esci
                 </button>
               </div>
             ) : (
               <Link href="/autenticazione">
-                <Button className="bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
                   <FontAwesomeIcon icon={faUser} />
                   <span>Accedi</span>
                 </Button>
               </Link>
             )}
-            <Link href="/cerca" className="hover:text-red-600 transition-colors">
+            <Link href="/cerca" className="hover:text-blue-400 transition-colors">
                 <FontAwesomeIcon icon={faSearch} size="lg" />
             </Link>
         </div>
