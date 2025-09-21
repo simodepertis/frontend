@@ -24,6 +24,13 @@ function AuthContent() {
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) throw new Error("Credenziali non valide");
+      
+      const data = await res.json();
+      // Salva anche nel localStorage come backup
+      if (data.token) {
+        localStorage.setItem('auth-token', data.token);
+      }
+      
       // Il cookie httpOnly viene impostato dalla API. Basta reindirizzare.
       window.location.href = redirect;
     } catch (err: unknown) {
