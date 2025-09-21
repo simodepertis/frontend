@@ -56,9 +56,9 @@ export default function FotoPage() {
       <SectionHeader title="Foto" subtitle="Galleria fotografica aggiornata" />
 
       {/* Filtri */}
-      <div className="mb-6 p-4 bg-neutral-100 rounded-lg border shadow-sm">
+      <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-gray-600 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={city} onChange={(e)=>{ setCity(e.target.value); setPage(1); }}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" value={city} onChange={(e)=>{ setCity(e.target.value); setPage(1); }}>
             <option value="">Tutte le città</option>
             {/* In futuro possiamo popolare dinamicamente la lista città da API */}
             <option value="Milano">Milano</option>
@@ -66,7 +66,7 @@ export default function FotoPage() {
             <option value="Torino">Torino</option>
           </select>
           <select
-            className="bg-white border border-neutral-300 rounded-md px-3 py-2"
+            className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
             value={tag}
             onChange={(e) => { setTag(e.target.value); setPage(1); }}
           >
@@ -82,10 +82,10 @@ export default function FotoPage() {
       {/* Griglia foto con badge */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {!loading && items.length === 0 && (
-          <div className="col-span-full text-sm text-neutral-500">Nessuna foto disponibile.</div>
+          <div className="col-span-full text-sm text-gray-400">Nessuna foto disponibile.</div>
         )}
         {items.map((p, idx) => (
-          <div key={p.id} className="relative group overflow-hidden rounded-xl border shadow-sm hover:shadow-lg transition bg-white cursor-pointer" onClick={()=>setLightboxIdx(idx)}>
+          <div key={p.id} className="relative group overflow-hidden rounded-xl border border-gray-600 shadow-sm hover:shadow-lg transition bg-gray-800 cursor-pointer" onClick={()=>setLightboxIdx(idx)}>
             <div className="relative w-full aspect-[3/4]">
               <Image src={p.url || p.src} alt={`Foto ${p.id}`} fill className="object-cover group-hover:scale-105 transition-transform" />
               <div className="absolute top-2 left-2 flex gap-1">
@@ -111,7 +111,7 @@ export default function FotoPage() {
       {/* Paginazione */}
       <div className="mt-6 flex items-center justify-center gap-3">
         <Button variant="outline" disabled={page === 1} onClick={() => setPage((x) => Math.max(1, x - 1))}>Precedente</Button>
-        <span className="text-sm text-neutral-600">Pagina {page} di {totalPages}</span>
+        <span className="text-sm text-gray-300">Pagina {page} di {totalPages}</span>
         <Button variant="outline" disabled={page === totalPages} onClick={() => setPage((x) => Math.min(totalPages, x + 1))}>Successiva</Button>
       </div>
     </main>

@@ -56,16 +56,16 @@ export default function VideoPage() {
       <SectionHeader title="Video" subtitle="Anteprime e clip recenti" />
 
       {/* Filtri */}
-      <div className="mb-6 p-4 bg-neutral-100 rounded-lg border shadow-sm">
+      <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-gray-600 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={city} onChange={(e)=>{setCity(e.target.value); setPage(1);}}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" value={city} onChange={(e)=>{setCity(e.target.value); setPage(1);}}>
             <option value="">Tutte le città</option>
             {/* TODO: popolare dinamicamente */}
             <option value="Milano">Milano</option>
             <option value="Roma">Roma</option>
             <option value="Torino">Torino</option>
           </select>
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={tag} onChange={(e)=>{setTag(e.target.value); setPage(1);}}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" value={tag} onChange={(e)=>{setTag(e.target.value); setPage(1);}}>
             <option value="">Tutti i tag</option>
             <option value="HD">HD</option>
             <option value="Nuova">Nuova</option>
@@ -78,10 +78,10 @@ export default function VideoPage() {
       {/* Video Grid UI */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {!loading && items.length === 0 && (
-          <div className="col-span-full text-sm text-neutral-500">Nessun video disponibile.</div>
+          <div className="col-span-full text-sm text-gray-400">Nessun video disponibile.</div>
         )}
         {items.map((video, idx) => (
-          <div key={video.id} className="relative bg-white border rounded-lg shadow overflow-hidden group cursor-pointer" onClick={()=>setLightboxIdx(idx)}>
+          <div key={video.id} className="relative bg-gray-800 border border-gray-600 rounded-lg shadow overflow-hidden group cursor-pointer" onClick={()=>setLightboxIdx(idx)}>
             <div className="relative w-full aspect-video">
               <Image src={video.thumb || '/placeholder.png'} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" />
               <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -100,7 +100,7 @@ export default function VideoPage() {
               </div>
             </div>
             <div className="p-3">
-              <div className="text-sm font-semibold text-neutral-800 line-clamp-1">{video.title}</div>
+              <div className="text-sm font-semibold text-white line-clamp-1">{video.title}</div>
             </div>
           </div>
         ))}
@@ -109,7 +109,7 @@ export default function VideoPage() {
       {/* Paginazione finta */}
       <div className="mt-6 flex items-center justify-center gap-3">
         <Button variant="outline" disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Precedente</Button>
-        <span className="text-sm text-neutral-600">Pagina {page} di {totalPages}</span>
+        <span className="text-sm text-gray-300">Pagina {page} di {totalPages}</span>
         <Button variant="outline" disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))}>Successiva</Button>
       </div>
     </main>
