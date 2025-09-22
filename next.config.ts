@@ -22,6 +22,16 @@ const nextConfig: NextConfig = {
     // Temporarily ignore ESLint errors during production builds while we refactor types
     ignoreDuringBuilds: true,
   },
+  // Forza le API routes a essere case-sensitive
+  trailingSlash: false,
+  async rewrites() {
+    return [
+      {
+        source: '/API/:path*',
+        destination: '/api/:path*',
+      },
+    ]
+  },
 };
 
 export default nextConfig;
