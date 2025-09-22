@@ -19,13 +19,16 @@ export async function GET(request: NextRequest) {
     const adm = await requireAdmin(request);
     if (!adm) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
 
-    // Get escort users with their profiles that need approval (have consent but not admin approved yet)
+    // Get escort users with their profiles that need approval (have consent and created recently)
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    
     const profiles = await prisma.user.findMany({
       where: {
         ruolo: 'escort',
         escortProfile: {
           consentAcceptedAt: { not: null }, // User has given consent
-          // We'll consider profiles that need admin approval as those recently created
+          updatedAt: { gte: twoDaysAgo } // Updated in last 2 days (likely needs approval)
         }
       },
       select: {
@@ -82,11 +85,12 @@ export async function PATCH(request: NextRequest) {
     }
     
     if (action === 'approve') {
-      // Approve the escort profile by setting consent date
+      // Approve the escort profile - we'll update the updatedAt to mark as processed
       const updatedProfile = await prisma.escortProfile.update({
         where: { id: profileId },
         data: { 
-          consentAcceptedAt: new Date()
+          // Keep consent but update timestamp to mark as processed
+          updatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Set to 7 days ago so it doesn't appear in pending list
         },
       });
       
@@ -96,10 +100,17 @@ export async function PATCH(request: NextRequest) {
         message: 'Profilo approvato con successo'
       });
     } else {
-      // For rejection, we could delete the profile or mark it somehow
-      // For now, let's just return success (you might want to add a rejection field)
+      // For rejection, remove consent so profile becomes inactive
+      const updatedProfile = await prisma.escortProfile.update({
+        where: { id: profileId },
+        data: { 
+          consentAcceptedAt: null // Remove consent to deactivate profile
+        },
+      });
+      
       return NextResponse.json({ 
         success: true,
+        profile: updatedProfile,
         message: 'Profilo rifiutato'
       });
     }
