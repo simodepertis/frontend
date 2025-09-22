@@ -27,9 +27,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Configurazione per evitare problemi Edge Runtime
-  experimental: {
-    serverComponentsExternalPackages: ['jsonwebtoken', 'bcryptjs'],
-  },
+  serverExternalPackages: ['jsonwebtoken', 'bcryptjs'],
   // Forza le API routes a essere case-sensitive
   trailingSlash: false,
   async rewrites() {
