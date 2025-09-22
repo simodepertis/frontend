@@ -411,7 +411,14 @@ export default function VerificaFotoPage() {
               if (!consentTick) return;
               try {
                 setConsentSaving(true);
-                const res = await fetch('/api/escort/consent', { method: 'PATCH' });
+                const token = localStorage.getItem('auth-token');
+                const res = await fetch('/api/escort/consent', { 
+                  method: 'PATCH',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
                 if (res.ok) {
                   const data = await res.json();
                   setConsentAcceptedAt(data?.consentAcceptedAt || new Date().toISOString());
