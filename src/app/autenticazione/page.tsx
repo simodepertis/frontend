@@ -52,9 +52,15 @@ function AuthContent() {
       
       console.log('✅ Login completato con successo!');
       
-      // REDIRECT CORRETTO ALLA DASHBOARD
-      console.log('🔄 Reindirizzamento a:', redirect);
-      router.push(redirect);
+      // REDIRECT CORRETTO ALLA DASHBOARD - Admin va alla dashboard admin
+      let finalRedirect = redirect;
+      if (data.user.ruolo === 'admin' && redirect === '/dashboard') {
+        finalRedirect = '/dashboard/admin';
+        console.log('🔄 Admin rilevato - reindirizzamento a dashboard admin');
+      }
+      
+      console.log('🔄 Reindirizzamento a:', finalRedirect);
+      router.push(finalRedirect);
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
