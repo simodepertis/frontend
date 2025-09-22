@@ -47,10 +47,17 @@ export default async function handler(
     }
 
     // VERIFICA RUOLO - L'utente può accedere solo con il ruolo corretto
-    if (expectedRole && user.ruolo !== expectedRole) {
+    // MAPPING SPECIALE: admin può accedere da tab "agenzia"
+    const allowedAccess = expectedRole && (
+      user.ruolo === expectedRole || 
+      (user.ruolo === 'admin' && expectedRole === 'agenzia')
+    );
+    
+    if (expectedRole && !allowedAccess) {
       console.log(`❌ Ruolo non corrispondente. Utente: ${user.ruolo}, Atteso: ${expectedRole}`)
+      const correctTab = user.ruolo === 'admin' ? 'Agenzia' : user.ruolo;
       return res.status(403).json({ 
-        error: `Questo account è registrato come "${user.ruolo}". Seleziona la scheda corretta per accedere.` 
+        error: `Questo account è registrato come "${user.ruolo}". Seleziona la scheda "${correctTab}" per accedere.` 
       })
     }
 
