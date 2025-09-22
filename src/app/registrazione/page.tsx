@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export default function RegistrazionePage() {
@@ -9,6 +10,7 @@ export default function RegistrazionePage() {
   const [nome, setNome] = useState("");
   const [ruolo, setRuolo] = useState("user");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,21 +28,23 @@ export default function RegistrazionePage() {
         if (!res.ok) throw new Error(data?.error || 'Registrazione fallita');
         alert('Registrazione completata!');
         const r = (data?.user?.ruolo || ruolo);
-        window.location.href = r === 'escort'
+        const redirectUrl = r === 'escort'
           ? '/autenticazione?redirect=/dashboard/escort/compila'
           : r === 'agency'
           ? '/autenticazione?redirect=/dashboard/agenzia/compila'
           : '/autenticazione';
+        router.push(redirectUrl);
       } else {
         // Non-JSON (probabilmente HTML d'errore): leggi testo per mostrare il motivo
         const txt = await res.text();
         if (!res.ok) throw new Error(txt || 'Registrazione fallita');
         alert('Registrazione completata!');
-        window.location.href = ruolo === 'escort'
+        const redirectUrl = ruolo === 'escort'
           ? '/autenticazione?redirect=/dashboard/escort/compila'
           : ruolo === 'agency'
           ? '/autenticazione?redirect=/dashboard/agenzia/compila'
           : '/autenticazione';
+        router.push(redirectUrl);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Errore di registrazione';

@@ -150,18 +150,18 @@ export default function EscortDashboardPage() {
 
       {/* Bot Telegram / Verifica impostazioni */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-0 overflow-hidden">
-        <div className="p-4 border-b">
-          <div className="text-neutral-900 font-semibold">Ottieni più visualizzazioni con il bot</div>
-          <div className="text-neutral-600 text-sm">Per verificare le impostazioni di condivisione del tuo contenuto, clicca qui.</div>
+        <div className="p-4 border-b border-gray-600">
+          <div className="text-white font-semibold">Ottieni più visualizzazioni con il bot</div>
+          <div className="text-gray-300 text-sm">Per verificare le impostazioni di condivisione del tuo contenuto, clicca qui.</div>
         </div>
         <div className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative w-16 h-10">
               <Image src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" fill className="object-contain" />
             </div>
-            <div className="text-sm text-neutral-700">Configura il bot Telegram per la tua promozione</div>
+            <div className="text-sm text-gray-300">Configura il bot Telegram per la tua promozione</div>
           </div>
-          <Link href="/dashboard/supporto" className="text-blue-600 hover:underline text-sm">Clicca qui</Link>
+          <Link href="/dashboard/supporto" className="text-blue-400 hover:underline text-sm">Clicca qui</Link>
         </div>
       </div>
 
@@ -169,26 +169,26 @@ export default function EscortDashboardPage() {
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-lg font-semibold">Lui Cerca</div>
-            <div className="text-sm text-neutral-600">Scopri cosa cercano i clienti!</div>
+            <div className="text-lg font-semibold text-white">Lui Cerca</div>
+            <div className="text-sm text-gray-300">Scopri cosa cercano i clienti!</div>
           </div>
           <Link href="/dashboard/ricerca" className="text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-semibold">Controlla messaggi</Link>
         </div>
       </div>
 
       {/* Disponibilità switch */}
-      <div className="rounded-lg border bg-white p-4 grid md:grid-cols-2 gap-4">
-        <div className="border rounded-md p-3 flex items-center justify-between">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 grid md:grid-cols-2 gap-4">
+        <div className="border border-gray-600 rounded-md p-3 flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold">Disponibile per la prenotazione ora?</div>
-            <div className="text-xs text-neutral-500">Mostra agli utenti quando puoi ricevere richieste.</div>
+            <div className="text-sm font-semibold text-white">Disponibile per la prenotazione ora?</div>
+            <div className="text-xs text-gray-400">Mostra agli utenti quando puoi ricevere richieste.</div>
           </div>
           <Button variant="secondary" onClick={() => setAvailableBooking(v => !v)}>{availableBooking ? "Disattiva" : "Attiva"}</Button>
         </div>
-        <div className="border rounded-md p-3 flex items-center justify-between">
+        <div className="border border-gray-600 rounded-md p-3 flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold">Disponibile per Chat</div>
-            <div className="text-xs text-neutral-500">Indica se sei online e rispondi rapidamente.</div>
+            <div className="text-sm font-semibold text-white">Disponibile per Chat</div>
+            <div className="text-xs text-gray-400">Indica se sei online e rispondi rapidamente.</div>
           </div>
           <Button variant="secondary" onClick={() => setAvailableChat(v => !v)}>{availableChat ? "Disabilita" : "Abilita"}</Button>
         </div>
@@ -196,18 +196,18 @@ export default function EscortDashboardPage() {
 
       {/* Problemi e Suggerimenti */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
-        <div className="text-sm font-semibold mb-2">Problemi e Suggerimenti</div>
-        <ul className="text-sm text-neutral-700 list-disc pl-5 space-y-1">
-          <li>Aggiungi un video al tuo profilo per più visualizzazioni <Link href="/dashboard/escort/compila" className="text-blue-600 hover:underline">Carica</Link></li>
-          <li>Attira l'attenzione con una foto in copertina <Link href="/dashboard/escort/compila" className="text-blue-600 hover:underline">Carica</Link></li>
+        <div className="text-sm font-semibold mb-2 text-white">Problemi e Suggerimenti</div>
+        <ul className="text-sm text-gray-300 list-disc pl-5 space-y-1">
+          <li>Aggiungi un video al tuo profilo per più visualizzazioni <Link href="/dashboard/escort/compila" className="text-blue-400 hover:underline">Carica</Link></li>
+          <li>Attira l'attenzione con una foto in copertina <Link href="/dashboard/escort/compila" className="text-blue-400 hover:underline">Carica</Link></li>
         </ul>
       </div>
 
       {/* Forum teaser */}
-      <div className="rounded-lg border bg-white p-4 flex items-center justify-between">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex items-center justify-between">
         <div>
-          <div className="font-semibold">Forum Rosa</div>
-          <div className="text-sm text-neutral-600">Confronti con altre inserzioniste su stile e sicurezza.</div>
+          <div className="font-semibold text-white">Forum Rosa</div>
+          <div className="text-sm text-gray-300">Confronti con altre inserzioniste su stile e sicurezza.</div>
         </div>
         <Link href="/dashboard/forum" className="text-white bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-md text-sm font-semibold">Visita Forum</Link>
       </div>
@@ -215,10 +215,10 @@ export default function EscortDashboardPage() {
       {/* Promo banner */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-0 overflow-hidden">
         <div className="p-4">
-          <div className="text-neutral-900 font-semibold">1 GIORNO IN PRIMA POSIZIONE IN UNA CITTÀ A TUA SCELTA</div>
-          <div className="text-neutral-600 text-sm">Aumenta la visibilità del tuo profilo con le promozioni.</div>
+          <div className="text-white font-semibold">1 GIORNO IN PRIMA POSIZIONE IN UNA CITTÀ A TUA SCELTA</div>
+          <div className="text-gray-300 text-sm">Aumenta la visibilità del tuo profilo con le promozioni.</div>
         </div>
-        <div className="p-4 border-t flex justify-end">
+        <div className="p-4 border-t border-gray-600 flex justify-end">
           <Button className="bg-red-600 hover:bg-red-700">Scopri le offerte</Button>
         </div>
       </div>

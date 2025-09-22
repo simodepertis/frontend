@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -10,6 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string>("");
+  const router = useRouter();
 
   useEffect(() => {
     // Temporaneamente disabilitato - aspettiamo deploy API
@@ -54,7 +56,7 @@ export default function Navbar() {
     console.log('🔄 Stato componente resettato');
     
     // Reindirizza alla home
-    window.location.href = "/";
+    router.push("/");
   };
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-black text-white border-gray-800">
