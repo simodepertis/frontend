@@ -286,21 +286,24 @@ export default function VerificaFotoPage() {
                   try {
                     const fd = new FormData();
                     fd.append('file', file);
-                    fd.append('type', 'identity');
+                    // Usa il tipo selezionato (default ID_CARD_FRONT)
+                    fd.append('type', docType);
                     
+                    const token = localStorage.getItem('auth-token') || '';
                     const res = await fetch('/api/escort/documents/upload', { 
                       method: 'POST', 
+                      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
                       body: fd 
                     });
                     
-                    const data = await res.json();
+                    const data = await res.json().catch(()=>({ error: 'Errore sconosciuto' }));
                     
                     if (res.ok) {
                       // Sostituisci il documento temporaneo con quello reale
                       setDocs(prev => prev.map(doc => 
                         doc.id === tempDoc.id ? {
                           id: String(data.document.id),
-                          type: 'ID_CARD_FRONT' as const,
+                          type: (docType as any),
                           url: data.document.url,
                           status: 'in_review' as const
                         } : doc
