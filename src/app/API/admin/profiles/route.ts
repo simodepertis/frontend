@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const adm = await requireAdmin(request);
     if (!adm) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
 
-    // SIMPLIFIED: Get ALL escort users with their profiles
-    const profiles = await prisma.user.findMany({
+    // Get ALL escort users and create profiles if missing
+    const escortUsers = await prisma.user.findMany({
       where: {
         ruolo: 'escort'
       },
@@ -31,22 +31,40 @@ export async function GET(request: NextRequest) {
       take: 50
     });
 
-    // Transform the data to match the expected format
-    console.log('🔍 DEBUG Admin Profiles - Raw profiles found:', profiles.length);
-    console.log('🔍 DEBUG Admin Profiles - First profile:', profiles[0]);
+    console.log('🔍 DEBUG Admin Profiles - Raw escort users found:', escortUsers.length);
 
-    const formattedProfiles = profiles
-      .filter(user => user.escortProfile) // Only users with escort profiles
-      .map(user => ({
-        id: user.escortProfile!.id, // Use escort profile ID for approval
-        userId: user.id,
-        nome: user.nome,
-        email: user.email,
-        tier: user.escortProfile!.tier || 'STANDARD',
-        verified: !!user.escortProfile!.consentAcceptedAt, // True if has consent
-        createdAt: user.createdAt.toISOString().split('T')[0],
-        cities: user.escortProfile!.cities ? (Array.isArray(user.escortProfile!.cities) ? user.escortProfile!.cities : []) : []
-      }));
+    // Create escort profiles for users who don't have one
+    const profilesWithEscortProfile = await Promise.all(
+      escortUsers.map(async (user) => {
+        if (!user.escortProfile) {
+          console.log('🔧 Creating missing escortProfile for user:', user.id, user.nome);
+          // Create missing escort profile
+          const newProfile = await prisma.escortProfile.create({
+            data: {
+              userId: user.id
+            }
+          });
+          return {
+            ...user,
+            escortProfile: newProfile
+          };
+        }
+        return user;
+      })
+    );
+
+    console.log('🔍 DEBUG Admin Profiles - Users with profiles:', profilesWithEscortProfile.length);
+
+    const formattedProfiles = profilesWithEscortProfile.map(user => ({
+      id: user.escortProfile!.id, // Use escort profile ID for approval
+      userId: user.id,
+      nome: user.nome,
+      email: user.email,
+      tier: user.escortProfile!.tier || 'STANDARD',
+      verified: !!user.escortProfile!.consentAcceptedAt, // True if has consent
+      createdAt: user.createdAt.toISOString().split('T')[0],
+      cities: user.escortProfile!.cities ? (Array.isArray(user.escortProfile!.cities) ? user.escortProfile!.cities : []) : []
+    }));
 
     console.log('🔍 DEBUG Admin Profiles - Formatted profiles:', formattedProfiles.length);
     return NextResponse.json({ profiles: formattedProfiles });
