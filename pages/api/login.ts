@@ -14,9 +14,11 @@ export default async function handler(
   
   try {
     const { email, password } = req.body
+    console.log('📧 Email ricevuta:', email)
 
     // Validazione input
     if (!email || !password) {
+      console.log('❌ Email o password mancanti')
       return res.status(400).json({ error: 'Email e password sono obbligatori' })
     }
 
@@ -27,12 +29,18 @@ export default async function handler(
     })
 
     if (!user) {
+      console.log('❌ Utente non trovato per email:', email)
       return res.status(401).json({ error: 'Credenziali non valide' })
     }
 
+    console.log('👤 Utente trovato:', user.email, 'Ruolo:', user.ruolo)
+
     // Verifica password
     const isValid = await verifyPassword(password, user.password)
+    console.log('🔐 Password valida:', isValid)
+    
     if (!isValid) {
+      console.log('❌ Password non valida per:', email)
       return res.status(401).json({ error: 'Credenziali non valide' })
     }
 
