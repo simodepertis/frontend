@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown, faStar, faIdBadge, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faCrown, faStar, faIdBadge, faUser, faShieldHalved, faGem } from "@fortawesome/free-solid-svg-icons";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 
 export type Escort = {
@@ -18,11 +18,31 @@ export type Escort = {
 
 function getRankDetails(rank?: string) {
   switch (rank) {
-    case "VIP": return { color: "bg-yellow-500 text-black", icon: faCrown, borderColor: "border-yellow-500" };
-    case "ORO": return { color: "bg-amber-400 text-black", icon: faStar, borderColor: "border-amber-400" };
-    case "ARGENTO": return { color: "bg-slate-300 text-black", icon: faIdBadge, borderColor: "border-slate-300" };
-    case "TITANIUM": return { color: "bg-slate-600 text-white", icon: faUser, borderColor: "border-slate-600" };
-    default: return { color: "bg-gray-200 text-black", icon: faUser, borderColor: "border-gray-200" };
+    case "VIP": return { 
+      color: "bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold", 
+      icon: faCrown, 
+      borderColor: "border-yellow-400 shadow-yellow-400/50" 
+    };
+    case "TITANIO": return { 
+      color: "bg-gradient-to-r from-blue-500 to-blue-700 text-white font-bold", 
+      icon: faShieldHalved, 
+      borderColor: "border-blue-500 shadow-blue-500/50" 
+    };
+    case "ORO": return { 
+      color: "bg-gradient-to-r from-amber-400 to-amber-600 text-black font-bold", 
+      icon: faStar, 
+      borderColor: "border-amber-400 shadow-amber-400/50" 
+    };
+    case "ARGENTO": return { 
+      color: "bg-gradient-to-r from-gray-300 to-gray-500 text-black font-bold", 
+      icon: faGem, 
+      borderColor: "border-gray-400 shadow-gray-400/50" 
+    };
+    default: return { 
+      color: "bg-gray-600 text-white", 
+      icon: faUser, 
+      borderColor: "border-gray-600" 
+    };
   }
 }
 

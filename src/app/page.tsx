@@ -107,6 +107,11 @@ export default function Home() {
                   <div className="w-20">
                     <div className="relative w-20 h-20 rounded-full ring-2 ring-blue-200 hover:ring-blue-400 transition overflow-hidden bg-gray-700">
                       <Image src={p.coverUrl || "/placeholder.svg"} alt={p.name} fill className="object-cover" />
+                      {p.tier && p.tier !== 'STANDARD' && (
+                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                          <span className="text-[8px] font-bold text-black">{p.tier === 'VIP' ? '👑' : p.tier === 'TITANIO' ? '🛡️' : p.tier === 'ORO' ? '⭐' : '💎'}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="w-20 truncate text-[11px] text-center mt-1 text-gray-300">{p.name}</div>
                   </div>

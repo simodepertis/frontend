@@ -26,26 +26,85 @@ export default function EscortDashboardPage() {
   useEffect(() => {
     (async () => {
       try {
+        const authHeaders = {
+          'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`
+        };
+        
         const [w, c] = await Promise.all([
-          fetch('/api/credits/wallet'),
+          fetch('/api/credits/wallet', { headers: authHeaders }),
           fetch('/api/credits/catalog'),
         ]);
-        if (w.ok) { const { wallet } = await w.json(); setWallet(wallet?.balance ?? 0); }
-        if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
-      } catch {}
+        
+        if (w.ok) { 
+          const { wallet } = await w.json(); 
+          setWallet(wallet?.balance ?? 0); 
+          console.log(`💰 Saldo attuale: ${wallet?.balance} crediti`);
+        } else {
+          console.error('❌ Errore caricamento wallet:', await w.text());
+        }
+        
+        if (c.ok) { 
+          const { products } = await c.json(); 
+          setCatalog(products || []); 
+          console.log(`📦 Caricati ${products?.length || 0} pacchetti`);
+        } else {
+          console.error('❌ Errore caricamento catalogo:', await c.text());
+        }
+      } catch (error) {
+        console.error('❌ Errore caricamento dati:', error);
+      }
     })();
   }, []);
 
   async function spend(code: string) {
     setSpending(code);
     try {
-      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+      console.log(`💳 Tentativo attivazione pacchetto: ${code}`);
+      
+      const res = await fetch('/api/credits/spend', { 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`
+        }, 
+        body: JSON.stringify({ code }) 
+      });
+      
       const data = await res.json();
-      if (!res.ok) { alert(data?.error || 'Crediti insufficienti'); return; }
+      console.log('📦 Risposta API spend:', data);
+      
+      if (!res.ok) { 
+        const errorMsg = data?.error || 'Errore durante l\'attivazione';
+        alert(errorMsg);
+        console.error('❌ Errore attivazione:', errorMsg);
+        return; 
+      }
+      
       // reload wallet
-      try { const w = await fetch('/api/credits/wallet'); if (w.ok) { const { wallet } = await w.json(); setWallet(wallet?.balance ?? 0); } } catch {}
-      alert(`Attivato ${data?.activated?.tier} fino al ${new Date(data?.activated?.expiresAt).toLocaleDateString()}`);
-    } finally { setSpending(""); }
+      try { 
+        const w = await fetch('/api/credits/wallet', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` }
+        }); 
+        if (w.ok) { 
+          const { wallet } = await w.json(); 
+          setWallet(wallet?.balance ?? 0); 
+          console.log(`💰 Nuovo saldo: ${wallet?.balance} crediti`);
+        } 
+      } catch {}
+      
+      const successMsg = `✅ Pacchetto ${data?.activated?.tier} attivato fino al ${new Date(data?.activated?.expiresAt).toLocaleDateString()}!`;
+      alert(successMsg);
+      console.log(successMsg);
+      
+      // Refresh della pagina per vedere il profilo aggiornato
+      setTimeout(() => window.location.reload(), 2000);
+      
+    } catch (error) {
+      console.error('❌ Errore durante attivazione:', error);
+      alert('Errore di connessione. Riprova.');
+    } finally { 
+      setSpending(""); 
+    }
   }
 
   function tierIcon(code: string) {
