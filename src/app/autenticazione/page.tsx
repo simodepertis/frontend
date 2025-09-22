@@ -17,6 +17,7 @@ function AuthContent() {
     e.preventDefault();
     setLoading(true);
     console.log('🔐 Tentativo login per:', email);
+    
     try {
       // Login contro la nostra API Next
       const res = await fetch(`/api/login`, {
@@ -42,9 +43,11 @@ function AuthContent() {
       // Il cookie httpOnly viene impostato dalla API. Basta reindirizzare.
       window.location.href = redirect;
     } catch (err: unknown) {
+      console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
-      alert(message);
+      alert(`Errore login: ${message}`);
     } finally {
+      console.log('🔄 Fine tentativo login');
       setLoading(false);
     }
   };
