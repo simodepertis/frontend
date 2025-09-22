@@ -188,15 +188,15 @@ export default function EscortDashboardPage() {
                       <FontAwesomeIcon icon={tierIcon(p.code)} />
                     </div>
                     <div>
-                      <div className="font-semibold">{p.label}</div>
-                      <div className="text-[11px] text-neutral-600">Durata {p.durationDays} giorni</div>
+                      <div className="font-semibold text-white">{p.label}</div>
+                      <div className="text-[11px] text-gray-400">Durata {p.durationDays} giorni</div>
                     </div>
                     <span className={`ml-auto text-[10px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="text-xs">
-                      <div className="text-neutral-600">Costo</div>
-                      <div className="font-semibold">{p.creditsCost} crediti</div>
+                      <div className="text-gray-400">Costo</div>
+                      <div className="font-semibold text-white">{p.creditsCost} crediti</div>
                     </div>
                     <Button onClick={() => spend(p.code)} disabled={spending === p.code} className={`px-4 ${s.cta}`}>{spending === p.code ? 'Attivazione…' : 'Attiva'}</Button>
                   </div>
