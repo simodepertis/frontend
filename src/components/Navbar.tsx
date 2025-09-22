@@ -12,16 +12,23 @@ export default function Navbar() {
   const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/user/me");
-        if (!res.ok) return;
-        const data = await res.json();
-        setUserName(data?.user?.nome || "");
-      } catch {
-        // ignore
-      }
-    })();
+    // Temporaneamente disabilitato - aspettiamo deploy API
+    // (async () => {
+    //   try {
+    //     const res = await fetch("/api/user/me");
+    //     if (!res.ok) return;
+    //     const data = await res.json();
+    //     setUserName(data?.user?.nome || "");
+    //   } catch {
+    //     // ignore
+    //   }
+    // })();
+    
+    // Usa localStorage temporaneamente
+    const email = localStorage.getItem('user-email');
+    if (email) {
+      setUserName(email.split('@')[0]);
+    }
   }, []);
 
   const handleLogout = async () => {
