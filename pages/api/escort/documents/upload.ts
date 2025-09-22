@@ -18,8 +18,8 @@ async function parseForm(req: NextApiRequest): Promise<{ fields: formidable.Fiel
   const form = formidable({ multiples: false, uploadDir, keepExtensions: true })
   return new Promise((resolve, reject) => {
     form.parse(req, (err, fields, files) => {
-      if (err) reject(err)
-      else resolve({ fields, files })
+      if (err) return reject(err)
+      return resolve({ fields, files })
     })
   })
 }
@@ -50,17 +50,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!mime.startsWith('image/')) return res.status(400).json({ error: 'Formato non supportato' })
     if ((file.size || 0) > 5 * 1024 * 1024) return res.status(400).json({ error: 'File troppo grande (max 5MB)' })
 
-    // Move file into public/uploads with a friendly unique name
-    const ext = path.extname(file.originalFilename || file.newFilename || '') || '.jpg'
-    const fname = `doc_${user.id}_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    const dest = path.join(uploadDir, fname)
-    await fs.promises.copyFile(file.filepath, dest)
+    // formidable has already stored the file inside public/uploads (uploadDir)
+    // Build a public URL from the stored path
+    const storedBasename = path.basename(file.filepath || file.newFilename || file.originalFilename || `doc_${Date.now()}`)
+    const url = `/uploads/${storedBasename}`
 
-    const url = `/uploads/${fname}`
-
-    // Determine type from fields.type if present
-    const rawType = String((fields.type as string) || '').toUpperCase()
+    // Determine type from fields.type if present (can be string | string[])
+    const rawField = (fields as any).type
+    const rawType = (Array.isArray(rawField) ? String(rawField[0] || '') : String(rawField || '')).toUpperCase()
     const type: any = ['ID_CARD_FRONT','ID_CARD_BACK','SELFIE_WITH_ID'].includes(rawType) ? rawType : 'ID_CARD_FRONT'
 
     const created = await prisma.document.create({
@@ -73,8 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     return res.status(201).json({ document: created })
-  } catch (e) {
+  } catch (e: any) {
     console.error('Document upload error', e)
-    return res.status(500).json({ error: 'Errore interno' })
+    return res.status(500).json({ error: e?.message || 'Errore interno' })
   }
 }
