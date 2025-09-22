@@ -215,7 +215,7 @@ export default function EscortDetailPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-2">
         {/* Galleria */}
-        <div className="md:col-span-2 bg-white rounded-xl border shadow-sm p-4">
+        <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
             <Image src={escort.foto[active] || '/placeholder.svg'} alt={`${escort.nome} principale`} fill className="object-cover" />
             {escort.girlOfTheDay && (
@@ -281,14 +281,14 @@ export default function EscortDetailPage() {
           {escort.tier && escort.tier !== 'STANDARD' && (
             <div className="mt-4 border-t pt-4 text-sm">
               <div className="font-semibold">Promozione attiva</div>
-              <div className="text-neutral-700">{escort.tier} {escort.tierExpiresAt ? `fino al ${new Date(escort.tierExpiresAt).toLocaleDateString()}${countdown ? ` (${countdown})` : ''}` : ''}</div>
+              <div className="text-gray-300">{escort.tier} {escort.tierExpiresAt ? `fino al ${new Date(escort.tierExpiresAt).toLocaleDateString()}${countdown ? ` (${countdown})` : ''}` : ''}</div>
             </div>
           )}
           <div className="mt-4 border-t pt-4 space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-neutral-700">
+            <div className="flex items-center gap-2 text-gray-300">
               <FontAwesomeIcon icon={faShieldHeart} className="text-green-600" /> Verificata manualmente
             </div>
-            <div className="flex items-center gap-2 text-neutral-700">
+            <div className="flex items-center gap-2 text-gray-300">
               <FontAwesomeIcon icon={faStar} className="text-amber-500" /> Preferita da 128 utenti
             </div>
           </div>
@@ -296,8 +296,8 @@ export default function EscortDetailPage() {
       </div>
       {/* Quick Access + Content */}
       <div className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-6" id="quick-access">
-        <aside className="md:col-span-1 bg-white border rounded-xl shadow-sm p-4 h-fit sticky top-24">
-          <div className="text-sm font-semibold mb-2 text-neutral-700">Quick Access</div>
+        <aside className="md:col-span-1 bg-gray-800 border rounded-xl shadow-sm p-4 h-fit sticky top-24">
+          <div className="text-sm font-semibold mb-2 text-gray-300">Quick Access</div>
           <nav className="space-y-1 text-sm">
             <a href="#bio" className="block px-2 py-1 rounded hover:bg-neutral-100">Bio</a>
             <a href="#lingue" className="block px-2 py-1 rounded hover:bg-neutral-100">Lingue</a>
@@ -310,7 +310,7 @@ export default function EscortDetailPage() {
         </aside>
         <section className="md:col-span-3 space-y-6">
           {/* Bio */}
-          <div id="bio" className="bg-white border rounded-xl shadow-sm p-4">
+          <div id="bio" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2">Bio</div>
             {escort.descrizione ? (
               <div className="grid md:grid-cols-2 gap-4 text-sm text-neutral-800">
@@ -333,7 +333,7 @@ export default function EscortDetailPage() {
           </div>
 
           {/* Lingue */}
-          <div id="lingue" className="bg-white border rounded-xl shadow-sm p-4">
+          <div id="lingue" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2">Lingue</div>
             {Array.isArray((data as any)?.languages) && (data as any).languages.length ? (
               <div className="flex flex-wrap gap-2">
@@ -354,7 +354,7 @@ export default function EscortDetailPage() {
           </div>
 
           {/* Su di me */}
-          <div id="su-di-me" className="bg-white border rounded-xl shadow-sm p-4">
+          <div id="su-di-me" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2">Su di me</div>
             {escort.descrizione ? (
               <div className="text-sm text-neutral-800 whitespace-pre-line leading-6">{escort.descrizione}</div>
@@ -364,7 +364,7 @@ export default function EscortDetailPage() {
           </div>
 
           {/* Servizi */}
-          <div id="servizi" className="bg-white border rounded-xl shadow-sm p-4">
+          <div id="servizi" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2">Servizi</div>
             {servicesList.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
@@ -381,13 +381,13 @@ export default function EscortDetailPage() {
           </div>
 
           {/* Orari e Tariffe */}
-          <div id="tariffe" className="bg-white border rounded-xl shadow-sm p-4">
+          <div id="tariffe" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2">Orari e Tariffe</div>
             {Array.isArray((data as any)?.rates) && (data as any).rates.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                 {((data as any).rates as any[]).map((r:any,idx:number)=> (
                   <div key={idx} className="border rounded-md p-2 flex items-center justify-between">
-                    <div className="text-neutral-700">{r?.label || r?.type || 'Sessione'}</div>
+                    <div className="text-gray-300">{r?.label || r?.type || 'Sessione'}</div>
                     <div className="font-semibold">€ {r?.price ?? '-'}</div>
                   </div>
                 ))}
@@ -400,7 +400,7 @@ export default function EscortDetailPage() {
       </div>
       {/* Sezioni in fondo: Recensioni e Commenti */}
       <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6" id="recensioni">
-        <section className="bg-white border rounded-xl shadow-sm p-4" id="commenti">
+        <section className="bg-gray-800 border rounded-xl shadow-sm p-4" id="commenti">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">Recensioni</h2>
             <div className="text-xs text-neutral-500">{reviews.length} recensioni</div>
@@ -420,7 +420,7 @@ export default function EscortDetailPage() {
                   ))}
                   <span className="ml-2 text-neutral-600">da {r.author?.nome || 'Utente'}</span>
                 </div>
-                <div className="mt-1 text-sm text-neutral-700">{r.body}</div>
+                <div className="mt-1 text-sm text-gray-300">{r.body}</div>
               </div>
             ))}
           </div>
@@ -437,7 +437,7 @@ export default function EscortDetailPage() {
           </div>
         </section>
 
-        <section className="bg-white border rounded-xl shadow-sm p-4">
+        <section className="bg-gray-800 border rounded-xl shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold flex items-center gap-2"><FontAwesomeIcon icon={faComments} /> Commenti</h2>
             <div className="text-xs text-neutral-500">{comments.length} commenti</div>
@@ -448,7 +448,7 @@ export default function EscortDetailPage() {
             ) : comments.map((c: any) => (
               <div key={c.id} className="border rounded-lg p-3">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-neutral-700">{c.body}</div>
+                  <div className="text-sm text-gray-300">{c.body}</div>
                   <div className="text-xs text-neutral-500">{new Date(c.createdAt).toLocaleDateString()}</div>
                 </div>
                 <div className="text-xs text-neutral-500 mt-1">da {c.author?.nome || 'Utente'}</div>

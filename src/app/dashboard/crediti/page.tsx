@@ -10,7 +10,7 @@ function Copy({ text, label }: { text: string; label?: string }) {
   return (
     <button
       onClick={() => navigator.clipboard.writeText(text)}
-      className="text-xs px-2 py-1 border rounded-md hover:bg-neutral-50"
+      className="text-xs px-2 py-1 border border-gray-600 bg-gray-700 text-white rounded-md hover:bg-gray-600"
       title="Copia negli appunti"
     >{label || 'Copia'}</button>
   );
@@ -19,8 +19,8 @@ function Copy({ text, label }: { text: string; label?: string }) {
 function Row({ k, v, copy }: { k: string; v: string; copy?: boolean }) {
   return (
     <div className="grid grid-cols-[140px,1fr,auto] items-center gap-2 py-1">
-      <div className="text-neutral-600 text-xs md:text-sm">{k}</div>
-      <div className="font-medium text-xs md:text-sm break-all">{v}</div>
+      <div className="text-gray-400 text-xs md:text-sm">{k}</div>
+      <div className="font-medium text-xs md:text-sm break-all text-white">{v}</div>
       {copy && <Copy text={v} />}
     </div>
   );
@@ -38,15 +38,15 @@ function PaymentInstructions({ instructions, order }: { instructions: any; order
   const prezzoTotaleEuro = order.credits * prezzoCreditoEuro;
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <div className="rounded-xl border bg-gray-800 p-5">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm text-neutral-600">Istruzioni di pagamento</div>
-          <div className="text-lg font-semibold">{metodo}</div>
+          <div className="text-sm text-gray-400">Istruzioni di pagamento</div>
+          <div className="text-lg font-semibold text-white">{metodo}</div>
         </div>
-        <div className="text-sm text-neutral-600">
-          <div>Importo: <span className="font-semibold text-lg text-green-700">€{prezzoTotaleEuro.toFixed(2)}</span></div>
-          <div className="text-xs text-neutral-500">({order.credits} crediti × €{prezzoCreditoEuro.toFixed(2)})</div>
+        <div className="text-sm text-gray-400">
+          <div>Importo: <span className="font-semibold text-lg text-green-400">€{prezzoTotaleEuro.toFixed(2)}</span></div>
+          <div className="text-xs text-gray-500">({order.credits} crediti × €{prezzoCreditoEuro.toFixed(2)})</div>
         </div>
       </div>
 
@@ -73,7 +73,7 @@ function PaymentInstructions({ instructions, order }: { instructions: any; order
         )}
       </div>
 
-      <div className="mt-4 p-3 rounded-md bg-neutral-50 border text-xs text-neutral-700">
+      <div className="mt-4 p-3 rounded-md bg-gray-700 border border-gray-600 text-xs text-gray-300">
         - Conserva la ricevuta in formato immagine o PDF.\n
         - Dopo il versamento, carica la ricevuta nella sezione "I miei ordini" qui sotto.\n
         - L'accredito dei crediti avviene dopo la verifica (in orari d'ufficio).
@@ -180,7 +180,7 @@ export default function CreditiPage() {
       };
     }
     return {
-      card: 'bg-white border-neutral-200',
+      card: 'bg-gray-800 border-neutral-200',
       pill: 'bg-neutral-200 text-neutral-800',
       cta: 'bg-neutral-900 hover:bg-black text-white',
       ring: 'ring-neutral-300'
@@ -193,8 +193,8 @@ export default function CreditiPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-2">
-        <button onClick={() => setTab('crediti')} className={`px-3 py-1.5 rounded-md text-sm ${tab==='crediti' ? 'bg-neutral-900 text-white' : 'bg-white border'}`}>Crediti</button>
-        <button onClick={() => setTab('ordini')} className={`px-3 py-1.5 rounded-md text-sm ${tab==='ordini' ? 'bg-neutral-900 text-white' : 'bg-white border'}`}>Ordini</button>
+        <button onClick={() => setTab('crediti')} className={`px-3 py-1.5 rounded-md text-sm ${tab==='crediti' ? 'bg-neutral-900 text-white' : 'bg-gray-800 border'}`}>Crediti</button>
+        <button onClick={() => setTab('ordini')} className={`px-3 py-1.5 rounded-md text-sm ${tab==='ordini' ? 'bg-neutral-900 text-white' : 'bg-gray-800 border'}`}>Ordini</button>
       </div>
 
       {notice && (
@@ -208,7 +208,7 @@ export default function CreditiPage() {
       {tab === 'crediti' && (
       <>
       {/* Hero saldo + acquisto */}
-      <div className="rounded-xl border bg-white p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="rounded-xl border bg-gray-800 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <div className="text-sm text-neutral-600">Saldo attuale</div>
           <div className="text-4xl font-extrabold">{balance} crediti</div>
@@ -220,7 +220,7 @@ export default function CreditiPage() {
       </div>
 
       {/* Catalogo posizionamenti */}
-      <div className="rounded-xl border bg-white p-5">
+      <div className="rounded-xl border bg-gray-800 p-5">
         <div className="font-semibold mb-3">Acquista posizionamenti</div>
         {catalog.length === 0 ? (
           <div className="text-sm text-neutral-500">Catalogo non disponibile</div>
@@ -237,7 +237,7 @@ export default function CreditiPage() {
                     </div>
                   )}
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 grid place-items-center rounded-full bg-white/80 ${s.ring} ring-2 text-neutral-800`}>
+                    <div className={`w-10 h-10 grid place-items-center rounded-full bg-gray-800/80 ${s.ring} ring-2 text-neutral-800`}>
                       <FontAwesomeIcon icon={tierIcon(p.code)} />
                     </div>
                     <div>
@@ -261,7 +261,7 @@ export default function CreditiPage() {
       </div>
 
       {/* Storico */}
-      <div className="rounded-xl border bg-white p-5">
+      <div className="rounded-xl border bg-gray-800 p-5">
         <div className="font-semibold mb-3">Ultime transazioni</div>
         {sortedTx.length === 0 ? (
           <div className="text-sm text-neutral-500">Nessuna transazione</div>
@@ -285,7 +285,7 @@ export default function CreditiPage() {
       {tab === 'ordini' && (
       <>
         {/* Crea ordine manuale */}
-        <div className="rounded-xl border bg-white p-5 space-y-4">
+        <div className="rounded-xl border bg-gray-800 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="font-semibold">Crea nuovo ordine</div>
             <div className="text-right">
@@ -329,7 +329,7 @@ export default function CreditiPage() {
         </div>
 
         {/* Elenco ordini + upload ricevuta */}
-        <div className="rounded-xl border bg-white p-5">
+        <div className="rounded-xl border bg-gray-800 p-5">
           <div className="font-semibold mb-3">I miei ordini</div>
           {orders.length === 0 ? (
             <div className="text-sm text-neutral-500">Nessun ordine</div>
