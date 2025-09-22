@@ -104,6 +104,8 @@ export default function EscortDashboardPage() {
           <div className="text-sm uppercase font-semibold text-blue-400">Happy Hour</div>
           <div className="text-gray-300 text-sm">Ottieni più visualizzazioni con l'Happy Hour.</div>
         </div>
+        <Button className="bg-blue-600 hover:bg-blue-700">Attiva</Button>
+      </div>
 
       {/* Promuovi il profilo */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
@@ -144,8 +146,6 @@ export default function EscortDashboardPage() {
             })}
           </div>
         )}
-      </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">Attiva</Button>
       </div>
 
       {/* Bot Telegram / Verifica impostazioni */}
