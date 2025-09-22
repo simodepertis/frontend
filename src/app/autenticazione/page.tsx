@@ -48,7 +48,12 @@ function AuthContent() {
       }
       
       alert('Login completato con successo!');
-      window.location.href = redirect;
+      console.log('🔄 Reindirizzamento a:', redirect);
+      
+      // Forza il redirect
+      setTimeout(() => {
+        window.location.href = redirect;
+      }, 1000);
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
