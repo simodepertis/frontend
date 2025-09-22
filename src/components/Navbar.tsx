@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faPhone, faSearch, faUserCheck
+  faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faPhone, faSearch, faUserCheck, faMapMarkerAlt, faCrown, faVenus
 } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
 
@@ -126,14 +126,14 @@ export default function Navbar() {
       {/* BARRA SECONDARIA DELLE CATEGORIE */}
       <nav className="w-full bg-gray-900 border-y border-gray-700">
         <ul className="container flex flex-wrap justify-center gap-x-4 gap-y-2 py-2 text-sm font-medium text-gray-300">
+          <li><Link href="/ricerca-citta" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faMapMarkerAlt} /> Ricerca Città</Link></li>
           <li><Link href="/escort-indipendenti" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faUserCheck} /> Escort Indipendenti</Link></li>
+          <li><Link href="/sugardaddy" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faCrown} /> SugarDaddy</Link></li>
+          <li><Link href="/trans" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVenus} /> Trans</Link></li>
           <li><Link href="/video" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVideo} /> Video</Link></li>
           <li><Link href="/foto" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faImages} /> Foto</Link></li>
           <li><Link href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</Link></li>
-          <li><Link href="/commenti" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faComments} /> Commenti</Link></li>
           <li><Link href="/top10" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faTrophy} /> Top 10</Link></li>
-          <li><Link href="/annunci" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faBullhorn} /> Annunci</Link></li>
-          <li><Link href="/virtuali" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faLaptop} /> Virtuali</Link></li>
         </ul>
       </nav>
     </header>
