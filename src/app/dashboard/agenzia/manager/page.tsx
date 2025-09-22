@@ -98,20 +98,20 @@ export default function AgencyManagerPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'suspended': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-green-900/40 text-green-300 border border-green-700';
+      case 'inactive': return 'bg-gray-800 text-gray-300 border border-gray-600';
+      case 'pending': return 'bg-yellow-900/30 text-yellow-300 border border-yellow-700';
+      case 'suspended': return 'bg-red-900/40 text-red-300 border border-red-700';
+      default: return 'bg-gray-800 text-gray-300 border border-gray-600';
     }
   };
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case 'VIP': return 'bg-purple-100 text-purple-800 border-purple-300';
-      case 'GOLD': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'SILVER': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'VIP': return 'bg-purple-900/40 text-purple-200 border-purple-700';
+      case 'GOLD': return 'bg-yellow-900/30 text-yellow-200 border-yellow-700';
+      case 'SILVER': return 'bg-gray-800 text-gray-200 border-gray-600';
+      default: return 'bg-blue-900/30 text-blue-200 border-blue-700';
     }
   };
 
@@ -124,31 +124,31 @@ export default function AgencyManagerPage() {
 
       {/* Statistiche generali */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold text-green-600">{profiles.filter(p => p.status === 'active').length}</div>
-          <div className="text-sm text-gray-600">Profili Attivi</div>
+        <div className="bg-gray-800 rounded-lg border border-gray-600 p-4">
+          <div className="text-2xl font-bold text-green-400">{profiles.filter(p => p.status === 'active').length}</div>
+          <div className="text-sm text-gray-300">Profili Attivi</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold text-yellow-600">{profiles.filter(p => p.status === 'pending').length}</div>
-          <div className="text-sm text-gray-600">In Approvazione</div>
+        <div className="bg-gray-800 rounded-lg border border-gray-600 p-4">
+          <div className="text-2xl font-bold text-yellow-400">{profiles.filter(p => p.status === 'pending').length}</div>
+          <div className="text-sm text-gray-300">In Approvazione</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold text-blue-600">€{profiles.reduce((sum, p) => sum + p.earnings, 0).toFixed(2)}</div>
-          <div className="text-sm text-gray-600">Guadagni Totali</div>
+        <div className="bg-gray-800 rounded-lg border border-gray-600 p-4">
+          <div className="text-2xl font-bold text-blue-400">€{profiles.reduce((sum, p) => sum + p.earnings, 0).toFixed(2)}</div>
+          <div className="text-sm text-gray-300">Guadagni Totali</div>
         </div>
-        <div className="bg-white rounded-lg border p-4">
-          <div className="text-2xl font-bold text-purple-600">{profiles.reduce((sum, p) => sum + p.bookings, 0)}</div>
-          <div className="text-sm text-gray-600">Prenotazioni Totali</div>
+        <div className="bg-gray-800 rounded-lg border border-gray-600 p-4">
+          <div className="text-2xl font-bold text-purple-400">{profiles.reduce((sum, p) => sum + p.bookings, 0)}</div>
+          <div className="text-sm text-gray-300">Prenotazioni Totali</div>
         </div>
       </div>
 
       {/* Azioni principali */}
-      <div className="bg-white rounded-lg border p-4">
+      <div className="bg-gray-800 rounded-lg border border-gray-600 p-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Gestione Profili</h3>
+          <h3 className="text-lg font-semibold text-white">Gestione Profili</h3>
           <Button 
             onClick={() => setShowAddForm(true)}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
             Aggiungi Nuovo Profilo
@@ -157,57 +157,57 @@ export default function AgencyManagerPage() {
 
         {/* Form aggiunta profilo */}
         {showAddForm && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-4">
-            <h4 className="font-semibold mb-3">Nuovo Profilo Escort</h4>
+          <div className="bg-gray-900 rounded-lg p-4 mb-4 border border-gray-700">
+            <h4 className="font-semibold mb-3 text-white">Nuovo Profilo Escort</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Nome *</label>
+                <label className="block text-sm font-medium mb-1 text-gray-300">Nome *</label>
                 <input
                   type="text"
                   value={newProfile.name}
                   onChange={(e) => setNewProfile(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2"
                   placeholder="Nome escort"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Età</label>
+                <label className="block text-sm font-medium mb-1 text-gray-300">Età</label>
                 <input
                   type="number"
                   min="18"
                   max="65"
                   value={newProfile.age}
                   onChange={(e) => setNewProfile(prev => ({ ...prev, age: parseInt(e.target.value) }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Città *</label>
+                <label className="block text-sm font-medium mb-1 text-gray-300">Città *</label>
                 <input
                   type="text"
                   value={newProfile.city}
                   onChange={(e) => setNewProfile(prev => ({ ...prev, city: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2"
                   placeholder="Milano, Roma, etc."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Email *</label>
+                <label className="block text-sm font-medium mb-1 text-gray-300">Email *</label>
                 <input
                   type="email"
                   value={newProfile.email}
                   onChange={(e) => setNewProfile(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2"
                   placeholder="email@esempio.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Telefono</label>
+                <label className="block text-sm font-medium mb-1 text-gray-300">Telefono</label>
                 <input
                   type="tel"
                   value={newProfile.phone}
                   onChange={(e) => setNewProfile(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border border-gray-600 bg-gray-700 text-white rounded-lg px-3 py-2"
                   placeholder="+39 333 123 4567"
                 />
               </div>
@@ -235,9 +235,9 @@ export default function AgencyManagerPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-gray-300">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b border-gray-700">
                   <th className="text-left py-3 px-2">Nome</th>
                   <th className="text-left py-3 px-2">Età</th>
                   <th className="text-left py-3 px-2">Città</th>
@@ -250,8 +250,8 @@ export default function AgencyManagerPage() {
               </thead>
               <tbody>
                 {profiles.map((profile) => (
-                  <tr key={profile.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-2 font-medium">{profile.name}</td>
+                  <tr key={profile.id} className="border-b border-gray-700 hover:bg-gray-800/60">
+                    <td className="py-3 px-2 font-medium text-white">{profile.name}</td>
                     <td className="py-3 px-2">{profile.age}</td>
                     <td className="py-3 px-2">{profile.city}</td>
                     <td className="py-3 px-2">
@@ -269,21 +269,21 @@ export default function AgencyManagerPage() {
                     <td className="py-3 px-2 text-sm">
                       {profile.photos} foto, {profile.videos} video
                     </td>
-                    <td className="py-3 px-2 font-medium text-green-600">
+                    <td className="py-3 px-2 font-medium text-green-400">
                       €{profile.earnings.toFixed(2)}
                     </td>
                     <td className="py-3 px-2">
                       <div className="flex gap-1">
                         <button
                           onClick={() => window.open(`/escort/${profile.name.toLowerCase().replace(/\s+/g, '-')}-${profile.id}`, '_blank')}
-                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                          className="p-1 text-blue-400 hover:bg-blue-900/30 rounded"
                           title="Visualizza profilo"
                         >
                           <FontAwesomeIcon icon={faEye} size="sm" />
                         </button>
                         <button
                           onClick={() => window.open(`/dashboard/escort/compila?id=${profile.id}`, '_blank')}
-                          className="p-1 text-green-600 hover:bg-green-100 rounded"
+                          className="p-1 text-green-400 hover:bg-green-900/30 rounded"
                           title="Modifica profilo"
                         >
                           <FontAwesomeIcon icon={faEdit} size="sm" />
@@ -291,7 +291,7 @@ export default function AgencyManagerPage() {
                         {profile.status === 'active' ? (
                           <button
                             onClick={() => updateProfileStatus(profile.id, 'inactive')}
-                            className="p-1 text-yellow-600 hover:bg-yellow-100 rounded"
+                            className="p-1 text-yellow-400 hover:bg-yellow-900/30 rounded"
                             title="Disattiva"
                           >
                             <FontAwesomeIcon icon={faUserTimes} size="sm" />
@@ -299,7 +299,7 @@ export default function AgencyManagerPage() {
                         ) : (
                           <button
                             onClick={() => updateProfileStatus(profile.id, 'active')}
-                            className="p-1 text-green-600 hover:bg-green-100 rounded"
+                            className="p-1 text-green-400 hover:bg-green-900/30 rounded"
                             title="Attiva"
                           >
                             <FontAwesomeIcon icon={faUserCheck} size="sm" />

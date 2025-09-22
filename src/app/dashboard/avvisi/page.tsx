@@ -23,15 +23,15 @@ export default function AvvisiPage() {
     <div className="space-y-6">
       <SectionHeader title="Avvisi" subtitle="Crea e gestisci i tuoi avvisi" />
 
-      <div className="rounded-lg border bg-white p-4">
-        <h3 className="font-semibold mb-3">Crea un nuovo avviso</h3>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <h3 className="font-semibold mb-3 text-white">Crea un nuovo avviso</h3>
         <form onSubmit={add} className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl">
-          <select value={type} onChange={(e) => setType(e.target.value)} className="border rounded-md px-3 py-2">
+          <select value={type} onChange={(e) => setType(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
             <option value="nuovi-profili">Nuovi profili</option>
             <option value="verificate">Escort verificate</option>
             <option value="tour">In tour vicino a te</option>
           </select>
-          <select value={freq} onChange={(e) => setFreq(e.target.value)} className="border rounded-md px-3 py-2">
+          <select value={freq} onChange={(e) => setFreq(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
             <option value="giornaliero">Giornaliero</option>
             <option value="settimanale">Settimanale</option>
             <option value="mensile">Mensile</option>
@@ -40,12 +40,12 @@ export default function AvvisiPage() {
         </form>
       </div>
 
-      <div className="rounded-lg border bg-white divide-y">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 divide-y divide-gray-700">
         {alerts.map((a) => (
           <div key={a.id} className="p-4 flex items-center gap-4">
             <div className="flex-1">
-              <div className="font-semibold text-sm">{a.label}</div>
-              <div className="text-xs text-neutral-500">Frequenza: {a.freq}</div>
+              <div className="font-semibold text-sm text-white">{a.label}</div>
+              <div className="text-xs text-gray-400">Frequenza: {a.freq}</div>
             </div>
             <label className="text-sm flex items-center gap-2">
               <input type="checkbox" checked={a.active} onChange={() => toggle(a.id)} /> Attivo
@@ -54,7 +54,7 @@ export default function AvvisiPage() {
           </div>
         ))}
         {alerts.length === 0 && (
-          <div className="p-6 text-center text-sm text-neutral-500">Nessun avviso creato.</div>
+          <div className="p-6 text-center text-sm text-gray-400">Nessun avviso creato.</div>
         )}
       </div>
     </div>

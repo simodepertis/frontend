@@ -1,6 +1,7 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
+import ITALIAN_CITIES from "@/lib/cities";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 
@@ -232,24 +233,34 @@ export default function AgencyOnboardingPage() {
 
 function CityEditor({ cities, onChange }: { cities: string[]; onChange: (c: string[]) => void }) {
   const [draft, setDraft] = useState("");
-  function add() {
-    const v = draft.trim();
+  const [sel, setSel] = useState("");
+  function add(value?: string) {
+    const v = (value ?? draft).trim();
     if (!v) return;
     onChange([...(cities || []), v]);
     setDraft("");
+    setSel("");
   }
   function remove(idx: number) { onChange(cities.filter((_, i) => i !== idx)); }
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Aggiungi città" className="border rounded-md px-3 py-2" />
-        <Button onClick={add}>Aggiungi</Button>
+      <div className="grid md:grid-cols-[1fr,auto] gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <select value={sel} onChange={(e)=> setSel(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
+            <option value="">Seleziona città</option>
+            {ITALIAN_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="…o inserisci manualmente" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => add(sel || draft)} disabled={!sel && !draft}>Aggiungi</Button>
+        </div>
       </div>
       {(cities?.length || 0) > 0 && (
         <div className="flex flex-wrap gap-2">
           {cities.map((c, i) => (
-            <span key={`${c}-${i}`} className="text-xs bg-neutral-100 border px-2 py-1 rounded-full">
-              {c} <button className="ml-1" onClick={() => remove(i)}>×</button>
+            <span key={`${c}-${i}`} className="text-xs bg-gray-800 text-gray-200 border border-gray-600 px-2 py-1 rounded-full">
+              {c} <button className="ml-1 text-gray-400 hover:text-red-400" onClick={() => remove(i)}>×</button>
             </span>
           ))}
         </div>

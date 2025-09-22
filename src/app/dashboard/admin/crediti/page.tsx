@@ -40,24 +40,24 @@ export default function AdminCreditiSettingsPage() {
     <div className="space-y-6">
       <SectionHeader title="Admin · Crediti" subtitle="Valore singolo credito e valuta" />
 
-      <div className="rounded-xl border bg-white p-5 max-w-xl space-y-3">
+      <div className="rounded-xl border border-gray-600 bg-gray-800 p-5 max-w-xl space-y-3">
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-neutral-600">Valore credito (cent)</label>
-          <input type="number" value={creditValueCents} onChange={(e) => setCreditValueCents(Number(e.target.value))} className="border rounded-md px-3 py-2" />
-          <div className="text-xs text-neutral-500">Esempio: 100 = 1,00 {currency}</div>
+          <label className="text-sm text-gray-300">Valore credito (cent)</label>
+          <input type="number" value={creditValueCents} onChange={(e) => setCreditValueCents(Number(e.target.value))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
+          <div className="text-xs text-gray-400">Esempio: 100 = 1,00 {currency}</div>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-sm text-neutral-600">Valuta</label>
-          <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="border rounded-md px-3 py-2" />
+          <label className="text-sm text-gray-300">Valuta</label>
+          <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
         </div>
         <div className="pt-2">
           <Button onClick={save} disabled={saving}>{saving ? 'Salvataggio…' : 'Salva impostazioni'}</Button>
         </div>
       </div>
 
-      <div className="rounded-xl border bg-white p-5">
-        <div className="text-sm text-neutral-600">Gestisci anche il catalogo prodotti a questa pagina:</div>
-        <a href="/dashboard/admin/crediti/catalogo" className="text-blue-600 underline text-sm">Apri Catalogo Prodotti</a>
+      <div className="rounded-xl border border-gray-600 bg-gray-800 p-5">
+        <div className="text-sm text-gray-400">Gestisci anche il catalogo prodotti a questa pagina:</div>
+        <a href="/dashboard/admin/crediti/catalogo" className="text-blue-400 underline text-sm">Apri Catalogo Prodotti</a>
       </div>
     </div>
   );

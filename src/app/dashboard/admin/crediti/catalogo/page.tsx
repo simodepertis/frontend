@@ -60,23 +60,23 @@ export default function AdminCatalogoCreditiPage() {
       <SectionHeader title="Admin · Catalogo Crediti" subtitle="Gestisci prodotti, prezzi in crediti e durata" />
 
       {/* Nuovo prodotto */}
-      <div className="rounded-xl border bg-white p-5 space-y-3 max-w-2xl">
+      <div className="rounded-xl border border-gray-600 bg-gray-800 p-5 space-y-3 max-w-2xl">
         <div className="grid md:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-neutral-600">Codice</label>
-            <input value={form.code} onChange={(e)=>setForm(p=>({...p, code: e.target.value}))} className="border rounded-md px-3 py-2" placeholder="VIP_7D" />
+            <label className="text-sm text-gray-300">Codice</label>
+            <input value={form.code} onChange={(e)=>setForm(p=>({...p, code: e.target.value}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="VIP_7D" />
           </div>
           <div className="flex flex-col gap-1 md:col-span-2">
-            <label className="text-sm text-neutral-600">Label</label>
-            <input value={form.label} onChange={(e)=>setForm(p=>({...p, label: e.target.value}))} className="border rounded-md px-3 py-2" placeholder="VIP 7 Giorni" />
+            <label className="text-sm text-gray-300">Label</label>
+            <input value={form.label} onChange={(e)=>setForm(p=>({...p, label: e.target.value}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="VIP 7 Giorni" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-neutral-600">Crediti</label>
-            <input type="number" min={1} value={form.creditsCost} onChange={(e)=>setForm(p=>({...p, creditsCost: Number(e.target.value)}))} className="border rounded-md px-3 py-2" />
+            <label className="text-sm text-gray-300">Crediti</label>
+            <input type="number" min={1} value={form.creditsCost} onChange={(e)=>setForm(p=>({...p, creditsCost: Number(e.target.value)}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-neutral-600">Durata (giorni)</label>
-            <input type="number" min={1} value={form.durationDays} onChange={(e)=>setForm(p=>({...p, durationDays: Number(e.target.value)}))} className="border rounded-md px-3 py-2" />
+            <label className="text-sm text-gray-300">Durata (giorni)</label>
+            <input type="number" min={1} value={form.durationDays} onChange={(e)=>setForm(p=>({...p, durationDays: Number(e.target.value)}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
           </div>
         </div>
         <div>
@@ -85,20 +85,20 @@ export default function AdminCatalogoCreditiPage() {
       </div>
 
       {/* Elenco prodotti */}
-      <div className="rounded-xl border bg-white p-5">
+      <div className="rounded-xl border border-gray-600 bg-gray-800 p-5">
         {loading ? (
-          <div className="text-sm text-neutral-500">Caricamento…</div>
+          <div className="text-sm text-gray-400">Caricamento…</div>
         ) : list.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessun prodotto</div>
+          <div className="text-sm text-gray-400">Nessun prodotto</div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {list.map(p => (
-              <div key={p.id} className="rounded-lg border p-4 space-y-2">
-                <div className="font-semibold">{p.label}</div>
-                <div className="text-xs text-neutral-600">Codice: {p.code}</div>
-                <div className="text-sm">Costo: {p.creditsCost} crediti</div>
-                <div className="text-sm">Durata: {p.durationDays} giorni</div>
-                <div className="text-xs text-neutral-500">Aggiornato: {new Date(p.updatedAt).toLocaleString()}</div>
+              <div key={p.id} className="rounded-lg border border-gray-600 bg-gray-900 p-4 space-y-2">
+                <div className="font-semibold text-white">{p.label}</div>
+                <div className="text-xs text-gray-400">Codice: {p.code}</div>
+                <div className="text-sm text-gray-300">Costo: {p.creditsCost} crediti</div>
+                <div className="text-sm text-gray-300">Durata: {p.durationDays} giorni</div>
+                <div className="text-xs text-gray-500">Aggiornato: {new Date(p.updatedAt).toLocaleString()}</div>
                 <div className="flex items-center gap-2 pt-1">
                   <Button variant="secondary" disabled={updatingId === p.id} onClick={() => updateProduct(p.id, { active: !p.active })}>{p.active ? 'Disattiva' : 'Attiva'}</Button>
                   <Button variant="secondary" disabled={updatingId === p.id} onClick={() => updateProduct(p.id, { creditsCost: p.creditsCost + 10 })}>+10 crediti</Button>

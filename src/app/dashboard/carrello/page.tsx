@@ -28,26 +28,26 @@ export default function CarrelloPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Carrello" subtitle="Riepilogo ordini e checkout" />
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         {items.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessun articolo nel carrello.</div>
+          <div className="text-sm text-gray-400">Nessun articolo nel carrello.</div>
         ) : (
           <div className="space-y-3">
             {items.map((p, idx) => (
-              <div key={`${p.id}-${idx}`} className="border rounded-md p-3 flex items-center justify-between gap-3">
+              <div key={`${p.id}-${idx}`} className="border border-gray-600 rounded-md p-3 bg-gray-900 flex items-center justify-between gap-3">
                 <div>
-                  <div className="font-medium text-sm">{p.name}</div>
-                  <div className="text-xs text-neutral-600">{p.desc}</div>
+                  <div className="font-medium text-sm text-white">{p.name}</div>
+                  <div className="text-xs text-gray-400">{p.desc}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="font-semibold">€ {p.price}</div>
+                  <div className="font-semibold text-white">€ {p.price}</div>
                   <Button variant="secondary" onClick={() => remove(idx)}>Rimuovi</Button>
                 </div>
               </div>
             ))}
-            <div className="flex items-center justify-between pt-3 border-t">
-              <div className="text-sm">Totale</div>
-              <div className="text-lg font-semibold">€ {total}</div>
+            <div className="flex items-center justify-between pt-3 border-t border-gray-700">
+              <div className="text-sm text-gray-300">Totale</div>
+              <div className="text-lg font-semibold text-white">€ {total}</div>
             </div>
             <div className="flex items-center justify-end gap-2">
               <Button variant="secondary" onClick={clear}>Svuota</Button>

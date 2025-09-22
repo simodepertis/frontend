@@ -61,36 +61,36 @@ export default function ImpostazioniPage() {
     <div className="space-y-6">
       <SectionHeader title="Impostazioni" subtitle="Account, sicurezza e preferenze" />
 
-      <div className="rounded-lg border bg-white p-4 text-sm text-neutral-700 space-y-6">
-        <p>Il tuo account è attivo. Le modifiche sotto riguardano lingua, sicurezza e comunicazioni.</p>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 text-sm text-gray-300 space-y-6">
+        <p className="text-gray-300">Il tuo account è attivo. Le modifiche sotto riguardano lingua, sicurezza e comunicazioni.</p>
 
         {/* Lingua preferita */}
         <section>
-          <h3 className="font-semibold mb-2">Lingua preferita</h3>
+          <h3 className="font-semibold mb-2 text-white">Lingua preferita</h3>
           <div className="flex items-center gap-3 max-w-md">
             <select
               value={lang}
               onChange={(e) => setLang(e.target.value)}
-              className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 w-full"
+              className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full"
             >
               <option value="it">Italiano</option>
               <option value="en">English</option>
             </select>
             <Button onClick={savePrefs}>Salva</Button>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">Usata per email e notifiche automatiche.</p>
+          <p className="text-xs text-gray-400 mt-1">Usata per email e notifiche automatiche.</p>
         </section>
 
         {/* Cambia password */}
         <section>
-          <h3 className="font-semibold mb-2">Cambia password</h3>
+          <h3 className="font-semibold mb-2 text-white">Cambia password</h3>
           <form onSubmit={changePassword} className="grid gap-3 max-w-md">
             <input
               type="password"
               placeholder="Inserisci la password attuale"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
-              className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2"
+              className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
               required
             />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -99,7 +99,7 @@ export default function ImpostazioniPage() {
                 placeholder="Inserisci la nuova password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2"
+                className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
                 required
                 minLength={6}
               />
@@ -108,19 +108,19 @@ export default function ImpostazioniPage() {
                 placeholder="Conferma nuova password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2"
+                className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2"
                 required
                 minLength={6}
               />
             </div>
-            <p className="text-xs text-neutral-500">La tua nuova password deve avere almeno 6 caratteri e contenere lettere e numeri.</p>
+            <p className="text-xs text-gray-400">La tua nuova password deve avere almeno 6 caratteri e contenere lettere e numeri.</p>
             <Button type="submit" disabled={savingPwd} className="w-full md:w-auto">{savingPwd ? "Salvataggio…" : "Salva modifiche"}</Button>
           </form>
         </section>
 
         {/* Newsletter */}
         <section>
-          <h3 className="font-semibold mb-2">Newsletter</h3>
+          <h3 className="font-semibold mb-2 text-white">Newsletter</h3>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={newsletter} onChange={(e) => setNewsletter(e.target.checked)} />
             <span>Voglio ricevere le newsletter di incontriescort.org</span>
@@ -132,28 +132,28 @@ export default function ImpostazioniPage() {
 
         {/* Profili Visti */}
         <section>
-          <h3 className="font-semibold mb-2">Profili Visti</h3>
+          <h3 className="font-semibold mb-2 text-white">Profili Visti</h3>
           <div className="flex items-center gap-3 max-w-md">
             <select
               value={viewLabel}
               onChange={(e) => setViewLabel(e.target.value)}
-              className="bg-white border border-neutral-300 text-neutral-800 rounded-md px-3 py-2 w-full"
+              className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full"
             >
               <option value="visti">Profili Visti</option>
               <option value="nessuna">Nessuna etichetta</option>
             </select>
             <Button onClick={savePrefs}>Salva</Button>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">Etichetta “Visto” applicata ai profili già visitati.</p>
+          <p className="text-xs text-gray-400 mt-1">Etichetta “Visto” applicata ai profili già visitati.</p>
         </section>
 
         {/* Impostazioni degli avvisi */}
         <section>
-          <h3 className="font-semibold mb-2">Impostazioni degli avvisi</h3>
-          <p className="text-sm text-neutral-600">Scegli come desideri ricevere gli avvisi.</p>
+          <h3 className="font-semibold mb-2 text-white">Impostazioni degli avvisi</h3>
+          <p className="text-sm text-gray-400">Scegli come desideri ricevere gli avvisi.</p>
           <div className="flex gap-3 mt-2">
-            <a href="/dashboard/avvisi" className="underline text-blue-600">Gestisci Avvisi</a>
-            <a href="/dashboard/avvisi-citta" className="underline text-blue-600">Avvisi Città</a>
+            <a href="/dashboard/avvisi" className="underline text-blue-400">Gestisci Avvisi</a>
+            <a href="/dashboard/avvisi-citta" className="underline text-blue-400">Avvisi Città</a>
           </div>
         </section>
       </div>

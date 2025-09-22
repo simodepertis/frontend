@@ -61,33 +61,33 @@ export default function LuiCercaPage() {
       <SectionHeader title="Lui Cerca" subtitle="Scopri cosa cercano i clienti e rispondi" />
 
       {/* Filtri */}
-      <div className="rounded-lg border bg-white p-4 grid md:grid-cols-4 gap-3">
-        <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Filtra per città" className="border rounded-md px-3 py-2" />
-        <input value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="Durata (es. 1 ora)" className="border rounded-md px-3 py-2" />
-        <label className="text-sm flex items-center gap-2">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 grid md:grid-cols-4 gap-3">
+        <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Filtra per città" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
+        <input value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="Durata (es. 1 ora)" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
+        <label className="text-sm flex items-center gap-2 text-gray-300">
           <input type="checkbox" checked={onlyNew} onChange={(e) => setOnlyNew(e.target.checked)} />
           Solo nuove
         </label>
-        <div className="text-sm text-neutral-500 self-center">Risultati: {filtered.length}</div>
+        <div className="text-sm text-gray-400 self-center">Risultati: {filtered.length}</div>
       </div>
 
       {/* Lista feed */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         {filtered.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessuna richiesta corrispondente ai filtri.</div>
+          <div className="text-sm text-gray-400">Nessuna richiesta corrispondente ai filtri.</div>
         ) : (
           <div className="space-y-3">
             {filtered.map((i) => (
-              <div key={i.id} className="border rounded-md p-3 space-y-2">
+              <div key={i.id} className="border border-gray-600 rounded-md p-3 bg-gray-900 space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium text-sm">{i.name} · {i.when}</div>
-                    <div className="text-xs text-neutral-600">Durata: {i.duration}{i.note ? ` · ${i.note}` : ''}</div>
+                    <div className="font-medium text-sm text-white">{i.name} · {i.when}</div>
+                    <div className="text-xs text-gray-400">Durata: {i.duration}{i.note ? ` · ${i.note}` : ''}</div>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${i.status === 'accepted' ? 'bg-green-100 text-green-700' : i.status === 'declined' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{i.status === 'accepted' ? 'Accettata' : i.status === 'declined' ? 'Rifiutata' : 'Nuova'}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full border ${i.status === 'accepted' ? 'bg-green-900/40 text-green-300 border-green-700' : i.status === 'declined' ? 'bg-red-900/40 text-red-300 border-red-700' : 'bg-yellow-900/30 text-yellow-300 border-yellow-700'}`}>{i.status === 'accepted' ? 'Accettata' : i.status === 'declined' ? 'Rifiutata' : 'Nuova'}</span>
                 </div>
                 <div className="grid md:grid-cols-[1fr_auto] gap-2">
-                  <input value={replies[i.id] || ''} onChange={(e) => setReplies((r) => ({ ...r, [i.id]: e.target.value }))} placeholder="Scrivi una risposta o proposta..." className="border rounded-md px-3 py-2" />
+                  <input value={replies[i.id] || ''} onChange={(e) => setReplies((r) => ({ ...r, [i.id]: e.target.value }))} placeholder="Scrivi una risposta o proposta..." className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
                   <Button onClick={() => sendReply(i.id)}>Invia</Button>
                 </div>
               </div>

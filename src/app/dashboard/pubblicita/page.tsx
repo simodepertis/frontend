@@ -73,10 +73,10 @@ export default function PubblicitaPage() {
       ring: 'ring-zinc-400',
     };
     return {
-      card: 'bg-white border-neutral-200',
-      pill: 'bg-neutral-200 text-neutral-800',
-      cta: 'bg-neutral-900 hover:bg-black text-white',
-      ring: 'ring-neutral-300',
+      card: 'bg-gray-800 border-gray-600',
+      pill: 'bg-gray-700 text-gray-200',
+      cta: 'bg-blue-600 hover:bg-blue-700 text-white',
+      ring: 'ring-gray-500',
     };
   }
 
@@ -84,9 +84,9 @@ export default function PubblicitaPage() {
     <div className="space-y-6">
       <SectionHeader title="Acquista Pubblicità" subtitle="Aumenta la visibilità con pacchetti e promozioni" />
 
-      <div className="rounded-lg border bg-white p-4 flex items-center justify-between">
-        <div className="text-sm text-neutral-700">Saldo crediti: <strong>{balance}</strong></div>
-        <Link href="/dashboard/crediti" className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold">Ricarica crediti</Link>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex items-center justify-between">
+        <div className="text-sm text-gray-300">Saldo crediti: <strong className="text-white">{balance}</strong></div>
+        <Link href="/dashboard/crediti" className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Ricarica crediti</Link>
       </div>
 
       {catalog.length === 0 ? (
