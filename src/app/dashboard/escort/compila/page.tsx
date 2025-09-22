@@ -171,8 +171,25 @@ export default function EscortOnboardingPage() {
   };
 
   const publish = async () => {
-    try { await saveToServer(); } catch {}
-    alert("Profilo inviato. Integrazione DB/Moderazione sarà attivata in produzione.");
+    try { 
+      await saveToServer(); 
+      
+      // Set consent to trigger admin approval workflow
+      const token = localStorage.getItem('auth-token');
+      if (token) {
+        await fetch('/api/escort/consent', {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+    } catch (error) {
+      console.error('❌ Errore pubblicazione profilo:', error);
+    }
+    
+    alert("Profilo inviato per moderazione. Riceverai conferma una volta approvato dall'amministratore.");
     window.location.href = "/dashboard";
   };
 

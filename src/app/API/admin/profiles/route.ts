@@ -19,12 +19,13 @@ export async function GET(request: NextRequest) {
     const adm = await requireAdmin(request);
     if (!adm) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
 
-    // Get escort users with their profiles that need approval (no consent yet)
+    // Get escort users with their profiles that need approval (have consent but not admin approved yet)
     const profiles = await prisma.user.findMany({
       where: {
         ruolo: 'escort',
         escortProfile: {
-          consentAcceptedAt: null // Profiles without consent need approval
+          consentAcceptedAt: { not: null }, // User has given consent
+          // We'll consider profiles that need admin approval as those recently created
         }
       },
       select: {

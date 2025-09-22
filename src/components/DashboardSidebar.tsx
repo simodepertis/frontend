@@ -138,7 +138,6 @@ export default function DashboardSidebar() {
         { href: "/dashboard/admin/media/foto", label: "📸 Moderazione Foto", icon: faIdCard },
         { href: "/dashboard/admin/media/video", label: "🎥 Moderazione Video", icon: faVideo },
         { href: "/dashboard/admin/profili", label: "👤 Approvazione Profili", icon: faUser },
-        { href: "/dashboard/admin/annunci", label: "📋 Moderazione Annunci", icon: faBullhorn },
         { href: "/dashboard/admin/utenti", label: "👥 Gestione Utenti", icon: faGear },
         { href: "/dashboard/admin/crediti/catalogo", label: "🛍️ Catalogo Crediti", icon: faCartShopping },
         { href: "/dashboard/admin/statistiche", label: "📊 Statistiche Sito", icon: faChartBar },
