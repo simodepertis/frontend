@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faPhone, faSearch
+  faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faPhone, faSearch, faUserCheck
 } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
 
@@ -126,6 +126,7 @@ export default function Navbar() {
       {/* BARRA SECONDARIA DELLE CATEGORIE */}
       <nav className="w-full bg-gray-900 border-y border-gray-700">
         <ul className="container flex flex-wrap justify-center gap-x-4 gap-y-2 py-2 text-sm font-medium text-gray-300">
+          <li><Link href="/escort-indipendenti" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faUserCheck} /> Escort Indipendenti</Link></li>
           <li><Link href="/video" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVideo} /> Video</Link></li>
           <li><Link href="/foto" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faImages} /> Foto</Link></li>
           <li><Link href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</Link></li>

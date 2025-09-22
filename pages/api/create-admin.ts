@@ -15,8 +15,8 @@ export default async function handler(
   try {
     // Credenziali admin predefinite
     const adminEmail = 'admin@incontriesescort.org'
-    const adminPassword = 'AdminPass2024!'
-    const adminName = 'Administrator'
+    const adminPassword = 'Admin123!'
+    const adminName = 'Amministratore'
     
     // Controlla se admin esiste già
     const existingAdmin = await prisma.user.findUnique({ 
