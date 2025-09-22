@@ -31,16 +31,23 @@ function AuthContent() {
       if (!res.ok) {
         const errorData = await res.text();
         console.log('❌ Errore login:', errorData);
-        throw new Error("Credenziali non valide");
+        throw new Error("Credenziali non valide o API non disponibile");
       }
       
       const data = await res.json();
-      // Salva anche nel localStorage come backup
+      console.log('✅ Login riuscito:', data);
+      
+      // Salva token e dati utente
       if (data.token) {
         localStorage.setItem('auth-token', data.token);
       }
+      if (data.user) {
+        localStorage.setItem('user-email', data.user.email);
+        localStorage.setItem('user-name', data.user.nome);
+        localStorage.setItem('user-role', data.user.ruolo);
+      }
       
-      // Il cookie httpOnly viene impostato dalla API. Basta reindirizzare.
+      alert('Login completato con successo!');
       window.location.href = redirect;
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
