@@ -11,8 +11,22 @@ function slugify(input: string) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 API /api/register chiamata')
+  
+  // Controllo variabili d'ambiente critiche
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL mancante!')
+    return NextResponse.json({ error: 'Configurazione database mancante' }, { status: 500 })
+  }
+  
+  if (!process.env.JWT_SECRET) {
+    console.error('❌ JWT_SECRET mancante!')
+    return NextResponse.json({ error: 'Configurazione JWT mancante' }, { status: 500 })
+  }
+  
   try {
     const body = await request.json()
+    console.log('📝 Body ricevuto:', { email: body.email, ruolo: body.ruolo })
     const { email, password, ruolo = 'user' } = body
     let nome = body.nome as string | undefined
 
@@ -83,6 +97,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Utente registrato con successo', user: created }, { status: 201 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Errore'
+    console.error('❌ ERRORE nella registrazione:', error)
+    console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A')
     if (message.includes('Unique') || message.includes('P2002')) {
       return NextResponse.json({ error: 'Email già registrata' }, { status: 409 })
     }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Register</title>
+</head>
+<body>
+    <h1>Test API /api/register</h1>
+    <button onclick="testRegister()">Test Registrazione</button>
+    <div id="result"></div>
+
+    <script>
+        async function testRegister() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'password123',
+                        nome: 'Test User',
+                        ruolo: 'user'
+                    })
+                });
+                
+                const contentType = response.headers.get('content-type');
+                console.log('Content-Type:', contentType);
+                console.log('Status:', response.status);
+                
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    result.innerHTML = `
+                        <h3>JSON Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p>Status: ${response.status}</p>
+                    `;
+                } else {
+                    const text = await response.text();
+                    result.innerHTML = `
+                        <h3>HTML Response (ERROR):</h3>
+                        <p>Status: ${response.status}</p>
+                        <pre>${text.substring(0, 500)}...</pre>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `<h3>Error:</h3><pre>${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>
