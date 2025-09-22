@@ -14,7 +14,10 @@ export default function AdminAnnunciModerazionePage() {
   async function load() {
     setLoading(true); setErr("");
     try {
-      const res = await fetch('/api/admin/listings?status=IN_REVIEW');
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/admin/listings?status=IN_REVIEW', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || 'Errore');
       setItems(j.items || []);
@@ -27,12 +30,18 @@ export default function AdminAnnunciModerazionePage() {
   async function act(id: number, action: 'PUBLISH'|'REJECT') {
     setUpdating(id);
     try {
-      const res = await fetch('/api/admin/listings', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, action }) });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/admin/listings', { 
+        method: 'PATCH', 
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, 
+        body: JSON.stringify({ id, action }) 
+      });
       const j = await res.json();
       if (!res.ok) throw new Error(j?.error || 'Errore');
       await load();
     } catch (e) {
-      alert('Errore operazione');
+      const msg = (e as any)?.message || 'Errore operazione';
+      setErr(msg);
     } finally {
       setUpdating(null);
     }
