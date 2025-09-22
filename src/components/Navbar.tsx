@@ -32,12 +32,29 @@ export default function Navbar() {
   }, []);
 
   const handleLogout = async () => {
+    console.log('🚪 Logout iniziato');
     try {
+      // Chiama API logout
       await fetch("/api/logout", { method: "POST" });
-      window.location.href = "/";
-    } catch {
-      window.location.href = "/";
+      console.log('✅ API logout chiamata');
+    } catch (error) {
+      console.log('⚠️ Errore API logout:', error);
     }
+    
+    // Pulisci TUTTO il localStorage
+    localStorage.clear();
+    console.log('🧹 localStorage pulito');
+    
+    // Pulisci sessionStorage
+    sessionStorage.clear();
+    console.log('🧹 sessionStorage pulito');
+    
+    // Reset stato componente
+    setUserName("");
+    console.log('🔄 Stato componente resettato');
+    
+    // Reindirizza alla home
+    window.location.href = "/";
   };
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-black text-white border-gray-800">

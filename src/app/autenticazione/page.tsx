@@ -47,13 +47,11 @@ function AuthContent() {
         localStorage.setItem('user-role', data.user.ruolo);
       }
       
-      alert('Login completato con successo!');
+      console.log('✅ Login completato con successo!');
       console.log('🔄 Reindirizzamento a:', redirect);
       
-      // Forza il redirect
-      setTimeout(() => {
-        window.location.href = redirect;
-      }, 1000);
+      // Redirect immediato
+      window.location.href = redirect;
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
