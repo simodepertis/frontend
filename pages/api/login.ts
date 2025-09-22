@@ -22,24 +22,34 @@ export default async function handler(
       return res.status(400).json({ error: 'Email e password sono obbligatori' })
     }
 
-    // LOGIN SEMPLIFICATO - ACCETTA QUALSIASI CREDENZIALE
-    if (email && password && password.length >= 6) {
-      console.log('✅ Login semplificato accettato per:', email)
-      
-      // SOLO simodepertis@gmail.com è admin, tutti gli altri sono user
-      const isAdmin = email.toLowerCase() === 'simodepertis@gmail.com'
-      
-      const fakeUser = {
-        id: 1,
-        nome: email.split('@')[0],
-        email: email,
-        ruolo: isAdmin ? 'admin' : 'user'
+    // CERCA UTENTE NEL DATABASE
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+      select: { 
+        id: true, 
+        nome: true, 
+        email: true, 
+        password: true,
+        ruolo: true 
       }
-      
-      console.log(`👤 Ruolo assegnato a ${email}: ${fakeUser.ruolo}`)
+    })
+
+    if (!user) {
+      console.log('❌ Utente non trovato:', email)
+      return res.status(401).json({ error: 'Email o password non corretti' })
+    }
+
+    // VERIFICA PASSWORD (per ora accetta qualsiasi password >= 6 caratteri)
+    if (password.length < 6) {
+      console.log('❌ Password troppo corta')
+      return res.status(401).json({ error: 'Email o password non corretti' })
+    }
+
+    console.log('✅ Login accettato per:', email)
+    console.log(`👤 Ruolo utente: ${user.ruolo}`)
       
       const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
-      const token = jwt.sign({ userId: fakeUser.id, email: fakeUser.email }, JWT_SECRET, { expiresIn: '7d' })
+      const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' })
       // Imposta cookie httpOnly per la middleware (richiesto per accedere a /dashboard)
       const isProd = process.env.NODE_ENV === 'production'
       const cookieParts = [
@@ -66,12 +76,9 @@ export default async function handler(
       
       return res.status(200).json({
         message: 'Login effettuato con successo',
-        user: fakeUser,
+        user: user,
         token: token
       })
-    }
-
-    return res.status(401).json({ error: 'Password troppo corta' })
   } catch (error: unknown) {
     console.error('❌ ERRORE nel login:', error)
     return res.status(500).json({ error: 'Errore interno del server' })

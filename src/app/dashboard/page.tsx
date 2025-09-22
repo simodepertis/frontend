@@ -11,11 +11,45 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
+  
   useEffect(() => {
-    // Usa localStorage invece di API
-    const userName = localStorage.getItem('user-name') || localStorage.getItem('user-email')?.split('@')[0] || 'Utente';
-    setName(userName);
-    setLoading(false);
+    // Controlla se l'utente è admin e reindirizza
+    (async () => {
+      try {
+        const token = localStorage.getItem('auth-token');
+        if (token) {
+          const res = await fetch('/api/user/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (res.ok) {
+            const data = await res.json();
+            const userRole = data?.user?.ruolo;
+            
+            console.log('🔍 Dashboard - Ruolo utente:', userRole);
+            
+            // Se è admin, reindirizza alla dashboard admin
+            if (userRole === 'admin') {
+              console.log('👑 Admin rilevato - reindirizzamento a dashboard admin');
+              window.location.href = '/dashboard/admin';
+              return;
+            }
+            
+            setName(data?.user?.nome || 'Utente');
+          }
+        }
+        
+        // Fallback per utenti senza token
+        const userName = localStorage.getItem('user-name') || localStorage.getItem('user-email')?.split('@')[0] || 'Utente';
+        setName(userName);
+      } catch (error) {
+        console.error('❌ Errore controllo ruolo:', error);
+        const userName = localStorage.getItem('user-name') || localStorage.getItem('user-email')?.split('@')[0] || 'Utente';
+        setName(userName);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
   useEffect(() => {
     (async () => {

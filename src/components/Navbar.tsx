@@ -101,7 +101,7 @@ export default function Navbar() {
                 <Link href="/dashboard">
                   <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
                     <FontAwesomeIcon icon={faUser} />
-                    <span>Area Privata</span>
+                    <span>Ciao, {userName}</span>
                   </Button>
                 </Link>
                 <button onClick={handleLogout} className="underline text-gray-400 hover:text-blue-400">

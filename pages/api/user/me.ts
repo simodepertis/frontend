@@ -54,7 +54,12 @@ export default async function handler(
       return res.status(404).json({ error: 'Utente non trovato' })
     }
 
-    console.log('✅ Utente autenticato:', user.email)
+    console.log('✅ Utente autenticato:', { 
+      id: user.id, 
+      nome: user.nome, 
+      email: user.email, 
+      ruolo: user.ruolo 
+    })
     return res.status(200).json({ user })
   } catch (error: unknown) {
     console.error('❌ ERRORE in /api/user/me:', error)
