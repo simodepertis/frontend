@@ -16,6 +16,7 @@ function AuthContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log('🔐 Tentativo login per:', email);
     try {
       // Login contro la nostra API Next
       const res = await fetch(`/api/login`, {
@@ -23,7 +24,14 @@ function AuthContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      if (!res.ok) throw new Error("Credenziali non valide");
+      
+      console.log('📡 Risposta login:', res.status, res.statusText);
+      
+      if (!res.ok) {
+        const errorData = await res.text();
+        console.log('❌ Errore login:', errorData);
+        throw new Error("Credenziali non valide");
+      }
       
       const data = await res.json();
       // Salva anche nel localStorage come backup
