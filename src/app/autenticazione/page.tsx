@@ -11,7 +11,7 @@ function AuthContent() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const search = useSearchParams();
-  const redirect = search.get("redirect") || "/dashboard";
+  const redirect = search?.get("redirect") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
