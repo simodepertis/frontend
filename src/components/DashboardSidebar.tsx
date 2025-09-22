@@ -134,6 +134,7 @@ export default function DashboardSidebar() {
   const adminOnlyItems = isAdmin
     ? [
         { href: "/dashboard/admin", label: "🏠 Dashboard Admin", icon: faGaugeHigh },
+        { href: "/dashboard/admin/annunci", label: "📝 Moderazione Annunci", icon: faBullhorn },
         { href: "/dashboard/admin/crediti/ordini", label: "💳 Approvazione Ordini Crediti", icon: faBolt },
         { href: "/dashboard/admin/media/foto", label: "📸 Moderazione Foto", icon: faIdCard },
         { href: "/dashboard/admin/media/video", label: "🎥 Moderazione Video", icon: faVideo },

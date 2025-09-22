@@ -57,6 +57,9 @@ export default function EscortOnboardingPage() {
   const [data, setData] = useState<OnboardingData>(defaultData);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [okMsg, setOkMsg] = useState("");
+  const [errMsg, setErrMsg] = useState("");
+  const [dirty, setDirty] = useState(false);
 
   // Carica/salva bozza su localStorage
   useEffect(() => {
@@ -67,13 +70,25 @@ export default function EscortOnboardingPage() {
   }, []);
   useEffect(() => {
     try { localStorage.setItem("escort-onboarding", JSON.stringify(data)); } catch {}
+    if (!loading) setDirty(true);
   }, [data]);
+
+  // Autosave every 20s if there are unsaved changes
+  useEffect(() => {
+    if (loading) return;
+    const id = setInterval(async () => {
+      if (dirty && !saving) {
+        try { await saveToServer(); setDirty(false); } catch {}
+      }
+    }, 20000);
+    return () => clearInterval(id);
+  }, [dirty, saving, loading]);
 
   // Carica bozza dal server (se esiste)
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/API/escort/profile');
+        const res = await fetch('/api/me/profile');
         if (res.ok) {
           const { profile } = await res.json();
           if (profile) {
@@ -151,7 +166,7 @@ export default function EscortOnboardingPage() {
   const saveToServer = async () => {
     setSaving(true);
     try {
-      const res = await fetch('/API/escort/profile', {
+      const res = await fetch('/api/me/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -160,15 +175,16 @@ export default function EscortOnboardingPage() {
         const txt = await res.text();
         throw new Error(txt || 'Salvataggio fallito');
       }
+      setOkMsg('Bozza salvata.'); setErrMsg("");
     } finally {
       setSaving(false);
     }
   };
 
   const saveAndExit = async () => {
-    try { await saveToServer(); } catch {}
-    alert("Bozza salvata. Potrai riprendere in qualsiasi momento.");
-    window.location.href = "/dashboard";
+    try { await saveToServer(); setOkMsg('Bozza salvata. Potrai riprendere in qualsiasi momento.'); setErrMsg("");
+      setTimeout(()=>{ window.location.href = "/dashboard"; }, 600);
+    } catch (e:any) { setErrMsg(e?.message || 'Errore salvataggio'); setOkMsg(""); }
   };
 
   const publish = async () => {
@@ -190,16 +206,16 @@ export default function EscortOnboardingPage() {
         if (response.ok) {
           const result = await response.json();
           console.log('✅ Consenso impostato:', result);
-          alert("Profilo inviato per moderazione. Riceverai conferma una volta approvato dall'amministratore.");
-          window.location.href = "/dashboard";
+          setOkMsg("Profilo inviato per moderazione. Riceverai conferma una volta approvato dall'amministratore."); setErrMsg("");
+          setTimeout(()=>{ window.location.href = "/dashboard"; }, 800);
         } else {
           console.error('❌ Errore impostazione consenso:', response.status);
-          alert('Errore nell\'invio per moderazione. Riprova.');
+          setErrMsg('Errore nell\'invio per moderazione. Riprova.'); setOkMsg("");
         }
       }
     } catch (error) {
       console.error('❌ Errore pubblicazione profilo:', error);
-      alert('Errore: ' + error);
+      setErrMsg('Errore: ' + error); setOkMsg("");
     }
   };
 
@@ -218,6 +234,8 @@ export default function EscortOnboardingPage() {
       </div>
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-6">
+        {okMsg && (<div className="rounded-md border border-green-700 bg-green-900/40 text-green-200 px-3 py-2">{okMsg}</div>)}
+        {errMsg && (<div className="rounded-md border border-red-700 bg-red-900/40 text-red-200 px-3 py-2">{errMsg}</div>)}
         {loading && <div className="text-sm text-gray-400">Caricamento dati dal server…</div>}
         {step === 1 && (
           <section>
@@ -251,20 +269,20 @@ export default function EscortOnboardingPage() {
             <h3 className="font-semibold mb-2 text-white">Città di lavoro</h3>
             <p className="text-sm text-gray-400 mb-3">Imposta la città base e opzionalmente altre città. Specifica CAP e disponibilità.</p>
             <div className="grid gap-3 max-w-xl">
-              <select value={data.cities.base} onChange={(e) => setData({ ...data, cities: { ...data.cities, base: e.target.value } })} className="border rounded-md px-3 py-2">
+              <select value={data.cities.base} onChange={(e) => setData({ ...data, cities: { ...data.cities, base: e.target.value } })} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
                 <option value="">Città Base</option>
                 {ITALIAN_CITIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <select value={data.cities.second} onChange={(e) => setData({ ...data, cities: { ...data.cities, second: e.target.value } })} className="border rounded-md px-3 py-2">
+                <select value={data.cities.second} onChange={(e) => setData({ ...data, cities: { ...data.cities, second: e.target.value } })} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
                   <option value="">Seconda città</option>
                   {ITALIAN_CITIES.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-                <select value={data.cities.third} onChange={(e) => setData({ ...data, cities: { ...data.cities, third: e.target.value } })} className="border rounded-md px-3 py-2">
+                <select value={data.cities.third} onChange={(e) => setData({ ...data, cities: { ...data.cities, third: e.target.value } })} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
                   <option value="">Terza città</option>
                   {ITALIAN_CITIES.map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -272,7 +290,7 @@ export default function EscortOnboardingPage() {
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <input value={data.cities.cap} onChange={(e) => setData({ ...data, cities: { ...data.cities, cap: e.target.value } })} placeholder="CAP" className="border rounded-md px-3 py-2" />
+                <input value={data.cities.cap} onChange={(e) => setData({ ...data, cities: { ...data.cities, cap: e.target.value } })} placeholder="CAP" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
                 <div className="flex items-center gap-4 text-sm">
                   <label className="flex items-center gap-2"><input type="checkbox" checked={!!data.cities.incall} onChange={(e) => setData({ ...data, cities: { ...data.cities, incall: e.target.checked } })} /> Incall</label>
                   <label className="flex items-center gap-2"><input type="checkbox" checked={!!data.cities.outcall} onChange={(e) => setData({ ...data, cities: { ...data.cities, outcall: e.target.checked } })} /> Outcall</label>
@@ -287,8 +305,8 @@ export default function EscortOnboardingPage() {
             <h3 className="font-semibold mb-2 text-white">Servizi</h3>
             <div className="grid gap-4 max-w-3xl">
               <div>
-                <label className="block text-xs mb-1">Orientamento Sessuale</label>
-                <select value={data.services.orientation} onChange={(e) => setData({ ...data, services: { ...data.services, orientation: e.target.value } })} className="border rounded-md px-3 py-2">
+                <label className="block text-xs mb-1 text-white">Orientamento Sessuale</label>
+                <select value={data.services.orientation} onChange={(e) => setData({ ...data, services: { ...data.services, orientation: e.target.value } })} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
                   <option value="">Orientamento Sessuale</option>
                   <option>Eterosessuale</option>
                   <option>Bisessuale</option>
@@ -443,12 +461,12 @@ function ServiceGroup({ title, options, selected, onChange }: { title: string; o
   };
   return (
     <div>
-      <div className="font-semibold mb-2">{title} <span className="text-xs text-neutral-400">({selected.length}/{options.length})</span></div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+      <div className="font-semibold mb-2 text-white">{title} <span className="text-xs text-gray-400">({selected.length}/{options.length})</span></div>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-gray-300">
         {options.map((o) => (
           <label key={o} className="inline-flex items-center gap-2">
             <input type="checkbox" checked={selected.includes(o)} onChange={(e) => toggle(o, e.target.checked)} />
-            <span>{o}</span>
+            <span className="text-gray-300">{o}</span>
           </label>
         ))}
       </div>
@@ -467,27 +485,27 @@ function RateAdder({ label, items, onChange }: { label: string; items: { duratio
   };
   const remove = (d: string) => onChange(items.filter(i => i.duration !== d));
   return (
-    <div className="border rounded-md p-3">
-      <div className="mb-3 font-semibold">{label}</div>
+    <div className="border border-gray-600 rounded-md p-3 bg-gray-900">
+      <div className="mb-3 font-semibold text-white">{label}</div>
       <div className="grid grid-cols-1 md:grid-cols-[1fr,1fr,auto] gap-3 max-w-2xl">
-        <select value={duration} onChange={(e) => setDuration(e.target.value)} className="border rounded-md px-3 py-2">
+        <select value={duration} onChange={(e) => setDuration(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2">
           <option value="">Scegli durata</option>
           {DURATIONS.map((d) => (<option key={d}>{d}</option>))}
         </select>
         <div className="grid grid-cols-[1fr,auto] gap-2">
-          <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Prezzo" className="border rounded-md px-3 py-2" />
-          <div className="self-center">EUR</div>
+          <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Prezzo" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
+          <div className="self-center text-gray-300">EUR</div>
         </div>
         <Button onClick={add}>＋</Button>
       </div>
 
-      <ul className="mt-3 text-sm text-neutral-700 space-y-1">
-        {items.length === 0 && <li className="text-neutral-500">Non ci sono tariffe definite</li>}
+      <ul className="mt-3 text-sm text-gray-300 space-y-1">
+        {items.length === 0 && <li className="text-gray-400">Non ci sono tariffe definite</li>}
         {items.map((i) => (
-          <li key={i.duration} className="flex items-center justify-between border rounded-md px-3 py-2">
-            <span>{i.duration}</span>
-            <span className="font-semibold">€ {i.price}</span>
-            <button className="text-neutral-500 hover:text-red-600" onClick={() => remove(i.duration)}>×</button>
+          <li key={i.duration} className="flex items-center justify-between border border-gray-600 rounded-md px-3 py-2 bg-gray-800">
+            <span className="text-white">{i.duration}</span>
+            <span className="font-semibold text-white">€ {i.price}</span>
+            <button className="text-gray-400 hover:text-red-400" onClick={() => remove(i.duration)}>×</button>
           </li>
         ))}
       </ul>
