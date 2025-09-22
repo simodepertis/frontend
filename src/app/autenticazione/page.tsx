@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 function AuthContent() {
   const [tab, setTab] = useState("utente");
@@ -11,6 +11,7 @@ function AuthContent() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const search = useSearchParams();
+  const router = useRouter();
   const redirect = search?.get("redirect") || "/dashboard";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,8 +51,22 @@ function AuthContent() {
       console.log('✅ Login completato con successo!');
       console.log('🔄 Reindirizzamento a:', redirect);
       
-      // Redirect immediato
-      window.location.href = redirect;
+      // REDIRECT FORZATO MULTIPLO
+      try {
+        // Metodo 1: Next.js router
+        router.push(redirect);
+        console.log('✅ Router push eseguito');
+      } catch (e) {
+        console.log('Router fallito, provo location.href');
+        try {
+          // Metodo 2: location.href
+          window.location.href = redirect;
+        } catch (e2) {
+          console.log('location.href fallito, provo replace');
+          // Metodo 3: location.replace
+          window.location.replace(redirect);
+        }
+      }
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
