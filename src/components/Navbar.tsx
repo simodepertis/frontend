@@ -77,9 +77,10 @@ export default function Navbar() {
         
         {/* COLONNA SINISTRA: Link di navigazione - MODIFICATO justify-end */}
         <div className="w-1/3 flex justify-end items-center gap-4 text-sm font-medium">
-            <Link href="/escort" className="hover:text-blue-400 transition-colors">Nuove Escort</Link>
-            <Link href="/foto" className="hover:text-blue-400 transition-colors">Foto</Link>
-            <Link href="/video" className="hover:text-blue-400 transition-colors">Video</Link>
+            <Link href="/nuove-escort" className="hover:text-blue-400 transition-colors">Nuove Escort</Link>
+            <Link href="/tours" className="hover:text-blue-400 transition-colors">Tours</Link>
+            <Link href="/uomini" className="hover:text-blue-400 transition-colors">Uomini</Link>
+            <Link href="/instant-book" className="hover:text-blue-400 transition-colors">Instant Book</Link>
             <Link href="/agenzie" className="hover:text-blue-400 transition-colors">Agenzie</Link>
         </div>
 
@@ -133,7 +134,13 @@ export default function Navbar() {
           <li><Link href="/video" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faVideo} /> Video</Link></li>
           <li><Link href="/foto" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faImages} /> Foto</Link></li>
           <li><Link href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</Link></li>
+          <li><Link href="/commenti" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Commenti</Link></li>
           <li><Link href="/top10" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faTrophy} /> Top 10</Link></li>
+          <li><Link href="/piccoli-annunci" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Piccoli Annunci</Link></li>
+          <li><Link href="/virtuali" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Virtuali</Link></li>
+          <li><Link href="/happy-hour" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Happy Hour</Link></li>
+          <li><Link href="/forum" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Forum</Link></li>
+          <li><Link href="/internazionale" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Internazionale</Link></li>
         </ul>
       </nav>
     </header>
