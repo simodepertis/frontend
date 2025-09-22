@@ -37,13 +37,29 @@ export default function DashboardSidebar() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/user/me");
+        const token = localStorage.getItem('auth-token');
+        if (!token) {
+          console.log('❌ Nessun token per sidebar');
+          return;
+        }
+        
+        const res = await fetch("/api/user/me", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
         if (res.ok) {
           const data = await res.json();
           setRole(data?.user?.ruolo || "");
           setEmail(data?.user?.email || "");
+          console.log('✅ Sidebar - Ruolo utente:', data?.user?.ruolo);
+        } else {
+          console.log('❌ Errore caricamento profilo sidebar');
         }
-      } catch {}
+      } catch (error) {
+        console.log('❌ Errore fetch sidebar:', error);
+      }
     })();
   }, []);
 
@@ -109,18 +125,30 @@ export default function DashboardSidebar() {
         { href: "/autenticazione", label: "Esci", icon: faRightFromBracket },
       ];
 
-  // Detect admin by role or email whitelist (temporary)
-  const isAdmin = role === 'admin' || new Set(['musicamagazine23@gmail.com','admin@local']).has(email);
+  // Detect admin by role only - NO email whitelist for security
+  const isAdmin = role === 'admin';
+  
+  console.log('🔒 Controllo admin:', { role, email, isAdmin });
 
-  // Append admin links if user is admin
-  const adminItems = isAdmin
+  // Admin has ONLY admin functions - no regular user functions
+  const adminOnlyItems = isAdmin
     ? [
-        { href: "/dashboard/admin/crediti/ordini", label: "Admin · Ordini Crediti", icon: faBolt },
-        { href: "/dashboard/admin/media/foto", label: "Admin · Moderazione Foto", icon: faIdCard },
-        { href: "/dashboard/admin/media/video", label: "Admin · Moderazione Video", icon: faIdCard },
+        { href: "/dashboard/admin", label: "🏠 Dashboard Admin", icon: faGaugeHigh },
+        { href: "/dashboard/admin/crediti/ordini", label: "💳 Approvazione Ordini Crediti", icon: faBolt },
+        { href: "/dashboard/admin/media/foto", label: "📸 Moderazione Foto", icon: faIdCard },
+        { href: "/dashboard/admin/media/video", label: "🎥 Moderazione Video", icon: faVideo },
+        { href: "/dashboard/admin/profili", label: "👤 Approvazione Profili", icon: faUser },
+        { href: "/dashboard/admin/annunci", label: "📋 Moderazione Annunci", icon: faBullhorn },
+        { href: "/dashboard/admin/utenti", label: "👥 Gestione Utenti", icon: faGear },
+        { href: "/dashboard/admin/crediti/catalogo", label: "🛍️ Catalogo Crediti", icon: faCartShopping },
+        { href: "/dashboard/admin/statistiche", label: "📊 Statistiche Sito", icon: faChartBar },
+        { href: "/", label: "🌐 Vai al Sito", icon: faGlobe },
+        { href: "/autenticazione", label: "🚪 Esci", icon: faRightFromBracket },
       ]
     : [];
-  const items = [...baseItems, ...adminItems];
+
+  // Regular users get normal items, admin gets ONLY admin items
+  const items = isAdmin ? adminOnlyItems : baseItems;
 
   return (
     <aside className="w-full md:w-64 bg-[#0f2a5c] text-white min-h-[calc(100vh-80px)] md:sticky md:top-[80px]">

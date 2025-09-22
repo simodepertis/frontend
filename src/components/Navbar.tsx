@@ -14,23 +14,35 @@ export default function Navbar() {
   const router = useRouter();
 
   useEffect(() => {
-    // Temporaneamente disabilitato - aspettiamo deploy API
-    // (async () => {
-    //   try {
-    //     const res = await fetch("/api/user/me");
-    //     if (!res.ok) return;
-    //     const data = await res.json();
-    //     setUserName(data?.user?.nome || "");
-    //   } catch {
-    //     // ignore
-    //   }
-    // })();
-    
-    // Usa localStorage temporaneamente
-    const email = localStorage.getItem('user-email');
-    if (email) {
-      setUserName(email.split('@')[0]);
-    }
+    (async () => {
+      try {
+        const token = localStorage.getItem('auth-token');
+        if (!token) return;
+        
+        const res = await fetch("/api/user/me", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!res.ok) {
+          console.log('❌ Errore caricamento profilo utente');
+          return;
+        }
+        
+        const data = await res.json();
+        setUserName(data?.user?.nome || "");
+        console.log('✅ Nome utente caricato:', data?.user?.nome);
+      } catch (error) {
+        console.log('❌ Errore fetch profilo:', error);
+        
+        // Fallback: usa localStorage temporaneamente
+        const email = localStorage.getItem('user-email');
+        if (email) {
+          setUserName(email.split('@')[0]);
+        }
+      }
+    })();
   }, []);
 
   const handleLogout = async () => {
