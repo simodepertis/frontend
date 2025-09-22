@@ -77,7 +77,7 @@ export default function StatisticheProfiloPage() {
         <div className="text-sm text-neutral-600">Intervallo temporale</div>
         <div className="flex items-center gap-2">
           {(["7d","30d","90d"] as Range[]).map((r) => (
-            <button key={r} onClick={() => setRange(r)} className={`px-3 py-1 rounded-md border text-sm ${range === r ? 'bg-blue-600 text-white border-blue-600' : 'bg-white'}`}>{r === '7d' ? '7 giorni' : r === '30d' ? '30 giorni' : '90 giorni'}</button>
+            <button key={r} onClick={() => setRange(r)} className={`px-3 py-1 rounded-md border text-sm ${range === r ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-700 text-white border-gray-600'}`}>{r === '7d' ? '7 giorni' : r === '30d' ? '30 giorni' : '90 giorni'}</button>
           ))}
         </div>
       </div>
@@ -97,8 +97,8 @@ export default function StatisticheProfiloPage() {
       </div>
 
       {/* Trend semplificato */}
-      <div className="rounded-lg border bg-white p-4">
-        <div className="font-semibold mb-2">Andamento Visualizzazioni</div>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Andamento Visualizzazioni</div>
         <div className="h-40 w-full bg-neutral-100 rounded-md relative overflow-hidden">
           <div className="absolute inset-0 p-2 flex items-end gap-1">
             {trend.map((p) => (
@@ -120,20 +120,20 @@ export default function StatisticheProfiloPage() {
 
 function KpiCard({ title, value, delta }: { title: string; value: number; delta: string }) {
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <div className="text-sm text-neutral-600">{title}</div>
-      <div className="text-2xl font-semibold">{value}</div>
-      <div className="text-xs text-green-700 bg-green-100 inline-block mt-2 px-2 py-0.5 rounded-full">{delta}</div>
+    <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+      <div className="text-sm text-gray-400">{title}</div>
+      <div className="text-2xl font-semibold text-white">{value}</div>
+      <div className="text-xs text-green-100 bg-green-600 inline-block mt-2 px-2 py-0.5 rounded-full">{delta}</div>
     </div>
   );
 }
 
 function KpiSimple({ title, value, note }: { title: string; value: string; note: string }) {
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <div className="text-sm text-neutral-600">{title}</div>
-      <div className="text-2xl font-semibold">{value}</div>
-      <div className="text-xs text-neutral-500 mt-1">{note}</div>
+    <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+      <div className="text-sm text-gray-400">{title}</div>
+      <div className="text-2xl font-semibold text-white">{value}</div>
+      <div className="text-xs text-gray-400 mt-1">{note}</div>
     </div>
   );
 }
@@ -141,16 +141,16 @@ function KpiSimple({ title, value, note }: { title: string; value: string; note:
 function TopList({ title, items }: { title: string; items: { name: string; value: number }[] }) {
   const total = items.reduce((s, i) => s + i.value, 0) || 1;
   return (
-    <div className="rounded-lg border bg-white p-4">
-      <div className="font-semibold mb-2">{title}</div>
+    <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+      <div className="font-semibold mb-2 text-white">{title}</div>
       <div className="space-y-2">
         {items.map((i) => (
           <div key={i.name} className="space-y-1">
             <div className="flex items-center justify-between text-sm">
-              <div>{i.name}</div>
-              <div className="text-neutral-600">{i.value}</div>
+              <div className="text-white">{i.name}</div>
+              <div className="text-gray-400">{i.value}</div>
             </div>
-            <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+            <div className="h-2 bg-gray-600 rounded-full overflow-hidden">
               <div className="h-2 bg-blue-500" style={{ width: `${Math.round((i.value / total) * 100)}%` }} />
             </div>
           </div>

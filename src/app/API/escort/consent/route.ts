@@ -28,19 +28,26 @@ export async function PATCH(request: NextRequest) {
     const u = await requireAuth(request);
     if (!u) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 });
 
+    console.log('🔍 DEBUG Consent - User:', u.id, u.email, u.ruolo);
+
     // Ensure escort profile exists
-    await prisma.escortProfile.upsert({
+    const profile = await prisma.escortProfile.upsert({
       where: { userId: u.id },
       update: {},
       create: { userId: u.id },
     });
 
-    await prisma.escortProfile.update({
+    console.log('🔍 DEBUG Consent - Profile created/found:', profile.id);
+
+    const updatedProfile = await prisma.escortProfile.update({
       where: { userId: u.id },
       data: ({ consentAcceptedAt: new Date() } as any),
     });
-    return NextResponse.json({ ok: true });
+
+    console.log('🔍 DEBUG Consent - Profile updated with consent:', updatedProfile.consentAcceptedAt);
+    return NextResponse.json({ ok: true, profile: updatedProfile });
   } catch (e) {
+    console.error('❌ DEBUG Consent - Error:', e);
     return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
   }
 }

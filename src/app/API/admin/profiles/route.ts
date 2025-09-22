@@ -19,16 +19,12 @@ export async function GET(request: NextRequest) {
     const adm = await requireAdmin(request);
     if (!adm) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
 
-    // Get escort users with their profiles that need approval (have consent and created recently)
-    const twoDaysAgo = new Date();
-    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-    
+    // Get ALL escort users with their profiles that have consent (for debugging)
     const profiles = await prisma.user.findMany({
       where: {
         ruolo: 'escort',
         escortProfile: {
-          consentAcceptedAt: { not: null }, // User has given consent
-          updatedAt: { gte: twoDaysAgo } // Updated in last 2 days (likely needs approval)
+          consentAcceptedAt: { not: null } // User has given consent
         }
       },
       select: {
@@ -50,6 +46,9 @@ export async function GET(request: NextRequest) {
     });
 
     // Transform the data to match the expected format
+    console.log('🔍 DEBUG Admin Profiles - Raw profiles found:', profiles.length);
+    console.log('🔍 DEBUG Admin Profiles - First profile:', profiles[0]);
+
     const formattedProfiles = profiles.map(user => ({
       id: user.escortProfile?.id || 0, // Use escort profile ID for approval
       userId: user.id,
@@ -61,6 +60,7 @@ export async function GET(request: NextRequest) {
       cities: user.escortProfile?.cities ? (Array.isArray(user.escortProfile.cities) ? user.escortProfile.cities : []) : []
     }));
 
+    console.log('🔍 DEBUG Admin Profiles - Formatted profiles:', formattedProfiles.length);
     return NextResponse.json({ profiles: formattedProfiles });
   } catch (error) {
     console.error('❌ Errore caricamento profili:', error);
