@@ -50,9 +50,9 @@ function AuthContent() {
       
       console.log('✅ Login completato con successo!');
       
-      // SOLUZIONE DRASTICA: Ricarica la pagina e basta
-      alert('Login completato! Clicca OK per continuare.');
-      window.location.reload();
+      // REDIRECT CORRETTO ALLA DASHBOARD
+      alert('Login completato! Clicca OK per andare alla dashboard.');
+      window.location.href = '/dashboard';
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
