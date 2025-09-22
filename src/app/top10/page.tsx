@@ -50,35 +50,35 @@ export default function Top10Page() {
       <SectionHeader title="Top 10 Ragazze: La Scelta Dei Membri" subtitle="La classifica aggiornata in base alle preferenze dei membri" />
 
       {/* Info box con filtri e search */}
-      <div className="mb-6 p-4 bg-neutral-100 border rounded-lg shadow-sm">
+      <div className="mb-6 p-4 bg-gray-900 border border-gray-700 rounded-lg">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={city} onChange={(e)=>setCity(e.target.value)}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={city} onChange={(e)=>setCity(e.target.value)}>
             <option value="">Città</option>
             <option>Milano</option>
             <option>Padova</option>
             <option>Roma</option>
             <option>Bari</option>
           </select>
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={order} onChange={(e)=>setOrder(e.target.value)}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={order} onChange={(e)=>setOrder(e.target.value)}>
             <option>Ranking</option>
             <option>Nome</option>
           </select>
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={view} onChange={(e)=>setView(e.target.value)}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={view} onChange={(e)=>setView(e.target.value)}>
             <option>Card</option>
             <option>Compatta</option>
           </select>
           <div className="relative">
-            <input className="w-full bg-white border border-neutral-300 rounded-md pl-10 pr-3 py-2" placeholder="Cerca per nome" value={q} onChange={(e)=>setQ(e.target.value)} />
-            <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input className="w-full bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cerca per nome" value={q} onChange={(e)=>setQ(e.target.value)} />
+            <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-white">
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" className="accent-red-600" checked={onlyActive} onChange={(e)=>setOnlyActive(e.target.checked)} />
+            <input type="checkbox" className="accent-blue-600" checked={onlyActive} onChange={(e)=>setOnlyActive(e.target.checked)} />
             Ragazze attive solo
           </label>
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" className="accent-red-600" checked={withComments} onChange={(e)=>setWithComments(e.target.checked)} />
+            <input type="checkbox" className="accent-blue-600" checked={withComments} onChange={(e)=>setWithComments(e.target.checked)} />
             Con commenti solo
           </label>
         </div>
@@ -88,19 +88,19 @@ export default function Top10Page() {
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {filtered.map((p: any) => (
           <Link key={p.id} href={`/escort/${p.slug}`} className="block group">
-            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border shadow-sm bg-white">
+            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
               <Image src={p.photo} alt={p.name} fill className="object-cover group-hover:scale-105 transition-transform" />
               <div className="absolute top-2 left-2 flex flex-wrap gap-1">
                 <span className="text-xs font-bold bg-black/70 text-white rounded px-2 py-0.5">#{p.rank}</span>
-                <span className="text-xs font-bold bg-red-600 text-white rounded px-2 py-0.5">#Top 10</span>
+                <span className="text-xs font-bold bg-blue-600 text-white rounded px-2 py-0.5">#Top 10</span>
               </div>
               <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
                 <span className="text-[10px] bg-black/70 text-white rounded px-1.5 py-0.5">{p.city || '—'}</span>
               </div>
             </div>
             <div className="px-1.5 mt-2">
-              <div className="text-sm font-semibold text-neutral-800 truncate hover:underline">{p.name}</div>
-              <div className="text-xs text-neutral-500 truncate">{p.city ? `Escort ${p.city}` : 'Escort'}</div>
+              <div className="text-sm font-semibold text-white truncate hover:underline">{p.name}</div>
+              <div className="text-xs text-gray-400 truncate">{p.city ? `Escort ${p.city}` : 'Escort'}</div>
             </div>
           </Link>
         ))}

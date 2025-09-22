@@ -36,95 +36,18 @@ export default function EscortIndipendentiPage() {
       
       const data = await response.json();
       
-      if (data.success && data.escorts) {
-        setEscorts(data.escorts);
+      if (data.success && data.escorts && data.escorts.length > 0) {
+        // Filtra solo escort verificati con pacchetto attivo
+        const escortsVerificati = data.escorts.filter(escort => 
+          escort.verificata && escort.pacchettoAttivo
+        );
+        setEscorts(escortsVerificati);
         return;
       }
       
-      // Fallback ai dati mock se l'API non funziona
-      console.log('⚠️ Usando dati mock come fallback');
-      const mockEscorts = [
-        { 
-          id: 1, 
-          nome: "Giulia", 
-          eta: 25, 
-          citta: "Milano", 
-          capelli: "Biondi", 
-          prezzo: 150, 
-          foto: "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5", 
-          rank: "VIP",
-          tipo: "indipendente",
-          verificata: true,
-          descrizione: "Escort indipendente di Milano, disponibile per incontri di qualità"
-        },
-        { 
-          id: 2, 
-          nome: "Martina", 
-          eta: 28, 
-          citta: "Roma", 
-          capelli: "Castani", 
-          prezzo: 200, 
-          foto: "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1", 
-          rank: "ORO",
-          tipo: "indipendente",
-          verificata: true,
-          descrizione: "Professionista indipendente a Roma, massima discrezione"
-        },
-        { 
-          id: 3, 
-          nome: "Sara", 
-          eta: 23, 
-          citta: "Firenze", 
-          capelli: "Neri", 
-          prezzo: 180, 
-          foto: "https://i.escortforumit.xxx/376078/profile/190aa487-a2dd-43ee-a4c2-5dff8c5fab49_thumb_750.jpg?v=1", 
-          rank: "ARGENTO",
-          tipo: "indipendente",
-          verificata: true,
-          descrizione: "Escort indipendente fiorentina, elegante e raffinata"
-        },
-        { 
-          id: 4, 
-          nome: "Elena", 
-          eta: 26, 
-          citta: "Milano", 
-          capelli: "Neri", 
-          prezzo: 180, 
-          foto: "https://i.escortforumit.xxx/703461/profile/28a91e4c-c6c3-4639-bae9-aeab4cbad15c_thumb_750.jpg?v=1", 
-          rank: "TITANIUM",
-          tipo: "indipendente",
-          verificata: false,
-          descrizione: "Nuova escort indipendente a Milano"
-        },
-        { 
-          id: 5, 
-          nome: "Sofia", 
-          eta: 29, 
-          citta: "Roma", 
-          capelli: "Biondi", 
-          prezzo: 220, 
-          foto: "https://i.escortforumit.xxx/686141/profile/80cb7136-bcc1-4c01-9430-b8cbedd43a21_thumb_750.jpg?v=1", 
-          rank: "VIP",
-          tipo: "indipendente",
-          verificata: true,
-          descrizione: "Top escort indipendente romana, esperienza premium"
-        },
-        { 
-          id: 6, 
-          nome: "Chiara", 
-          eta: 22, 
-          citta: "Napoli", 
-          capelli: "Castani", 
-          prezzo: 160, 
-          foto: "https://i.escortforumit.xxx/708057/profile/7040775e-d371-48b6-b310-6424e5ed3cd6_thumb_750.jpg?v=1", 
-          rank: "ORO",
-          tipo: "indipendente",
-          verificata: true,
-          descrizione: "Escort napoletana indipendente, dolce e passionale"
-        }
-      ];
-      
-      setEscorts(mockEscorts);
+      // NESSUN DATO MOCK - Solo utenti reali verificati
+      console.log('ℹ️ Nessun escort indipendente verificato trovato');
+      setEscorts([]);
     } catch (error) {
       console.error('❌ Errore caricamento escort indipendenti:', error);
     } finally {

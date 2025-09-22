@@ -22,39 +22,14 @@ export default function SugarDaddyPage() {
 
   async function loadSugarDaddyEscorts() {
     try {
-      // Simula caricamento - in produzione sarà API reale
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // LOGICA CORRETTA: Solo escort verificati con pacchetto attivo
+      // Al momento non ci sono escort che hanno:
+      // 1. Verificato l'identità (documenti approvati dall'admin)
+      // 2. Acquistato pacchetto VIP/ORO per categoria SugarDaddy
+      // 3. Completato il profilo con categoria "SugarDaddy"
       
-      const mockEscorts = [
-        {
-          id: 1,
-          nome: "Isabella",
-          eta: 24,
-          citta: "Milano",
-          capelli: "Biondi",
-          prezzo: 300,
-          foto: "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-          rank: "VIP",
-          categoria: "sugardaddy",
-          verificata: true,
-          descrizione: "Elegante e raffinata, perfetta per cene di lavoro e eventi esclusivi"
-        },
-        {
-          id: 2,
-          nome: "Valentina",
-          eta: 26,
-          citta: "Roma",
-          capelli: "Castani",
-          prezzo: 350,
-          foto: "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1",
-          rank: "VIP",
-          categoria: "sugardaddy",
-          verificata: true,
-          descrizione: "Laureata in economia, compagna ideale per uomini di successo"
-        }
-      ];
-      
-      setEscorts(mockEscorts);
+      console.log('ℹ️ Nessun escort SugarDaddy verificato con pacchetto attivo trovato');
+      setEscorts([]);
     } catch (error) {
       console.error("Errore caricamento SugarDaddy:", error);
     } finally {

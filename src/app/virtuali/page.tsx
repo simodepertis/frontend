@@ -49,37 +49,37 @@ export default function VirtualiPage() {
       <SectionHeader title="Servizi Virtuali" subtitle="Chat, chiamate e videochiamate in modo sicuro" />
 
       {/* Info/Filter bar come nel riferimento */}
-      <div className="mb-6 p-4 bg-neutral-100 rounded-lg border shadow-sm">
+      <div className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={city} onChange={(e)=>setCity(e.target.value)}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={city} onChange={(e)=>setCity(e.target.value)}>
             <option value="">Città</option>
             <option>Milano</option>
             <option>Roma</option>
             <option>Firenze</option>
           </select>
-          <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={type} onChange={(e)=>setType(e.target.value)}>
+          <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={type} onChange={(e)=>setType(e.target.value)}>
             <option value="">Tipologia</option>
             <option>Chat</option>
             <option>Videochiamata</option>
             <option>Chiamata</option>
           </select>
           <div className="relative">
-            <input className="w-full bg-white border border-neutral-300 rounded-md pl-10 pr-3 py-2" placeholder="Cerca per nome" value={q} onChange={(e)=>setQ(e.target.value)} />
-            <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input className="w-full bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cerca per nome" value={q} onChange={(e)=>setQ(e.target.value)} />
+            <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
-          <Button className="bg-red-600 hover:bg-red-700 text-white font-bold h-10">Cerca</Button>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-10">Cerca</Button>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-white">
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" className="accent-red-600" checked={verified} onChange={(e)=>setVerified(e.target.checked)} />
+            <input type="checkbox" className="accent-blue-600" checked={verified} onChange={(e)=>setVerified(e.target.checked)} />
             100% Verificato
           </label>
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" className="accent-red-600" checked={hasVideo} onChange={(e)=>setHasVideo(e.target.checked)} />
+            <input type="checkbox" className="accent-blue-600" checked={hasVideo} onChange={(e)=>setHasVideo(e.target.checked)} />
             Ha video
           </label>
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" className="accent-red-600" checked={hasReviews} onChange={(e)=>setHasReviews(e.target.checked)} />
+            <input type="checkbox" className="accent-blue-600" checked={hasReviews} onChange={(e)=>setHasReviews(e.target.checked)} />
             Ha recensioni
           </label>
         </div>
@@ -89,7 +89,7 @@ export default function VirtualiPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filtered.map((s: any) => (
           <Link key={s.id} href={`/escort/${s.slug}`} className="group block">
-            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border shadow-sm bg-white">
+            <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl border border-gray-700 bg-gray-800">
               <Image src={s.coverUrl || '/placeholder.svg'} alt={s.name} fill className="object-cover group-hover:scale-105 transition-transform" />
               <div className="absolute top-2 left-2">
                 <span className="text-xs font-bold bg-purple-600 text-white rounded px-2 py-0.5">VIRTUALE</span>
@@ -100,13 +100,13 @@ export default function VirtualiPage() {
             </div>
             <div className="px-1.5 mt-2">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-neutral-800 truncate group-hover:underline">{s.name}</div>
-                <div className="text-xs text-neutral-500">{Array.isArray(s.cities)&&s.cities[0]?s.cities[0]:'—'}</div>
+                <div className="text-sm font-semibold text-white truncate group-hover:underline">{s.name}</div>
+                <div className="text-xs text-gray-400">{Array.isArray(s.cities)&&s.cities[0]?s.cities[0]:'—'}</div>
               </div>
-              <div className="mt-1 text-xs text-neutral-600 flex items-center gap-2" />
+              <div className="mt-1 text-xs text-gray-300 flex items-center gap-2" />
               <div className="mt-2 flex items-center justify-between">
                 <div className="text-lg font-semibold">&nbsp;</div>
-                <button className="bg-red-600 hover:bg-red-700 text-white rounded-md px-3 py-1.5 text-sm font-semibold">Prenota</button>
+                <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-3 py-1.5 text-sm font-semibold">Prenota</button>
               </div>
             </div>
           </Link>

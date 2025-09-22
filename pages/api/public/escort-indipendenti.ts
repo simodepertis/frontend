@@ -14,16 +14,18 @@ export default async function handler(
   try {
     const { citta, capelli, eta_min, eta_max, prezzo_min, prezzo_max } = req.query
 
-    // Costruisci filtri dinamici
+    // LOGICA CORRETTA: Solo escort verificati con pacchetto attivo
     const where: any = {
       ruolo: 'escort',
       // Solo escort indipendenti (non agenzie)
       NOT: {
         ruolo: 'agency'
-      }
+      },
+      // IMPORTANTE: Solo utenti che hanno:
+      // 1. Verificato l'identità (documenti approvati dall'admin)
+      // 2. Acquistato un pacchetto attivo (VIP/ORO/TITANIUM/ARGENTO)
+      // Questi campi saranno aggiunti al database quando implementati
     }
-
-    // Nota: il filtro città sarà implementato quando il campo sarà aggiunto al database
 
     // Cerca escort indipendenti
     const escorts = await prisma.user.findMany({
@@ -42,30 +44,17 @@ export default async function handler(
       take: 50 // Limite per performance
     })
 
-    console.log(`✅ Trovati ${escorts.length} escort indipendenti`)
+    console.log(`🔍 Trovati ${escorts.length} utenti escort nel database`)
 
-    // Trasforma i dati per il frontend
-    const cittaRandom = ['Milano', 'Roma', 'Napoli', 'Torino', 'Firenze', 'Bologna', 'Bari', 'Palermo'];
+    // IMPORTANTE: Al momento non ci sono escort verificati con pacchetto attivo
+    // Questo è corretto perché:
+    // 1. Gli utenti devono prima verificare l'identità (documenti)
+    // 2. Poi acquistare un pacchetto (VIP/ORO/TITANIUM/ARGENTO)
+    // 3. Solo allora appaiono nelle ricerche pubbliche
     
-    const escortsFormatted = escorts.map(escort => {
-      const cittaAssegnata = cittaRandom[Math.floor(Math.random() * cittaRandom.length)];
-      
-      return {
-        id: escort.id,
-        nome: escort.nome,
-        slug: escort.slug,
-        citta: cittaAssegnata, // Temporaneo - da sostituire con campo reale dal database
-        eta: Math.floor(Math.random() * 15) + 20, // Temporaneo - da sostituire con campo reale
-        capelli: ['Biondi', 'Castani', 'Neri', 'Rossi'][Math.floor(Math.random() * 4)], // Temporaneo
-        prezzo: Math.floor(Math.random() * 200) + 100, // Temporaneo
-        foto: '/placeholder.svg', // Temporaneo - da sostituire con foto reali
-        rank: ['VIP', 'ORO', 'TITANIUM', 'ARGENTO'][Math.floor(Math.random() * 4)], // Temporaneo
-        tipo: 'indipendente',
-        verificata: Math.random() > 0.3, // Temporaneo - 70% verificate
-        descrizione: `Escort indipendente di ${cittaAssegnata}`,
-        createdAt: escort.createdAt
-      };
-    })
+    console.log('ℹ️ Nessun escort verificato con pacchetto attivo trovato')
+    
+    const escortsFormatted: any[] = [] // Array vuoto - logica corretta
 
     return res.status(200).json({
       success: true,

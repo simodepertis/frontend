@@ -60,14 +60,14 @@ export default function AnnunciPage() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-neutral-800">Annunci</h1>
+      <h1 className="text-3xl font-bold mb-6 text-white">Annunci</h1>
 
       {/* Filtri */}
-      <div className="mb-6 p-4 bg-white rounded-lg border">
+      <div className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-neutral-600">Categoria</label>
-            <select className="bg-white border border-neutral-300 rounded-md px-3 py-2">
+            <label className="text-sm font-medium text-white">Categoria</label>
+            <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
               <option>Tutte</option>
               <option>Escort</option>
               <option>Massaggi</option>
@@ -75,16 +75,16 @@ export default function AnnunciPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-neutral-600">Tipo</label>
-            <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={tipo} onChange={(e)=>{ setTipo(e.target.value); setPage(1); }}>
+            <label className="text-sm font-medium text-white">Tipo</label>
+            <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={tipo} onChange={(e)=>{ setTipo(e.target.value); setPage(1); }}>
               <option>Tutti</option>
               <option>Fisici</option>
               <option>Virtuali</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-neutral-600">Città</label>
-            <select className="bg-white border border-neutral-300 rounded-md px-3 py-2" value={city} onChange={(e)=>{ setCity(e.target.value); setPage(1); }}>
+            <label className="text-sm font-medium text-white">Città</label>
+            <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={city} onChange={(e)=>{ setCity(e.target.value); setPage(1); }}>
               <option value="">Tutte</option>
               <option>Milano</option>
               <option>Roma</option>
@@ -92,20 +92,20 @@ export default function AnnunciPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1 md:col-span-2">
-            <label className="text-sm font-medium text-neutral-600">Ricerca per testo libero</label>
+            <label className="text-sm font-medium text-white">Ricerca per testo libero</label>
             <div className="relative">
-              <input className="w-full bg-white border border-neutral-300 rounded-md pl-10 pr-3 py-2" placeholder="Cerca..." value={q} onChange={(e)=> { setQ(e.target.value); setPage(1); }} />
-              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input className="w-full bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md pl-10 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cerca..." value={q} onChange={(e)=> { setQ(e.target.value); setPage(1); }} />
+              <FontAwesomeIcon icon={faSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-neutral-600">
+        <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-white">
           <div>Risultati: {total} {city ? `a ${city}` : ''}</div>
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" className="accent-red-600" checked={withWhatsApp} onChange={(e)=> setWithWhatsApp(e.target.checked)} /> Con WhatsApp
+            <input type="checkbox" className="accent-blue-600" checked={withWhatsApp} onChange={(e)=> setWithWhatsApp(e.target.checked)} /> Con WhatsApp
           </label>
           <label className="inline-flex items-center gap-2">
-            <input type="checkbox" className="accent-red-600" checked={withPhone} onChange={(e)=> setWithPhone(e.target.checked)} /> Con Telefono
+            <input type="checkbox" className="accent-blue-600" checked={withPhone} onChange={(e)=> setWithPhone(e.target.checked)} /> Con Telefono
           </label>
         </div>
       </div>
@@ -114,20 +114,20 @@ export default function AnnunciPage() {
       {loading ? (
         <div className="space-y-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-40 rounded-lg border bg-neutral-100 animate-pulse" />
+            <div key={i} className="h-40 rounded-lg border border-gray-700 bg-gray-800 animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="text-sm text-neutral-500">Nessun annuncio trovato.</div>
+        <div className="text-sm text-gray-400">Nessun annuncio trovato.</div>
       ) : (
         <div className="space-y-4">
           {filtered.map((it) => {
             const t = tiers[it.tier] || tiers.STANDARD;
             const cityLabel = Array.isArray(it.cities) && it.cities.length ? String(it.cities[0]) : '—';
             return (
-              <div key={it.id} className="rounded-lg border bg-white p-3 md:p-4">
+              <div key={it.id} className="rounded-lg border border-gray-700 bg-gray-800 p-3 md:p-4">
                 <div className="flex gap-3">
-                  <div className="relative w-28 h-28 shrink-0 rounded-md overflow-hidden bg-neutral-100 border">
+                  <div className="relative w-28 h-28 shrink-0 rounded-md overflow-hidden bg-gray-700 border border-gray-600">
                     <Image src={it.coverUrl || '/placeholder.svg'} alt={it.name} fill className="object-cover" />
                     <div className="absolute left-1 top-1 flex gap-1">
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${t.className}`}>{t.label}</span>
@@ -137,37 +137,37 @@ export default function AnnunciPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <Link href={`/escort/${it.slug}`} className="font-semibold text-neutral-900 hover:underline line-clamp-1">{it.name}</Link>
-                        <div className="mt-1 text-sm text-neutral-600 line-clamp-2">{it.bio ? String(it.bio).slice(0,140) + (String(it.bio).length>140?'…':'') : `Annuncio aggiornato · Priorità ${it.priority}`}</div>
+                        <Link href={`/escort/${it.slug}`} className="font-semibold text-white hover:underline line-clamp-1">{it.name}</Link>
+                        <div className="mt-1 text-sm text-gray-300 line-clamp-2">{it.bio ? String(it.bio).slice(0,140) + (String(it.bio).length>140?'…':'') : `Annuncio aggiornato · Priorità ${it.priority}`}</div>
                       </div>
-                      <div className="text-xs text-neutral-500 whitespace-nowrap">ID: {it.id}</div>
+                      <div className="text-xs text-gray-400 whitespace-nowrap">ID: {it.id}</div>
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-2 border rounded-full px-3 py-1 text-xs">
-                        <FontAwesomeIcon icon={faLocationDot} className="text-neutral-600" /> {cityLabel}
+                      <span className="inline-flex items-center gap-2 border border-gray-600 rounded-full px-3 py-1 text-xs text-gray-300">
+                        <FontAwesomeIcon icon={faLocationDot} className="text-gray-400" /> {cityLabel}
                       </span>
                       {it.isVerified && (
-                        <span className="inline-flex items-center gap-2 border rounded-full px-3 py-1 text-xs bg-emerald-50 border-emerald-200 text-emerald-700">Verificata</span>
+                        <span className="inline-flex items-center gap-2 border border-green-600 rounded-full px-3 py-1 text-xs bg-green-900 text-green-300">Verificata</span>
                       )}
                       {it.onTour && (
-                        <span className="inline-flex items-center gap-2 border rounded-full px-3 py-1 text-xs bg-sky-50 border-sky-200 text-sky-700">In tour</span>
+                        <span className="inline-flex items-center gap-2 border border-blue-600 rounded-full px-3 py-1 text-xs bg-blue-900 text-blue-300">In tour</span>
                       )}
                       {it.contacts?.phone && (
-                        <a href={`tel:${it.contacts.phone}`} className="inline-flex items-center gap-2 border rounded-full px-3 py-1 text-xs">
-                          <FontAwesomeIcon icon={faPhone} className="text-neutral-600" /> {it.contacts.phone}
+                        <a href={`tel:${it.contacts.phone}`} className="inline-flex items-center gap-2 border border-gray-600 rounded-full px-3 py-1 text-xs text-gray-300 hover:bg-gray-700">
+                          <FontAwesomeIcon icon={faPhone} className="text-gray-400" /> {it.contacts.phone}
                         </a>
                       )}
                       {it.contacts?.email && (
-                        <a href={`mailto:${it.contacts.email}`} className="inline-flex items-center gap-2 border rounded-full px-3 py-1 text-xs">
-                          <FontAwesomeIcon icon={faEnvelope} className="text-neutral-600" /> Scrivimi
+                        <a href={`mailto:${it.contacts.email}`} className="inline-flex items-center gap-2 border border-gray-600 rounded-full px-3 py-1 text-xs text-gray-300 hover:bg-gray-700">
+                          <FontAwesomeIcon icon={faEnvelope} className="text-gray-400" /> Scrivimi
                         </a>
                       )}
                     </div>
-                    <div className="mt-2 text-xs text-neutral-500 flex items-center gap-2">
+                    <div className="mt-2 text-xs text-gray-400 flex items-center gap-2">
                       <FontAwesomeIcon icon={faBolt} width={12} /> Priorità {it.priority}
                     </div>
                     <div className="mt-2 text-right">
-                      <Link href={`/escort/${it.slug}`} className="text-sm text-blue-700 hover:underline">Mostra di più »</Link>
+                      <Link href={`/escort/${it.slug}`} className="text-sm text-blue-400 hover:underline">Mostra di più »</Link>
                     </div>
                   </div>
                 </div>
@@ -181,7 +181,7 @@ export default function AnnunciPage() {
       {totalPages > 1 && (
         <div className="mt-6 flex items-center justify-center gap-2">
           <Button className="h-9" variant="secondary" onClick={() => setPage((p) => Math.max(1, p-1))} disabled={page === 1}>Prev</Button>
-          <div className="text-sm">Pagina {page} di {totalPages}</div>
+          <div className="text-sm text-white">Pagina {page} di {totalPages}</div>
           <Button className="h-9" onClick={() => setPage((p) => Math.min(totalPages, p+1))} disabled={page === totalPages}>Next</Button>
         </div>
       )}

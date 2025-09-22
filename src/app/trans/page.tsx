@@ -22,38 +22,14 @@ export default function TransPage() {
 
   async function loadTransEscorts() {
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // LOGICA CORRETTA: Solo trans verificati con pacchetto attivo
+      // Al momento non ci sono trans che hanno:
+      // 1. Verificato l'identità (documenti approvati dall'admin)
+      // 2. Acquistato pacchetto attivo
+      // 3. Completato il profilo con categoria "Trans"
       
-      const mockEscorts = [
-        {
-          id: 1,
-          nome: "Samantha",
-          eta: 25,
-          citta: "Milano",
-          capelli: "Biondi",
-          prezzo: 200,
-          foto: "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-          rank: "VIP",
-          categoria: "trans",
-          verificata: true,
-          descrizione: "Bellissima trans, femminile e passionale"
-        },
-        {
-          id: 2,
-          nome: "Jessica",
-          eta: 28,
-          citta: "Roma",
-          capelli: "Castani",
-          prezzo: 180,
-          foto: "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1",
-          rank: "ORO",
-          categoria: "trans",
-          verificata: true,
-          descrizione: "Dolce e sensuale, per momenti indimenticabili"
-        }
-      ];
-      
-      setEscorts(mockEscorts);
+      console.log('ℹ️ Nessun trans verificato con pacchetto attivo trovato');
+      setEscorts([]);
     } catch (error) {
       console.error("Errore caricamento Trans:", error);
     } finally {

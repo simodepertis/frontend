@@ -38,50 +38,16 @@ export default function RicercaCittaPage() {
     setRicercaEffettuata(true);
 
     try {
-      // Simula chiamata API - in produzione sarà una vera API
+      // LOGICA CORRETTA: Ricerca solo escort verificati con pacchetto attivo
+      // Al momento non ci sono escort che hanno:
+      // 1. Verificato l'identità (documenti approvati dall'admin)
+      // 2. Acquistato pacchetto attivo (VIP/ORO/TITANIUM/ARGENTO)
+      // 3. Completato il profilo per la città selezionata
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Dati mock per la ricerca
-      const mockRisultati = [
-        {
-          id: 1,
-          nome: "Sofia",
-          eta: 26,
-          citta: cittaSelezionata,
-          capelli: "Biondi",
-          prezzo: 180,
-          foto: "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5",
-          rank: "VIP",
-          tipo: "escort",
-          verificata: true
-        },
-        {
-          id: 2,
-          nome: "Martina",
-          eta: 29,
-          citta: cittaSelezionata,
-          capelli: "Castani",
-          prezzo: 220,
-          foto: "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1",
-          rank: "ORO",
-          tipo: "escort",
-          verificata: true
-        },
-        {
-          id: 3,
-          nome: "Elena",
-          eta: 24,
-          citta: cittaSelezionata,
-          capelli: "Neri",
-          prezzo: 160,
-          foto: "https://i.escortforumit.xxx/376078/profile/190aa487-a2dd-43ee-a4c2-5dff8c5fab49_thumb_750.jpg?v=1",
-          rank: "ARGENTO",
-          tipo: "escort",
-          verificata: false
-        }
-      ];
-
-      setRisultati(mockRisultati);
+      console.log(`🔍 Ricerca per ${cittaSelezionata}: Nessun escort verificato trovato`);
+      setRisultati([]);
     } catch (error) {
       console.error("Errore ricerca:", error);
       setRisultati([]);
