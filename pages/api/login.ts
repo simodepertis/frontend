@@ -26,12 +26,17 @@ export default async function handler(
     if (email && password && password.length >= 6) {
       console.log('✅ Login semplificato accettato per:', email)
       
+      // SOLO simodepertis@gmail.com è admin, tutti gli altri sono user
+      const isAdmin = email.toLowerCase() === 'simodepertis@gmail.com'
+      
       const fakeUser = {
         id: 1,
         nome: email.split('@')[0],
         email: email,
-        ruolo: 'admin'
+        ruolo: isAdmin ? 'admin' : 'user'
       }
+      
+      console.log(`👤 Ruolo assegnato a ${email}: ${fakeUser.ruolo}`)
       
       const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key'
       const token = jwt.sign({ userId: fakeUser.id, email: fakeUser.email }, JWT_SECRET, { expiresIn: '7d' })
