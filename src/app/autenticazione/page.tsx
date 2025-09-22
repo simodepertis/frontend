@@ -49,24 +49,10 @@ function AuthContent() {
       }
       
       console.log('✅ Login completato con successo!');
-      console.log('🔄 Reindirizzamento a:', redirect);
       
-      // REDIRECT FORZATO MULTIPLO
-      try {
-        // Metodo 1: Next.js router
-        router.push(redirect);
-        console.log('✅ Router push eseguito');
-      } catch (e) {
-        console.log('Router fallito, provo location.href');
-        try {
-          // Metodo 2: location.href
-          window.location.href = redirect;
-        } catch (e2) {
-          console.log('location.href fallito, provo replace');
-          // Metodo 3: location.replace
-          window.location.replace(redirect);
-        }
-      }
+      // SOLUZIONE DRASTICA: Ricarica la pagina e basta
+      alert('Login completato! Clicca OK per continuare.');
+      window.location.reload();
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";

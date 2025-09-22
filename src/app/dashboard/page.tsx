@@ -12,17 +12,10 @@ export default function DashboardHome() {
   const [items, setItems] = useState<any[]>([]);
   const [loadingItems, setLoadingItems] = useState(true);
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/user/me");
-        if (res.ok) {
-          const data = await res.json();
-          setName(data?.user?.nome ?? "");
-        }
-      } finally {
-        setLoading(false);
-      }
-    })();
+    // Usa localStorage invece di API
+    const userName = localStorage.getItem('user-name') || localStorage.getItem('user-email')?.split('@')[0] || 'Utente';
+    setName(userName);
+    setLoading(false);
   }, []);
   useEffect(() => {
     (async () => {
