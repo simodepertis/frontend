@@ -19,45 +19,51 @@ export async function GET(request: NextRequest) {
     const adm = await requireAdmin(request);
     if (!adm) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
 
-    // Get ALL escort users with their profiles that have consent (for debugging)
-    const profiles = await prisma.user.findMany({
+    // Get ALL escort users with their profiles (create profile if missing)
+    const escortUsers = await prisma.user.findMany({
       where: {
-        ruolo: 'escort',
-        escortProfile: {
-          consentAcceptedAt: { not: null } // User has given consent
-        }
+        ruolo: 'escort'
       },
       select: {
         id: true,
         nome: true,
         email: true,
         createdAt: true,
-        escortProfile: {
-          select: {
-            id: true,
-            tier: true,
-            cities: true,
-            consentAcceptedAt: true,
-          }
-        }
       },
       orderBy: { createdAt: 'desc' },
       take: 50
     });
 
+    // For each escort user, ensure they have a profile and get profile data
+    const profiles = await Promise.all(
+      escortUsers.map(async (user) => {
+        // Ensure escort profile exists
+        const profile = await prisma.escortProfile.upsert({
+          where: { userId: user.id },
+          update: {},
+          create: { userId: user.id },
+        });
+
+        return {
+          user,
+          escortProfile: profile
+        };
+      })
+    );
+
     // Transform the data to match the expected format
     console.log('🔍 DEBUG Admin Profiles - Raw profiles found:', profiles.length);
     console.log('🔍 DEBUG Admin Profiles - First profile:', profiles[0]);
 
-    const formattedProfiles = profiles.map(user => ({
-      id: user.escortProfile?.id || 0, // Use escort profile ID for approval
-      userId: user.id,
-      nome: user.nome,
-      email: user.email,
-      tier: user.escortProfile?.tier || 'STANDARD',
-      verified: false, // Always false since they're pending
-      createdAt: user.createdAt.toISOString().split('T')[0],
-      cities: user.escortProfile?.cities ? (Array.isArray(user.escortProfile.cities) ? user.escortProfile.cities : []) : []
+    const formattedProfiles = profiles.map(item => ({
+      id: item.escortProfile.id, // Use escort profile ID for approval
+      userId: item.user.id,
+      nome: item.user.nome,
+      email: item.user.email,
+      tier: item.escortProfile.tier || 'STANDARD',
+      verified: !!item.escortProfile.consentAcceptedAt, // True if has consent
+      createdAt: item.user.createdAt.toISOString().split('T')[0],
+      cities: item.escortProfile.cities ? (Array.isArray(item.escortProfile.cities) ? item.escortProfile.cities : []) : []
     }));
 
     console.log('🔍 DEBUG Admin Profiles - Formatted profiles:', formattedProfiles.length);

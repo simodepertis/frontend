@@ -46,21 +46,12 @@ export async function GET(request: NextRequest) {
         where: { status: 'PENDING' }
       }),
       
-      // Pending profiles count (escort profiles with consent but updated recently)
-      (async () => {
-        const twoDaysAgo = new Date();
-        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-        
-        return prisma.user.count({
-          where: {
-            ruolo: 'escort',
-            escortProfile: {
-              consentAcceptedAt: { not: null },
-              updatedAt: { gte: twoDaysAgo }
-            }
-          }
-        });
-      })(),
+      // Pending profiles count (all escort users for now)
+      prisma.user.count({
+        where: {
+          ruolo: 'escort'
+        }
+      }),
       
       // Total credits ordered (sum of all credit orders)
       prisma.creditOrder.aggregate({
