@@ -20,20 +20,20 @@ function AuthContent() {
     console.log('🔐 Tentativo login per:', email);
     
     try {
-      // Login contro la nostra API Next
+      // Login contro la nostra API Next con controllo ruolo
       const res = await fetch(`/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, expectedRole: tab }),
         credentials: 'include',
       });
       
       console.log('📡 Risposta login:', res.status, res.statusText);
       
       if (!res.ok) {
-        const errorData = await res.text();
+        const errorData = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
         console.log('❌ Errore login:', errorData);
-        throw new Error("Credenziali non valide o API non disponibile");
+        throw new Error(errorData.error || "Credenziali non valide o API non disponibile");
       }
       
       const data = await res.json();

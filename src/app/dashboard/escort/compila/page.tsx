@@ -174,23 +174,31 @@ export default function EscortOnboardingPage() {
     try { 
       await saveToServer(); 
       
-      // Set consent to trigger admin approval workflow
+      // DEBUG: Test publish workflow
       const token = localStorage.getItem('auth-token');
       if (token) {
-        await fetch('/api/escort/consent', {
-          method: 'PATCH',
+        console.log('🧪 Testing publish workflow...');
+        const response = await fetch('/api/debug/test-publish', {
+          method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
+        
+        if (response.ok) {
+          const result = await response.json();
+          console.log('🧪 Test publish result:', result);
+          alert(`DEBUG: Profilo pubblicato! Admin vedrà ${result.adminWouldSee} profili. Controlla console per dettagli.`);
+        } else {
+          console.error('❌ Test publish failed:', response.status);
+          alert('Errore nel test di pubblicazione. Controlla console.');
+        }
       }
     } catch (error) {
       console.error('❌ Errore pubblicazione profilo:', error);
+      alert('Errore: ' + error);
     }
-    
-    alert("Profilo inviato per moderazione. Riceverai conferma una volta approvato dall'amministratore.");
-    window.location.href = "/dashboard";
   };
 
   return (

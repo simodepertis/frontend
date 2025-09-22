@@ -13,8 +13,9 @@ export default async function handler(
   console.log('🔐 API /api/login chiamata')
   
   try {
-    const { email, password } = req.body
+    const { email, password, expectedRole } = req.body
     console.log('📧 Email ricevuta:', email)
+    console.log('🎭 Ruolo atteso:', expectedRole)
 
     // Validazione input
     if (!email || !password) {
@@ -43,6 +44,14 @@ export default async function handler(
     if (password.length < 6) {
       console.log('❌ Password troppo corta')
       return res.status(401).json({ error: 'Email o password non corretti' })
+    }
+
+    // VERIFICA RUOLO - L'utente può accedere solo con il ruolo corretto
+    if (expectedRole && user.ruolo !== expectedRole) {
+      console.log(`❌ Ruolo non corrispondente. Utente: ${user.ruolo}, Atteso: ${expectedRole}`)
+      return res.status(403).json({ 
+        error: `Questo account è registrato come "${user.ruolo}". Seleziona la scheda corretta per accedere.` 
+      })
     }
 
     console.log('✅ Login accettato per:', email)
