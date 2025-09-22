@@ -86,9 +86,9 @@ export default function VerificaVideoPage() {
       <SectionHeader title="Verifica Video" subtitle="Aggiungi e invia i tuoi video per la verifica" />
 
       {/* Linee guida */}
-      <div className="rounded-lg border bg-white p-4">
-        <div className="font-semibold mb-2">Linee Guida</div>
-        <ul className="text-sm text-neutral-700 list-disc pl-5 space-y-1">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Linee Guida</div>
+        <ul className="text-sm text-gray-300 list-disc pl-5 space-y-1">
           <li>Carica solo contenuti che ti appartengono e rispettano le norme della piattaforma.</li>
           <li>Accettiamo URL diretti (mp4) o link HLS (m3u8). Per upload file diretto serve storage esterno (S3/R2).</li>
           <li>Inserisci un titolo descrittivo e, se possibile, una thumbnail.</li>
@@ -97,7 +97,7 @@ export default function VerificaVideoPage() {
 
       {/* Uploader per URL */}
       <div className="rounded-lg border bg-white p-4 space-y-3">
-        <div className="font-semibold">Aggiungi Video via URL</div>
+        <div className="font-semibold text-white">Aggiungi Video via URL</div>
         <div className="grid gap-3 md:grid-cols-2">
           <input value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="Titolo" className="border rounded-md px-3 py-2" />
           <input value={url} onChange={(e)=>setUrl(e.target.value)} placeholder="URL Video (mp4/m3u8)" className="border rounded-md px-3 py-2" />
@@ -113,14 +113,14 @@ export default function VerificaVideoPage() {
       </div>
 
       {/* Lista video */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="font-semibold mb-3">I tuoi video ({videos.length})</div>
         {videos.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessun video aggiunto. Inserisci l'URL per aggiungere un video.</div>
+          <div className="text-sm text-gray-400">Nessun video aggiunto. Inserisci l'URL per aggiungere un video.</div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((v) => (
-              <div key={v.id} className="border rounded-md overflow-hidden bg-white">
+              <div key={v.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-700">
                 <div className="relative w-full aspect-video bg-black grid place-items-center">
                   {v.thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element

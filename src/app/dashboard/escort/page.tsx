@@ -140,10 +140,10 @@ export default function EscortDashboardPage() {
       ring: 'ring-zinc-400',
     };
     return {
-      card: 'bg-white border-neutral-200',
-      pill: 'bg-neutral-200 text-neutral-800',
-      cta: 'bg-neutral-900 hover:bg-black text-white',
-      ring: 'ring-neutral-300',
+      card: 'bg-gray-800 border-gray-600',
+      pill: 'bg-gray-600 text-gray-200',
+      cta: 'bg-blue-600 hover:bg-blue-700 text-white',
+      ring: 'ring-gray-500',
     };
   }
   useEffect(() => {
@@ -184,7 +184,7 @@ export default function EscortDashboardPage() {
               return (
                 <div key={p.code} className={`relative rounded-2xl border p-4 transition-shadow hover:shadow-xl ${s.card}`}>
                   <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-9 h-9 grid place-items-center rounded-full bg-white/80 ${s.ring} ring-2 text-neutral-800`}>
+                    <div className={`w-9 h-9 grid place-items-center rounded-full bg-gray-700 ${s.ring} ring-2 text-white`}>
                       <FontAwesomeIcon icon={tierIcon(p.code)} />
                     </div>
                     <div>

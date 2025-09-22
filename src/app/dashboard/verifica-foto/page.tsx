@@ -140,9 +140,9 @@ export default function VerificaFotoPage() {
       <SectionHeader title="Verifica Foto al 100%" subtitle="Carica e verifica le tue foto per aumentare la fiducia" />
 
       {/* Linee guida */}
-      <div className="rounded-lg border bg-white p-4">
-        <div className="font-semibold mb-2">Linee Guida</div>
-        <ul className="text-sm text-neutral-700 list-disc pl-5 space-y-1">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Linee Guida</div>
+        <ul className="text-sm text-gray-300 list-disc pl-5 space-y-1">
           <li>Carica immagini nitide, senza watermark invadenti, in cui tu sia presente.</li>
           <li>Formati supportati: JPG/PNG, fino a 5MB per immagine.</li>
           <li>Evita collage, testo eccessivo e foto duplicate.</li>
@@ -153,7 +153,7 @@ export default function VerificaFotoPage() {
       {/* (Spostata in fondo) Consenso legale - renderizzato più in basso */}
 
       {/* Uploader */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="font-semibold">Carica Foto</div>
           <div className="text-xs text-neutral-500">Drag & Drop non supportato: usa il bottone qui sotto</div>
@@ -166,14 +166,14 @@ export default function VerificaFotoPage() {
       </div>
 
       {/* Lista foto */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="font-semibold mb-3">Le tue foto ({photos.length})</div>
         {photos.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessuna foto caricata. Aggiungi immagini per inviarle in verifica.</div>
+          <div className="text-sm text-gray-400">Nessuna foto caricata. Aggiungi immagini per inviarle in verifica.</div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {photos.map((p) => (
-              <div key={p.id} className="border rounded-md overflow-hidden bg-white">
+              <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-700">
                 <div className="relative w-full h-56 bg-neutral-100">
                   <Image src={p.url} alt={p.name} fill className="object-cover" />
                 </div>
@@ -198,7 +198,7 @@ export default function VerificaFotoPage() {
       </div>
 
       {/* Sezione Documenti di Identità */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="font-semibold text-lg">Documenti di Identità</div>
@@ -217,9 +217,9 @@ export default function VerificaFotoPage() {
             </svg>
             CARTA D'IDENTITÀ OBBLIGATORIA
           </div>
-          <div className="bg-white border border-red-300 rounded p-3 mb-3">
-            <p className="text-red-800 font-semibold text-sm mb-2">⚠️ DOCUMENTO RICHIESTO</p>
-            <p className="text-red-700 text-xs">
+          <div className="bg-red-900 border border-red-600 rounded p-3 mb-3">
+            <p className="text-red-200 font-semibold text-sm mb-2">⚠️ DOCUMENTO RICHIESTO</p>
+            <p className="text-red-300 text-xs">
               È OBBLIGATORIO caricare la carta d'identità (fronte e retro) per poter utilizzare il sito.
               Senza questo documento non potrai pubblicare annunci o accedere alle funzionalità avanzate.
             </p>
@@ -393,9 +393,9 @@ export default function VerificaFotoPage() {
       </div>
 
       {/* Consenso legale (obbligatorio) - in fondo */}
-      <div className="rounded-lg border bg-white p-4">
-        <div className="font-semibold mb-2">Consenso legale all'utilizzo di immagini e video</div>
-        <p className="text-sm text-neutral-700 mb-2">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Consenso legale all'utilizzo di immagini e video</div>
+        <p className="text-sm text-gray-300 mb-2">
           Leggi attentamente il documento di liberatoria prima di procedere:
         </p>
         <div className="flex flex-col gap-1">
