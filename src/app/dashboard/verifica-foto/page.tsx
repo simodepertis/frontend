@@ -67,7 +67,12 @@ export default function VerificaFotoPage() {
     // Carica stato consenso legale
     (async () => {
       try {
-        const res = await fetch('/api/escort/consent');
+        const token = localStorage.getItem('auth-token');
+        const res = await fetch('/api/escort/consent', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           setConsentAcceptedAt(data?.consentAcceptedAt || null);
