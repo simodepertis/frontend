@@ -58,7 +58,9 @@ export async function GET(request: NextRequest) {
         include: { user: { select: { id: true, nome: true, slug: true } } },
         orderBy: { updatedAt: 'desc' },
       });
-      mapped = profiles.map((p) => {
+
+      // Mappa profili base
+      const base = profiles.map((p) => {
         const cities = Array.isArray(p.cities) ? (p.cities as any[]) : [];
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0,10) === todayStr : false;
         const prio = tierPriority(p.tier as any, isGirl);
@@ -72,12 +74,25 @@ export async function GET(request: NextRequest) {
           girlOfTheDay: isGirl,
           priority: prio,
           updatedAt: p.updatedAt,
-          contacts: (p as any).contacts || null,
-          isVerified: Boolean((p as any)?.verified),
-          onTour: Boolean((p as any)?.onTour),
-          bio: (p as any)?.bio || null,
-        };
+        } as any;
       }).filter(x => (!city || x.cities.length === 0 || x.cities.some((c:any)=> String(c).toLowerCase().includes(city))) && (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c:any)=> String(c).toLowerCase().includes(q)))));
+
+      // Allego cover APPROVED e calcolo verified
+      const withMeta = await Promise.all(base.map(async (it) => {
+        const cover = await prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' }, orderBy: { updatedAt: 'desc' } });
+        // KYC: tutti i documenti richiesti approvati
+        const docs = await prisma.document.findMany({
+          where: { userId: it.id, status: 'APPROVED', type: { in: ['ID_CARD_FRONT', 'ID_CARD_BACK', 'SELFIE_WITH_ID'] as any } },
+          select: { type: true }
+        });
+        const docTypes = new Set(docs.map(d => d.type));
+        const hasAllKyc = docTypes.has('ID_CARD_FRONT') && docTypes.has('ID_CARD_BACK') && docTypes.has('SELFIE_WITH_ID');
+        const isVerified = Boolean(cover) && hasAllKyc;
+        return { ...it, coverUrl: cover?.url || null, isVerified };
+      }));
+
+      // PUBBLICAZIONE: mostra solo chi ha almeno una foto APPROVED (coverUrl non null)
+      mapped = withMeta.filter(x => x.coverUrl);
     }
 
     // Sort by priority desc then updatedAt desc
@@ -88,17 +103,7 @@ export async function GET(request: NextRequest) {
     const end = start + pageSize;
     const pageItems = mapped.slice(start, end);
 
-    // Attach cover photo (latest APPROVED) for each user
-    const itemsWithCovers = await Promise.all(pageItems.map(async (it) => {
-      try {
-        const ph = await prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' }, orderBy: { updatedAt: 'desc' } });
-        return { ...it, coverUrl: ph?.url || null };
-      } catch {
-        return { ...it, coverUrl: null };
-      }
-    }));
-
-    return NextResponse.json({ total, page, pageSize, items: itemsWithCovers });
+    return NextResponse.json({ total, page, pageSize, items: pageItems });
   } catch (e) {
     return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
   }

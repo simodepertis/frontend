@@ -43,11 +43,13 @@ export default async function handler(
       prisma.user.count(),
       prisma.photo.count({ where: { status: 'IN_REVIEW' } }),
       prisma.video.count({ where: { status: 'IN_REVIEW' } }),
-      prisma.creditTransaction.count({ where: { status: 'PENDING' } }),
+      // CreditOrder has a 'status' field; count pending orders awaiting approval/payment
+      prisma.creditOrder.count({ where: { status: 'PENDING' } }),
       prisma.escortProfile.count({ where: { consentAcceptedAt: { not: null } } }),
-      prisma.creditTransaction.aggregate({
-        _sum: { amount: true },
-        where: { status: 'COMPLETED' }
+      // Sum of credits from paid orders as a proxy for credits purchased
+      prisma.creditOrder.aggregate({
+        _sum: { credits: true },
+        where: { status: 'PAID' }
       })
     ])
 
@@ -57,7 +59,7 @@ export default async function handler(
       pendingVideos,
       pendingOrders,
       pendingProfiles,
-      totalCreditsOrdered: totalCreditsOrdered._sum.amount || 0
+      totalCreditsOrdered: totalCreditsOrdered._sum.credits || 0
     }
 
     console.log('✅ Admin stats caricate:', stats)

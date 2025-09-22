@@ -14,6 +14,7 @@ export type Escort = {
   prezzo: number;
   foto: string;
   rank?: "VIP" | "ORO" | "ARGENTO" | "TITANIUM" | string;
+  isVerified?: boolean;
 };
 
 function getRankDetails(rank?: string) {
@@ -55,6 +56,11 @@ export default function EscortCard({ escort }: { escort: Escort }) {
           <FontAwesomeIcon icon={rankDetails.icon} />
           <span>{escort.rank || ""}</span>
         </div>
+        {escort.isVerified && (
+          <div title="Profilo verificato" className="absolute top-2 right-2 z-10 px-2 py-1 rounded-full text-[10px] font-bold bg-blue-600 text-white shadow">
+            ✓ Verificato
+          </div>
+        )}
         <Image src={escort.foto} alt={escort.nome} fill className="object-cover w-full h-full" sizes="(max-width: 768px) 100vw, 33vw" />
       </div>
       <div className="p-4 text-white flex-grow flex flex-col">
