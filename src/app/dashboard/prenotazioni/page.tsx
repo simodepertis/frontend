@@ -168,10 +168,10 @@ export default function PrenotazioniIstantaneePage() {
       <SectionHeader title="Prenotazioni Istantanee" subtitle="Gestisci le richieste in arrivo e la tua disponibilità" />
 
       {/* Stato prenotazioni */}
-      <div className="rounded-lg border bg-white p-4 flex items-center justify-between">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex items-center justify-between">
         <div>
-          <div className="font-semibold">Prenotazioni Istantanee</div>
-          <div className="text-sm text-neutral-600">Permetti agli utenti di prenotare direttamente negli orari disponibili.</div>
+          <div className="font-semibold text-white">Prenotazioni Istantanee</div>
+          <div className="text-sm text-gray-400">Permetti agli utenti di prenotare direttamente negli orari disponibili.</div>
         </div>
         <Button variant={enabled ? "default" : "secondary"} onClick={() => setEnabled(v => !v)}>
           {enabled ? "Disattiva" : "Attiva"}
@@ -185,7 +185,7 @@ export default function PrenotazioniIstantaneePage() {
       </div>
 
       {/* Regole principali */}
-      <div className="rounded-lg border bg-white p-4 grid md:grid-cols-2 gap-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 grid md:grid-cols-2 gap-4">
         <div>
           <div className="text-sm font-semibold mb-2">Preavviso minimo</div>
           <select value={minNotice} onChange={(e) => setMinNotice(e.target.value)} className="border rounded-md px-3 py-2 w-full">
@@ -196,7 +196,7 @@ export default function PrenotazioniIstantaneePage() {
           <div className="text-sm font-semibold mb-2">Durate consentite</div>
           <div className="flex flex-wrap gap-2">
             {DURATIONS.map(d => (
-              <button key={d} onClick={() => toggleDuration(d)} className={`text-sm px-3 py-1 rounded-full border ${allowedDurations.includes(d) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-neutral-700'}`}>
+              <button key={d} onClick={() => toggleDuration(d)} className={`text-sm px-3 py-1 rounded-full border ${allowedDurations.includes(d) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-700 text-gray-200 border-gray-600'}`}>
                 {d}
               </button>
             ))}
@@ -205,8 +205,8 @@ export default function PrenotazioniIstantaneePage() {
       </div>
 
       {/* Prezzi per durata */}
-      <div className="rounded-lg border bg-white p-4">
-        <div className="text-sm font-semibold mb-3">Prezzi (EUR)</div>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="text-sm font-semibold mb-3 text-white">Prezzi (EUR)</div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {DURATIONS.map(d => (
             <div key={d} className="flex items-center gap-2">
@@ -218,8 +218,8 @@ export default function PrenotazioniIstantaneePage() {
       </div>
 
       {/* Orari settimanali */}
-      <div className="rounded-lg border bg-white p-4">
-        <div className="text-sm font-semibold mb-3">Disponibilità settimanale</div>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="text-sm font-semibold mb-3 text-white">Disponibilità settimanale</div>
         <div className="space-y-4">
           {DAYS.map((day) => (
             <div key={day} className="border rounded-md p-3">
@@ -252,23 +252,23 @@ export default function PrenotazioniIstantaneePage() {
       </div>
 
       {/* Richieste in arrivo */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="text-sm font-semibold">Richieste ricevute</div>
+          <div className="text-sm font-semibold text-white">Richieste ricevute</div>
           <div className="flex items-center gap-3">
-            <div className="text-xs text-neutral-500">Configurazione {isConfigOk ? 'completa' : 'incompleta: abilita almeno una durata'}</div>
+            <div className="text-xs text-gray-400">Configurazione {isConfigOk ? 'completa' : 'incompleta: abilita almeno una durata'}</div>
             <Button variant="secondary" onClick={generateMock}>Genera richiesta di prova</Button>
           </div>
         </div>
         {requests.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessuna richiesta al momento.</div>
+          <div className="text-sm text-gray-400">Nessuna richiesta al momento.</div>
         ) : (
           <div className="space-y-2">
             {requests.map((r) => (
               <div key={r.id} className="border rounded-md p-3 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="font-medium text-sm">{r.name} · {r.when}</div>
-                  <div className="text-xs text-neutral-600">Durata: {r.duration}{r.note ? ` · Note: ${r.note}` : ''}</div>
+                  <div className="text-xs text-gray-400">Durata: {r.duration}{r.note ? ` · Note: ${r.note}` : ''}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   {r.status === 'new' && (

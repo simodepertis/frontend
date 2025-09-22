@@ -96,7 +96,7 @@ export default function VerificaVideoPage() {
       </div>
 
       {/* Uploader per URL */}
-      <div className="rounded-lg border bg-white p-4 space-y-3">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-3">
         <div className="font-semibold text-white">Aggiungi Video via URL</div>
         <div className="grid gap-3 md:grid-cols-2">
           <input value={title} onChange={(e)=>setTitle(e.target.value)} placeholder="Titolo" className="border rounded-md px-3 py-2" />
