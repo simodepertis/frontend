@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
 
     if (type === 'VIRTUAL') {
       // Usa i Listing virtuali pubblicati
-      const listings = await (prisma as any).listing.findMany({
-        where: { status: 'PUBLISHED' as any, type: 'VIRTUAL' as any },
+      const listings = await prisma.listing.findMany({
+        where: { status: 'PUBLISHED', type: 'VIRTUAL' },
         include: { user: { select: { id: true, nome: true, slug: true }, }, },
         orderBy: { createdAt: 'desc' },
       });
