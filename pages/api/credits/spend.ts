@@ -35,7 +35,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const tier = mapProductToTier(product.code)
     const now = new Date()
-    const expires = new Date(now.getTime() + product.durationDays * 24 * 60 * 60 * 1000)
+    const msPerDay = 24 * 60 * 60 * 1000
+    const expires = new Date(now.getTime() + product.durationDays * msPerDay)
 
     const result = await prisma.$transaction(async (tx) => {
       const updatedWallet = await tx.creditWallet.update({
@@ -43,15 +44,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         data: { balance: { decrement: product.creditsCost } },
       })
       await tx.creditTransaction.create({ data: { userId: payload.userId, amount: -product.creditsCost, type: 'SPEND', reference: product.code } })
-      await tx.escortProfile.upsert({
-        where: { userId: payload.userId },
-        update: { tier, tierExpiresAt: expires },
-        create: { userId: payload.userId, tier, tierExpiresAt: expires },
-      })
+
+      // Se è un posizionamento a giorni (POS_*), gestiamo stato pausa/ripresa in contacts JSON
+      if (product.code.startsWith('POS_')) {
+        const prof = await tx.escortProfile.upsert({
+          where: { userId: payload.userId },
+          update: { tier: 'ARGENTO', tierExpiresAt: expires },
+          create: { userId: payload.userId, tier: 'ARGENTO', tierExpiresAt: expires },
+        })
+        // Aggiorna campo contacts come JSON con stato placement
+        const contacts: any = (prof as any).contacts || {}
+        contacts.placement = {
+          code: product.code,
+          status: 'ACTIVE',
+          startedAt: now.toISOString(),
+          lastStartAt: now.toISOString(),
+          remainingDays: product.durationDays,
+        }
+        await tx.escortProfile.update({ where: { userId: payload.userId }, data: { contacts } })
+      } else {
+        await tx.escortProfile.upsert({
+          where: { userId: payload.userId },
+          update: { tier, tierExpiresAt: expires },
+          create: { userId: payload.userId, tier, tierExpiresAt: expires },
+        })
+      }
       return updatedWallet
     })
 
-    return res.json({ ok: true, wallet: { balance: result.balance }, activated: { tier, expiresAt: expires.toISOString() } })
+    return res.json({ ok: true, wallet: { balance: result.balance }, activated: { tier, expiresAt: expires.toISOString(), code: product.code } })
   } catch (e) {
     return res.status(500).json({ error: 'Errore interno' })
   }

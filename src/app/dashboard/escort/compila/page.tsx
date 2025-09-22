@@ -1,6 +1,7 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
+import ITALIAN_CITIES from "@/lib/cities";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 
@@ -252,24 +253,22 @@ export default function EscortOnboardingPage() {
             <div className="grid gap-3 max-w-xl">
               <select value={data.cities.base} onChange={(e) => setData({ ...data, cities: { ...data.cities, base: e.target.value } })} className="border rounded-md px-3 py-2">
                 <option value="">Città Base</option>
-                <option>Milano</option>
-                <option>Roma</option>
-                <option>Firenze</option>
-                <option>Napoli</option>
-                <option>Bologna</option>
+                {ITALIAN_CITIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <select value={data.cities.second} onChange={(e) => setData({ ...data, cities: { ...data.cities, second: e.target.value } })} className="border rounded-md px-3 py-2">
                   <option value="">Seconda città</option>
-                  <option>Torino</option>
-                  <option>Genova</option>
-                  <option>Verona</option>
+                  {ITALIAN_CITIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
                 <select value={data.cities.third} onChange={(e) => setData({ ...data, cities: { ...data.cities, third: e.target.value } })} className="border rounded-md px-3 py-2">
                   <option value="">Terza città</option>
-                  <option>Padova</option>
-                  <option>Trieste</option>
-                  <option>Parma</option>
+                  {ITALIAN_CITIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">

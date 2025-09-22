@@ -1,19 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ITALIAN_CITIES from "@/lib/cities";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faMapMarkerAlt, faFilter } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
 import Link from "next/link";
 
-// Città principali italiane (da espandere con le 90+ di Bakecaincontri)
-const cittaItaliane = [
-  "Milano", "Roma", "Napoli", "Torino", "Palermo", "Genova", "Bologna", "Firenze",
-  "Bari", "Catania", "Venezia", "Verona", "Messina", "Padova", "Trieste", "Brescia",
-  "Taranto", "Prato", "Reggio Calabria", "Modena", "Reggio Emilia", "Perugia",
-  "Livorno", "Ravenna", "Cagliari", "Foggia", "Rimini", "Salerno", "Ferrara", "Sassari"
-];
+// Lista centralizzata di città
+const cittaItaliane = ITALIAN_CITIES;
 
 export default function RicercaCittaPage() {
   const [cittaSelezionata, setCittaSelezionata] = useState("");
@@ -24,7 +20,7 @@ export default function RicercaCittaPage() {
   const [loading, setLoading] = useState(false);
   const [ricercaEffettuata, setRicercaEffettuata] = useState(false);
 
-  const tipoOptions = ["Escort", "Trans", "MILF", "Mature", "Giovani", "Indipendenti"];
+  const tipoOptions = ["Escort", "Gigolo", "Trans", "Centro Massaggi", "Gay", "Coppia"];
   const etaOptions = ["18-25", "26-30", "31-35", "36-40", "40+"];
   const prezzoOptions = ["50-100€", "100-150€", "150-200€", "200-300€", "300€+"];
 

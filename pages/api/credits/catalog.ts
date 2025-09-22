@@ -5,6 +5,12 @@ async function ensureDefaults() {
   const count = await prisma.creditProduct.count()
   if (count === 0) {
     await prisma.creditProduct.createMany({ data: [
+      // Posizionamenti a giorni
+      { code: 'POS_1D', label: 'Posizionamento 1 Giorno', creditsCost: 10, durationDays: 1, active: true },
+      { code: 'POS_3D', label: 'Posizionamento 3 Giorni', creditsCost: 25, durationDays: 3, active: true },
+      { code: 'POS_7D', label: 'Posizionamento 7 Giorni', creditsCost: 50, durationDays: 7, active: true },
+      { code: 'POS_15D', label: 'Posizionamento 15 Giorni', creditsCost: 90, durationDays: 15, active: true },
+      { code: 'POS_30D', label: 'Posizionamento 30 Giorni', creditsCost: 150, durationDays: 30, active: true },
       { code: 'VIP_7D', label: 'VIP 7 Giorni', creditsCost: 100, durationDays: 7, active: true },
       { code: 'TITANIO_30D', label: 'Titanio 30 Giorni', creditsCost: 150, durationDays: 30, active: true },
       { code: 'ORO_30D', label: 'Oro 30 Giorni', creditsCost: 80, durationDays: 30, active: true },
