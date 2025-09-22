@@ -10,7 +10,7 @@ export default function HappyHourPage() {
   const [qCity, setQCity] = useState("");
   const [qFree, setQFree] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [filters, setFilters] = useState({ verified: false, hasVideo: false, hasReviews: false, vip: false, natural: false, virtual: false });
+  const [filters, setFilters] = useState({ verified: false, hasVideo: false, hasReviews: false, vip: true, natural: false, virtual: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ApiItem[]>([]);

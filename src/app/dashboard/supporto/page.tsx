@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 export default function SupportoPage() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [okMsg, setOkMsg] = useState("");
   const send = (e: React.FormEvent) => {
     e.preventDefault();
     setSubject(""); setMessage("");
-    alert("Ticket inviato. Ti risponderemo via email.");
+    setOkMsg("Ticket inviato. Ti risponderemo via email.");
   };
   return (
     <div className="space-y-6">
@@ -35,6 +36,9 @@ export default function SupportoPage() {
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <h3 className="font-semibold mb-3 text-white">Apri un Ticket</h3>
+        {okMsg && (
+          <div className="mb-3 rounded-md border border-green-700 bg-green-900/40 text-green-200 px-3 py-2">{okMsg}</div>
+        )}
         <form onSubmit={send} className="grid gap-3 max-w-xl">
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Oggetto" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" required />
           <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Descrivi il problema" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 h-28" required />

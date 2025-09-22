@@ -19,9 +19,12 @@ export default function CarrelloPage() {
 
   const remove = (idx: number) => setItems((arr) => arr.filter((_, i) => i !== idx));
   const clear = () => setItems([]);
+  const [okMsg, setOkMsg] = useState("");
+  const [errMsg, setErrMsg] = useState("");
   const checkout = () => {
-    if (items.length === 0) return alert("Il carrello è vuoto");
-    alert("Checkout simulato. Integrazione pagamento verrà aggiunta in produzione.");
+    if (items.length === 0) { setErrMsg("Il carrello è vuoto"); setOkMsg(""); return; }
+    setOkMsg("Checkout simulato. Integrazione pagamento verrà aggiunta in produzione.");
+    setErrMsg("");
     setItems([]);
   };
 
@@ -29,6 +32,12 @@ export default function CarrelloPage() {
     <div className="space-y-6">
       <SectionHeader title="Carrello" subtitle="Riepilogo ordini e checkout" />
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        {okMsg && (
+          <div className="mb-3 rounded-md border border-green-700 bg-green-900/40 text-green-200 px-3 py-2">{okMsg}</div>
+        )}
+        {errMsg && (
+          <div className="mb-3 rounded-md border border-red-700 bg-red-900/40 text-red-200 px-3 py-2">{errMsg}</div>
+        )}
         {items.length === 0 ? (
           <div className="text-sm text-gray-400">Nessun articolo nel carrello.</div>
         ) : (
