@@ -45,7 +45,11 @@ export async function PATCH(request: NextRequest) {
     });
 
     console.log('🔍 DEBUG Consent - Profile updated with consent:', updatedProfile.consentAcceptedAt);
-    return NextResponse.json({ ok: true, profile: updatedProfile });
+    return NextResponse.json({ 
+      ok: true, 
+      profile: updatedProfile,
+      consentAcceptedAt: updatedProfile.consentAcceptedAt?.toISOString()
+    });
   } catch (e) {
     console.error('❌ DEBUG Consent - Error:', e);
     return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
