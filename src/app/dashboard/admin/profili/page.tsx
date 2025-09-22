@@ -26,21 +26,21 @@ export default function AdminProfiliPage() {
   async function loadProfiles() {
     try {
       const token = localStorage.getItem('auth-token');
-      // Simulated data - replace with real API call
-      setProfiles([
-        {
-          id: 1,
-          userId: 1,
-          nome: "Maria Rossi",
-          email: "maria@example.com",
-          tier: "STANDARD",
-          verified: false,
-          createdAt: "2025-01-22",
-          cities: ["Milano", "Roma"]
-        }
-      ]);
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const response = await fetch('/api/admin/profiles', { headers });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProfiles(data.profiles);
+        console.log('✅ Profili admin caricati:', data.profiles);
+      } else {
+        console.error('❌ Errore risposta API profili:', response.status);
+        setProfiles([]);
+      }
     } catch (error) {
       console.error('❌ Errore caricamento profili:', error);
+      setProfiles([]);
     } finally {
       setLoading(false);
     }
@@ -48,9 +48,28 @@ export default function AdminProfiliPage() {
 
   async function approveProfile(profileId: number) {
     try {
-      console.log(`✅ Approvazione profilo ${profileId}`);
-      // API call here
-      await loadProfiles();
+      const token = localStorage.getItem('auth-token');
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      const response = await fetch('/api/admin/profiles', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          profileId,
+          action: 'approve'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Profilo approvato:', data.message);
+        await loadProfiles();
+      } else {
+        console.error('❌ Errore approvazione profilo:', response.status);
+      }
     } catch (error) {
       console.error('❌ Errore approvazione profilo:', error);
     }
@@ -58,9 +77,28 @@ export default function AdminProfiliPage() {
 
   async function rejectProfile(profileId: number) {
     try {
-      console.log(`❌ Rifiuto profilo ${profileId}`);
-      // API call here
-      await loadProfiles();
+      const token = localStorage.getItem('auth-token');
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      const response = await fetch('/api/admin/profiles', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          profileId,
+          action: 'reject'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('❌ Profilo rifiutato:', data.message);
+        await loadProfiles();
+      } else {
+        console.error('❌ Errore rifiuto profilo:', response.status);
+      }
     } catch (error) {
       console.error('❌ Errore rifiuto profilo:', error);
     }

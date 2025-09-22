@@ -33,18 +33,37 @@ export default function AdminDashboardPage() {
       const token = localStorage.getItem('auth-token');
       const headers = { 'Authorization': `Bearer ${token}` };
       
-      // Simulated stats - in production these would come from real APIs
-      setStats({
-        totalUsers: 150,
-        pendingPhotos: 12,
-        pendingVideos: 3,
-        pendingOrders: 5,
-        pendingProfiles: 8,
-        totalCreditsOrdered: 2500
-      });
+      // Load real stats from API
+      const response = await fetch('/api/admin/stats', { headers });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data.stats);
+        console.log('✅ Statistiche admin caricate:', data.stats);
+      } else {
+        console.error('❌ Errore risposta API statistiche:', response.status);
+        // Fallback to default values if API fails
+        setStats({
+          totalUsers: 0,
+          pendingPhotos: 0,
+          pendingVideos: 0,
+          pendingOrders: 0,
+          pendingProfiles: 0,
+          totalCreditsOrdered: 0
+        });
+      }
       
     } catch (error) {
       console.error('❌ Errore caricamento statistiche admin:', error);
+      // Fallback to default values if API fails
+      setStats({
+        totalUsers: 0,
+        pendingPhotos: 0,
+        pendingVideos: 0,
+        pendingOrders: 0,
+        pendingProfiles: 0,
+        totalCreditsOrdered: 0
+      });
     } finally {
       setLoading(false);
     }

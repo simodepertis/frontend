@@ -25,27 +25,31 @@ export default function AdminUtentiPage() {
   async function loadUsers() {
     try {
       const token = localStorage.getItem('auth-token');
-      // Simulated data - replace with real API call
-      setUsers([
-        {
-          id: 1,
-          nome: "Mario Rossi",
-          email: "mario@example.com",
-          ruolo: "user",
-          createdAt: "2025-01-20",
-          lastLogin: "2025-01-22"
-        },
-        {
-          id: 2,
-          nome: "Giulia Bianchi",
-          email: "giulia@example.com",
-          ruolo: "escort",
-          createdAt: "2025-01-21",
-          lastLogin: "2025-01-22"
-        }
-      ]);
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const url = filter === 'all' ? '/api/admin/users' : `/api/admin/users?role=${filter}`;
+      const response = await fetch(url, { headers });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Transform data to match expected format
+        const transformedUsers = data.users.map((user: any) => ({
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          ruolo: user.ruolo,
+          createdAt: user.createdAt.split('T')[0], // Format date
+          lastLogin: 'N/A' // We don't have lastLogin in schema yet
+        }));
+        setUsers(transformedUsers);
+        console.log('✅ Utenti admin caricati:', transformedUsers);
+      } else {
+        console.error('❌ Errore risposta API utenti:', response.status);
+        setUsers([]);
+      }
     } catch (error) {
       console.error('❌ Errore caricamento utenti:', error);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -53,9 +57,29 @@ export default function AdminUtentiPage() {
 
   async function changeUserRole(userId: number, newRole: string) {
     try {
-      console.log(`🔄 Cambio ruolo utente ${userId} a ${newRole}`);
-      // API call here
-      await loadUsers();
+      const token = localStorage.getItem('auth-token');
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          userId,
+          action: 'changeRole',
+          newRole
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Ruolo utente cambiato:', data.user);
+        await loadUsers();
+      } else {
+        console.error('❌ Errore cambio ruolo:', response.status);
+      }
     } catch (error) {
       console.error('❌ Errore cambio ruolo:', error);
     }
@@ -65,9 +89,22 @@ export default function AdminUtentiPage() {
     if (!confirm('Sei sicuro di voler eliminare questo utente?')) return;
     
     try {
-      console.log(`🗑️ Eliminazione utente ${userId}`);
-      // API call here
-      await loadUsers();
+      const token = localStorage.getItem('auth-token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const response = await fetch(`/api/admin/users?userId=${userId}`, {
+        method: 'DELETE',
+        headers
+      });
+      
+      if (response.ok) {
+        console.log('✅ Utente eliminato con successo');
+        await loadUsers();
+      } else {
+        const data = await response.json();
+        console.error('❌ Errore eliminazione utente:', data.error);
+        alert(`Errore: ${data.error}`);
+      }
     } catch (error) {
       console.error('❌ Errore eliminazione utente:', error);
     }
@@ -106,7 +143,7 @@ export default function AdminUtentiPage() {
           Nessun utente trovato per il filtro selezionato
         </div>
       ) : (
-        <div className="bg-gray-800 rounded-lg overflow-hidden">
+        <div className="bg-gray-800 rounded-lg overflow-hidden border border-gray-600">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-700">
@@ -128,7 +165,7 @@ export default function AdminUtentiPage() {
                       <select
                         value={user.ruolo}
                         onChange={(e) => changeUserRole(user.id, e.target.value)}
-                        className="bg-gray-600 text-white rounded px-2 py-1 text-sm"
+                        className="bg-gray-600 border border-gray-500 text-white rounded px-2 py-1 text-sm"
                       >
                         <option value="user">User</option>
                         <option value="escort">Escort</option>
