@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function DebugLogin() {
   const [logs, setLogs] = useState<string[]>([]);
   const [email, setEmail] = useState("test@test.com");
   const [password, setPassword] = useState("password123");
+  const router = useRouter();
 
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
@@ -50,8 +52,8 @@ export default function DebugLogin() {
       
       // Test redirect
       setTimeout(() => {
-        addLog("🎯 Eseguendo window.location.href = '/dashboard'");
-        window.location.href = '/dashboard';
+        addLog("🎯 Eseguendo router.push('/dashboard')");
+        router.push('/dashboard');
       }, 2000);
       
     } catch (error) {
@@ -61,7 +63,7 @@ export default function DebugLogin() {
 
   const testRedirectDiretto = () => {
     addLog("🎯 Test redirect diretto...");
-    window.location.href = '/dashboard';
+    router.push('/dashboard');
   };
 
   const clearLogs = () => setLogs([]);

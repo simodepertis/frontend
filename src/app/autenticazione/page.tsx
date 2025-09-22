@@ -25,6 +25,7 @@ function AuthContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
       
       console.log('📡 Risposta login:', res.status, res.statusText);
@@ -51,8 +52,8 @@ function AuthContent() {
       console.log('✅ Login completato con successo!');
       
       // REDIRECT CORRETTO ALLA DASHBOARD
-      alert('Login completato! Clicca OK per andare alla dashboard.');
-      window.location.href = '/dashboard';
+      console.log('🔄 Reindirizzamento a:', redirect);
+      router.push(redirect);
     } catch (err: unknown) {
       console.error('❌ Errore completo login:', err);
       const message = err instanceof Error ? err.message : "Errore di autenticazione";
