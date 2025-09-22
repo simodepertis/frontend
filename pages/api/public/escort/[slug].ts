@@ -1,18 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { prisma } from '@/lib/prisma'
 
 function titleCase(s: string) {
-  return s.split(/\s+/).filter(Boolean).map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ');
+  return s.split(/\s+/).filter(Boolean).map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ')
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
   try {
-    const { slug } = await params;
-    if (!slug) return NextResponse.json({ error: 'Slug mancante' }, { status: 400 });
-    const guessName = titleCase(slug.replace(/-/g, ' ').trim());
+    const slug = String(req.query.slug || '')
+    if (!slug) return res.status(400).json({ error: 'Slug mancante' })
+    const guessName = titleCase(slug.replace(/-/g, ' ').trim())
+
     // If slug ends with -<id>, try lookup by user id directly (more robust)
-    const idMatch = slug.match(/-(\d+)$/);
-    const userIdFromSlug = idMatch ? Number(idMatch[1]) : null;
+    const idMatch = slug.match(/-(\d+)$/)
+    const userIdFromSlug = idMatch ? Number(idMatch[1]) : null
+
     const user = userIdFromSlug
       ? await prisma.user.findUnique({
           where: { id: userIdFromSlug },
@@ -55,18 +61,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
             },
             bookingSettings: true,
           }
-        });
+        })
 
-    if (!user) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 404 });
+    if (!user) return res.status(404).json({ error: 'Profilo non trovato' })
 
-    let photos = await prisma.photo.findMany({ where: { userId: user.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' }, take: 24 });
+    let photos = await prisma.photo.findMany({ where: { userId: user.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' }, take: 24 })
     if (photos.length === 0 && process.env.NODE_ENV !== 'production') {
       // In sviluppo, se non ci sono APPROVED, mostra anche bozze/in review per facilitare i test
-      photos = await prisma.photo.findMany({ where: { userId: user.id }, orderBy: { updatedAt: 'desc' }, take: 24 });
+      photos = await prisma.photo.findMany({ where: { userId: user.id }, orderBy: { updatedAt: 'desc' }, take: 24 })
     }
-    const coverUrl = photos[0]?.url || null;
-    const p = user.escortProfile as any;
-    return NextResponse.json({
+    const coverUrl = photos[0]?.url || null
+    const p: any = (user as any).escortProfile
+
+    return res.json({
       userId: user.id,
       nome: user.nome,
       slug: user.slug,
@@ -81,16 +88,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
       languages: p?.languages ?? [],
       bio: p?.bioIt ?? p?.bioEn ?? null,
       photos: photos.map(ph => ph.url),
-      booking: user.bookingSettings ? {
-        enabled: user.bookingSettings.enabled,
-        minNotice: user.bookingSettings.minNotice,
-        allowedDurations: user.bookingSettings.allowedDurations,
-        prices: user.bookingSettings.prices,
-        schedule: user.bookingSettings.schedule,
+      booking: (user as any).bookingSettings ? {
+        enabled: (user as any).bookingSettings.enabled,
+        minNotice: (user as any).bookingSettings.minNotice,
+        allowedDurations: (user as any).bookingSettings.allowedDurations,
+        prices: (user as any).bookingSettings.prices,
+        schedule: (user as any).bookingSettings.schedule,
       } : null,
       coverUrl,
-    });
+    })
   } catch (e) {
-    return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
+    return res.status(500).json({ error: 'Errore interno' })
   }
 }
