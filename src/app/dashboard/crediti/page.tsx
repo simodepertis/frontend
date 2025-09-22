@@ -98,24 +98,58 @@ export default function CreditiPage() {
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [uploadingOrderId, setUploadingOrderId] = useState<number | null>(null);
 
+  useEffect(() => {
+    loadAll();
+  }, []);
+
   async function loadAll() {
-    setLoading(true);
     try {
-      const [w, t, c, o] = await Promise.all([
-        fetch('/api/credits/wallet'),
-        fetch('/api/credits/transactions'),
+      const authHeaders = {
+        'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`
+      };
+      
+      const [w, c, t, o] = await Promise.all([
+        fetch('/api/credits/wallet', { headers: authHeaders }),
         fetch('/api/credits/catalog'),
-        fetch('/api/credits/orders'),
+        fetch('/api/credits/transactions', { headers: authHeaders }),
+        fetch('/api/credits/orders', { headers: authHeaders }),
       ]);
-      if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); }
-      if (t.ok) { const { transactions } = await t.json(); setTx(transactions || []); }
-      if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
-      if (o.ok) { const { orders } = await o.json(); setOrders(orders || []); }
-    } finally {
-      setLoading(false);
+      
+      if (w.ok) { 
+        const { wallet } = await w.json(); 
+        setBalance(wallet?.balance ?? 0); 
+        console.log(`💰 Saldo caricato: ${wallet?.balance} crediti`);
+      } else {
+        console.error('❌ Errore caricamento wallet:', await w.text());
+      }
+      
+      if (c.ok) { 
+        const { products } = await c.json(); 
+        setCatalog(products || []); 
+        console.log(`📦 Caricati ${products?.length || 0} prodotti`);
+      } else {
+        console.error('❌ Errore caricamento catalogo:', await c.text());
+      }
+      
+      if (t.ok) { 
+        const { transactions } = await t.json(); 
+        setTx(transactions || []); 
+        console.log(`📊 Caricate ${transactions?.length || 0} transazioni`);
+      } else {
+        console.error('❌ Errore caricamento transazioni:', await t.text());
+      }
+      
+      if (o.ok) { 
+        const { orders } = await o.json(); 
+        setOrders(orders || []); 
+        console.log(`🛒 Caricati ${orders?.length || 0} ordini`);
+      } else {
+        console.error('❌ Errore caricamento ordini:', await o.text());
+      }
+    } catch (e) {
+      console.error('❌ Errore caricamento dati:', e);
     }
   }
-  useEffect(() => { loadAll(); }, []);
 
   async function buyCredits() {
     const qty = Number(creditsToBuy);
@@ -214,7 +248,7 @@ export default function CreditiPage() {
           <div className="text-4xl font-extrabold">{balance} crediti</div>
         </div>
         <div className="flex items-center gap-2">
-          <input type="number" min={minCredits} value={creditsToBuy} onChange={(e) => setCreditsToBuy(Number(e.target.value))} className="border rounded-md px-3 py-2 w-28" />
+          <input type="number" min={minCredits} value={creditsToBuy} onChange={(e) => setCreditsToBuy(Number(e.target.value))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <Button onClick={buyCredits} className="h-10">Procedi al pagamento</Button>
         </div>
       </div>
@@ -295,25 +329,32 @@ export default function CreditiPage() {
           </div>
           <div className="grid md:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-neutral-600">Crediti</label>
-              <input type="number" min={10} value={orderForm.credits} onChange={(e)=>setOrderForm(p=>({...p, credits: Number(e.target.value)}))} className="border rounded-md px-3 py-2" />
+              <label className="text-sm text-gray-400">Crediti</label>
+              <input type="number" min={10} value={orderForm.credits} onChange={(e)=>setOrderForm(p=>({...p, credits: Number(e.target.value)}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-neutral-600">Metodo</label>
-              <select className="border rounded-md px-3 py-2" value={orderForm.method} onChange={(e)=>setOrderForm(p=>({...p, method: e.target.value as any}))}>
+              <label className="text-sm text-gray-400">Metodo</label>
+              <select className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" value={orderForm.method} onChange={(e)=>setOrderForm(p=>({...p, method: e.target.value as any}))}>
                 <option value="manual_bollettino">Bollettino Postale</option>
                 <option value="manual_bonifico">Bonifico Istantaneo</option>
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-neutral-600">Telefono (in causale)</label>
-              <input value={orderForm.phone} onChange={(e)=>setOrderForm(p=>({...p, phone: e.target.value}))} className="border rounded-md px-3 py-2" placeholder="es. 333 333 3333" />
+              <label className="text-sm text-gray-400">Telefono (in causale)</label>
+              <input value={orderForm.phone} onChange={(e)=>setOrderForm(p=>({...p, phone: e.target.value}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="es. 333 333 3333" />
             </div>
             <div className="flex items-end">
               <Button onClick={async ()=>{
                 setCreatingOrder(true);
                 try {
-                  const res = await fetch('/api/credits/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderForm) });
+                  const res = await fetch('/api/credits/purchase', { 
+                    method: 'POST', 
+                    headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`
+                    }, 
+                    body: JSON.stringify(orderForm) 
+                  });
                   const data = await res.json();
                   if (!res.ok) { alert(data?.error || 'Errore creazione ordine'); return; }
                   setOrderInstructions(data.istruzioni || null);
@@ -359,8 +400,8 @@ export default function CreditiPage() {
                           await loadAll();
                         } finally { setUploadingOrderId(null); }
                       }}>
-                        <input name="phone" placeholder="Telefono in causale" className="border rounded-md px-2 py-1 text-xs" defaultValue={o.phone || ''} />
-                        <input name="file" type="file" accept="image/*" className="text-xs" required />
+                        <input name="phone" placeholder="Telefono in causale" className="bg-gray-700 border border-gray-600 text-white rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" defaultValue={o.phone || ''} />
+                        <input name="file" type="file" accept="image/*" className="text-xs text-white" required />
                         <Button type="submit" className="h-8" disabled={uploadingOrderId===o.id}>{uploadingOrderId===o.id ? 'Carico…' : 'Carica ricevuta'}</Button>
                       </form>
                     )}
