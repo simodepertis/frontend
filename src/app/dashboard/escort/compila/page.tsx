@@ -180,32 +180,32 @@ export default function EscortOnboardingPage() {
     <div className="space-y-6">
       <SectionHeader title={`Compila Profilo Escort`} subtitle={`Step ${step}/6 — ${stepTitle}`} />
       {/* Barra avanzamento */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between text-sm mb-2">
-          <div className="font-semibold">Completamento profilo</div>
-          <div className="text-neutral-600">{completionPercent}%</div>
+          <div className="font-semibold text-white">Completamento profilo</div>
+          <div className="text-gray-400">{completionPercent}%</div>
         </div>
-        <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
+        <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
           <div className="h-2 bg-green-500" style={{ width: `${completionPercent}%` }} />
         </div>
       </div>
 
-      <div className="rounded-lg border bg-white p-4 space-y-6">
-        {loading && <div className="text-sm text-neutral-500">Caricamento dati dal server…</div>}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-6">
+        {loading && <div className="text-sm text-gray-400">Caricamento dati dal server…</div>}
         {step === 1 && (
           <section>
-            <h3 className="font-semibold mb-2">Su di me</h3>
-            <p className="text-sm text-neutral-600 mb-3">Scrivi almeno 200 caratteri in italiano. Puoi aggiungere anche una descrizione in inglese.</p>
+            <h3 className="font-semibold mb-2 text-white">Su di me</h3>
+            <p className="text-sm text-gray-400 mb-3">Scrivi almeno 200 caratteri in italiano. Puoi aggiungere anche una descrizione in inglese.</p>
             <div className="grid gap-3">
               <div>
-                <label className="block text-xs mb-1">Solo Lingua Italiana*</label>
-                <textarea value={data.bioIt} onChange={(e) => setData({ ...data, bioIt: e.target.value })} className="w-full border rounded-md px-3 py-2 h-40" />
-                <div className="text-xs text-neutral-500 mt-1">{data.bioIt.length} / 3000</div>
+                <label className="block text-xs mb-1 text-white">Solo Lingua Italiana*</label>
+                <textarea value={data.bioIt} onChange={(e) => setData({ ...data, bioIt: e.target.value })} className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 h-40 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <div className="text-xs text-gray-400 mt-1">{data.bioIt.length} / 3000</div>
               </div>
               <div>
-                <label className="block text-xs mb-1">Solo Lingua Inglese</label>
-                <textarea value={data.bioEn} onChange={(e) => setData({ ...data, bioEn: e.target.value })} className="w-full border rounded-md px-3 py-2 h-32" />
-                <div className="text-xs text-neutral-500 mt-1">{data.bioEn.length} / 3000</div>
+                <label className="block text-xs mb-1 text-white">Solo Lingua Inglese</label>
+                <textarea value={data.bioEn} onChange={(e) => setData({ ...data, bioEn: e.target.value })} className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 h-32 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <div className="text-xs text-gray-400 mt-1">{data.bioEn.length} / 3000</div>
               </div>
             </div>
           </section>
@@ -213,16 +213,16 @@ export default function EscortOnboardingPage() {
 
         {step === 2 && (
           <section>
-            <h3 className="font-semibold mb-2">Lingue</h3>
-            <p className="text-sm text-neutral-600 mb-3">Seleziona lingua e livello, poi premi “+”.</p>
+            <h3 className="font-semibold mb-2 text-white">Lingue</h3>
+            <p className="text-sm text-gray-400 mb-3">Seleziona lingua e livello, poi premi “+”.</p>
             <LangAdder data={data} setData={setData} />
           </section>
         )}
 
         {step === 3 && (
           <section>
-            <h3 className="font-semibold mb-2">Città di lavoro</h3>
-            <p className="text-sm text-neutral-600 mb-3">Imposta la città base e opzionalmente altre città. Specifica CAP e disponibilità.</p>
+            <h3 className="font-semibold mb-2 text-white">Città di lavoro</h3>
+            <p className="text-sm text-gray-400 mb-3">Imposta la città base e opzionalmente altre città. Specifica CAP e disponibilità.</p>
             <div className="grid gap-3 max-w-xl">
               <select value={data.cities.base} onChange={(e) => setData({ ...data, cities: { ...data.cities, base: e.target.value } })} className="border rounded-md px-3 py-2">
                 <option value="">Città Base</option>
@@ -259,7 +259,7 @@ export default function EscortOnboardingPage() {
 
         {step === 4 && (
           <section>
-            <h3 className="font-semibold mb-2">Servizi</h3>
+            <h3 className="font-semibold mb-2 text-white">Servizi</h3>
             <div className="grid gap-4 max-w-3xl">
               <div>
                 <label className="block text-xs mb-1">Orientamento Sessuale</label>
@@ -313,7 +313,7 @@ export default function EscortOnboardingPage() {
 
               <div>
                 <label className="block text-xs mb-1">Servizi Aggiuntivi (note)</label>
-                <textarea value={data.services.notes} onChange={(e) => setData({ ...data, services: { ...data.services, notes: e.target.value } })} className="w-full border rounded-md px-3 py-2 h-24" />
+                <textarea value={data.services.notes} onChange={(e) => setData({ ...data, services: { ...data.services, notes: e.target.value } })} className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 h-24" />
               </div>
             </div>
           </section>
@@ -321,8 +321,8 @@ export default function EscortOnboardingPage() {
 
         {step === 5 && (
           <section>
-            <h3 className="font-semibold mb-2">Tariffe</h3>
-            <p className="text-sm text-neutral-600 mb-3">Seleziona durata e prezzo, poi premi “+”. Le tariffe aggiunte appariranno nella lista.</p>
+            <h3 className="font-semibold mb-2 text-white">Tariffe</h3>
+            <p className="text-sm text-gray-400 mb-3">Seleziona durata e prezzo, poi premi “+”. Le tariffe aggiunte appariranno nella lista.</p>
             <RateAdder
               label="Tariffe Incall"
               items={data.rates.incall}
@@ -339,8 +339,8 @@ export default function EscortOnboardingPage() {
 
         {step === 6 && (
           <section>
-            <h3 className="font-semibold mb-2">Contatti</h3>
-            <p className="text-sm text-neutral-600 mb-3">Indica un numero valido (verifica in futuro) e i recapiti di prenotazione.</p>
+            <h3 className="font-semibold mb-2 text-white">Contatti</h3>
+            <p className="text-sm text-gray-400 mb-3">Indica un numero valido (verifica in futuro) e i recapiti di prenotazione.</p>
             <div className="grid gap-3 max-w-xl">
               <div className="grid grid-cols-[140px,1fr] gap-2">
                 <select value={data.contacts.phoneCode} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phoneCode: e.target.value } })} className="border rounded-md px-3 py-2">
