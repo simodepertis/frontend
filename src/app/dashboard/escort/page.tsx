@@ -116,28 +116,28 @@ export default function EscortDashboardPage() {
   }
   function tierClasses(code: string) {
     if (code.startsWith('VIP')) return {
-      card: 'bg-gradient-to-br from-yellow-50 to-amber-100 border-amber-200 hover:shadow-amber-200/60',
-      pill: 'bg-yellow-400 text-black',
-      cta: 'bg-yellow-500 hover:bg-yellow-600 text-black',
-      ring: 'ring-yellow-400',
+      card: 'bg-gradient-to-br from-yellow-900 to-amber-800 border-amber-600 hover:shadow-amber-900/60',
+      pill: 'bg-yellow-600 text-yellow-100',
+      cta: 'bg-yellow-600 hover:bg-yellow-700 text-white',
+      ring: 'ring-yellow-500',
     };
     if (code.startsWith('TITANIO')) return {
-      card: 'bg-gradient-to-br from-sky-50 to-blue-100 border-blue-200 hover:shadow-blue-200/60',
-      pill: 'bg-sky-700 text-white',
-      cta: 'bg-sky-700 hover:bg-sky-800 text-white',
+      card: 'bg-gradient-to-br from-sky-900 to-blue-800 border-blue-600 hover:shadow-blue-900/60',
+      pill: 'bg-sky-600 text-sky-100',
+      cta: 'bg-sky-600 hover:bg-sky-700 text-white',
       ring: 'ring-sky-500',
     };
     if (code.startsWith('ORO')) return {
-      card: 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-200 hover:shadow-amber-200/60',
-      pill: 'bg-amber-300 text-black',
-      cta: 'bg-amber-400 hover:bg-amber-500 text-black',
-      ring: 'ring-amber-400',
+      card: 'bg-gradient-to-br from-amber-900 to-yellow-800 border-amber-600 hover:shadow-amber-900/60',
+      pill: 'bg-amber-600 text-amber-100',
+      cta: 'bg-amber-600 hover:bg-amber-700 text-white',
+      ring: 'ring-amber-500',
     };
     if (code.startsWith('ARGENTO')) return {
-      card: 'bg-gradient-to-br from-zinc-50 to-gray-100 border-gray-200 hover:shadow-gray-200/60',
-      pill: 'bg-zinc-300 text-neutral-900',
-      cta: 'bg-zinc-700 hover:bg-zinc-800 text-white',
-      ring: 'ring-zinc-400',
+      card: 'bg-gradient-to-br from-zinc-800 to-gray-700 border-gray-500 hover:shadow-gray-800/60',
+      pill: 'bg-zinc-600 text-zinc-100',
+      cta: 'bg-zinc-600 hover:bg-zinc-700 text-white',
+      ring: 'ring-zinc-500',
     };
     return {
       card: 'bg-gray-800 border-gray-600',

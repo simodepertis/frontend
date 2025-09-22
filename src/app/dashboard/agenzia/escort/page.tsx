@@ -87,8 +87,8 @@ export default function AgencyManageEscortsPage() {
     <div className="space-y-6">
       <SectionHeader title="Gestione Escort" subtitle="Collega o scollega i profili Escort alla tua Agenzia" />
 
-      <div className="rounded-lg border bg-white p-4 space-y-3">
-        <div className="text-sm text-neutral-700">Per collegare una escort, inserisci l'ID Utente dell'Escort e conferma. In futuro potremo aggiungere una ricerca avanzata.</div>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-3">
+        <div className="text-sm text-gray-300">Per collegare una escort, inserisci l'ID Utente dell'Escort e conferma. In futuro potremo aggiungere una ricerca avanzata.</div>
         <div className="flex items-center gap-2">
           <input value={escortUserId} onChange={(e) => setEscortUserId(e.target.value)} placeholder="ID Utente Escort" className="border rounded-md px-3 py-2 w-48" />
           <Button onClick={() => linkEscort('link')} disabled={!escortUserId || linking}>Collega</Button>
@@ -150,8 +150,8 @@ export default function AgencyManageEscortsPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-white p-4">
-        <div className="font-semibold mb-3">Escort collegate ({rows.length})</div>
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-3 text-white">Escort collegate ({rows.length})</div>
         {loading ? (
           <div className="text-sm text-neutral-500">Caricamento…</div>
         ) : rows.length === 0 ? (

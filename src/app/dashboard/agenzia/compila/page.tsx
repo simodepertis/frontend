@@ -120,10 +120,10 @@ export default function AgencyOnboardingPage() {
     <div className="space-y-6">
       <SectionHeader title="Compila Profilo Agenzia" subtitle={`Step ${step}/5 — ${stepTitle}`} />
 
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between text-sm mb-2">
-          <div className="font-semibold">Completamento profilo</div>
-          <div className="text-neutral-600">{completion}%</div>
+          <div className="font-semibold text-white">Completamento profilo</div>
+          <div className="text-gray-400">{completion}%</div>
         </div>
         <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
           <div className="h-2 bg-green-500" style={{ width: `${completion}%` }} />
@@ -131,7 +131,7 @@ export default function AgencyOnboardingPage() {
       </div>
 
       <div className="rounded-lg border bg-white p-4 space-y-6">
-        {loading && <div className="text-sm text-neutral-500">Caricamento dati…</div>}
+        {loading && <div className="text-sm text-gray-400">Caricamento dati…</div>}
 
         {step === 1 && (
           <section className="space-y-3">
@@ -152,7 +152,7 @@ export default function AgencyOnboardingPage() {
               <div className="font-semibold mb-1">Lingue offerte</div>
               <div className="flex flex-wrap gap-2">
                 {LANGS.map(l => (
-                  <button key={l} onClick={() => setData({ ...data, languages: data.languages.includes(l) ? data.languages.filter(x => x !== l) : [...data.languages, l] })} className={`text-sm px-3 py-1 rounded-full border ${data.languages.includes(l) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-neutral-700'}`}>{l}</button>
+                  <button key={l} onClick={() => setData({ ...data, languages: data.languages.includes(l) ? data.languages.filter(x => x !== l) : [...data.languages, l] })} className={`text-sm px-3 py-1 rounded-full border ${data.languages.includes(l) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-700 text-gray-200 border-gray-600'}`}>{l}</button>
                 ))}
               </div>
             </div>
@@ -168,7 +168,7 @@ export default function AgencyOnboardingPage() {
             <div className="font-semibold">Servizi</div>
             <div className="flex flex-wrap gap-2">
               {SERVICE_BANK.map(s => (
-                <button key={s} onClick={() => setData({ ...data, services: data.services.includes(s) ? data.services.filter(x => x !== s) : [...data.services, s] })} className={`text-sm px-3 py-1 rounded-full border ${data.services.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-neutral-700'}`}>{s}</button>
+                <button key={s} onClick={() => setData({ ...data, services: data.services.includes(s) ? data.services.filter(x => x !== s) : [...data.services, s] })} className={`text-sm px-3 py-1 rounded-full border ${data.services.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-700 text-gray-200 border-gray-600'}`}>{s}</button>
               ))}
             </div>
           </section>

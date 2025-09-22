@@ -35,34 +35,34 @@ export default function DashboardAgenziaPage() {
   }
   function tierClasses(code: string) {
     if (code.startsWith('VIP')) return {
-      card: 'bg-gradient-to-br from-yellow-50 to-amber-100 border-amber-200 hover:shadow-amber-200/60',
-      pill: 'bg-yellow-400 text-black',
-      cta: 'bg-yellow-500 hover:bg-yellow-600 text-black',
-      ring: 'ring-yellow-400',
+      card: 'bg-gradient-to-br from-yellow-900 to-amber-800 border-amber-600 hover:shadow-amber-900/60',
+      pill: 'bg-yellow-600 text-yellow-100',
+      cta: 'bg-yellow-600 hover:bg-yellow-700 text-white',
+      ring: 'ring-yellow-500',
     };
     if (code.startsWith('TITANIO')) return {
-      card: 'bg-gradient-to-br from-sky-50 to-blue-100 border-blue-200 hover:shadow-blue-200/60',
-      pill: 'bg-sky-700 text-white',
-      cta: 'bg-sky-700 hover:bg-sky-800 text-white',
+      card: 'bg-gradient-to-br from-sky-900 to-blue-800 border-blue-600 hover:shadow-blue-900/60',
+      pill: 'bg-sky-600 text-sky-100',
+      cta: 'bg-sky-600 hover:bg-sky-700 text-white',
       ring: 'ring-sky-500',
     };
     if (code.startsWith('ORO')) return {
-      card: 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-200 hover:shadow-amber-200/60',
-      pill: 'bg-amber-300 text-black',
-      cta: 'bg-amber-400 hover:bg-amber-500 text-black',
-      ring: 'ring-amber-400',
+      card: 'bg-gradient-to-br from-amber-900 to-yellow-800 border-amber-600 hover:shadow-amber-900/60',
+      pill: 'bg-amber-600 text-amber-100',
+      cta: 'bg-amber-600 hover:bg-amber-700 text-white',
+      ring: 'ring-amber-500',
     };
     if (code.startsWith('ARGENTO')) return {
-      card: 'bg-gradient-to-br from-zinc-50 to-gray-100 border-gray-200 hover:shadow-gray-200/60',
-      pill: 'bg-zinc-300 text-neutral-900',
-      cta: 'bg-zinc-700 hover:bg-zinc-800 text-white',
-      ring: 'ring-zinc-400',
+      card: 'bg-gradient-to-br from-zinc-800 to-gray-700 border-gray-500 hover:shadow-gray-800/60',
+      pill: 'bg-zinc-600 text-zinc-100',
+      cta: 'bg-zinc-600 hover:bg-zinc-700 text-white',
+      ring: 'ring-zinc-500',
     };
     return {
-      card: 'bg-white border-neutral-200',
-      pill: 'bg-neutral-200 text-neutral-800',
-      cta: 'bg-neutral-900 hover:bg-black text-white',
-      ring: 'ring-neutral-300',
+      card: 'bg-gray-800 border-gray-600',
+      pill: 'bg-gray-600 text-gray-200',
+      cta: 'bg-blue-600 hover:bg-blue-700 text-white',
+      ring: 'ring-gray-500',
     };
   }
 
@@ -136,7 +136,7 @@ export default function DashboardAgenziaPage() {
       <SectionHeader title="Dashboard Agenzia" subtitle="Strumenti rapidi e stato profilo" />
 
       {/* Stato profilo */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between text-sm mb-2">
           <div className="font-semibold">Completamento profilo</div>
           <div className="text-neutral-600">{completion}%</div>
@@ -151,34 +151,34 @@ export default function DashboardAgenziaPage() {
 
       {/* Azioni rapide */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border bg-white p-4 flex flex-col justify-between">
+        <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex flex-col justify-between">
           <div>
-            <div className="font-semibold mb-1">Gestisci Prenotazioni</div>
-            <div className="text-sm text-neutral-600">Configura disponibilità e gestisci le richieste dei clienti.</div>
+            <div className="font-semibold mb-1 text-white">Gestisci Prenotazioni</div>
+            <div className="text-sm text-gray-400">Configura disponibilità e gestisci le richieste dei clienti.</div>
           </div>
-          <div className="pt-3"><Link href="/dashboard/prenotazioni" className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold">Apri Prenotazioni</Link></div>
+          <div className="pt-3"><Link href="/dashboard/prenotazioni" className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Apri Prenotazioni</Link></div>
         </div>
-        <div className="rounded-lg border bg-white p-4 flex flex-col justify-between">
+        <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex flex-col justify-between">
           <div>
-            <div className="font-semibold mb-1">Promuovi l'Agenzia</div>
-            <div className="text-sm text-neutral-600">Acquista pacchetti promozionali e Happy Hour.</div>
+            <div className="font-semibold mb-1 text-white">Promuovi l'Agenzia</div>
+            <div className="text-sm text-gray-400">Acquista pacchetti promozionali e Happy Hour.</div>
           </div>
-          <div className="pt-3"><Link href="/dashboard/pubblicita" className="px-4 py-2 rounded-md bg-pink-600 text-white text-sm font-semibold">Vai a Pubblicità</Link></div>
+          <div className="pt-3"><Link href="/dashboard/pubblicita" className="px-4 py-2 rounded-md bg-pink-600 hover:bg-pink-700 text-white text-sm font-semibold">Vai a Pubblicità</Link></div>
         </div>
-        <div className="rounded-lg border bg-white p-4 flex flex-col justify-between">
+        <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex flex-col justify-between">
           <div>
-            <div className="font-semibold mb-1">Tour Città</div>
-            <div className="text-sm text-neutral-600">Pianifica e comunica le date in tour per le tue modelle.</div>
+            <div className="font-semibold mb-1 text-white">Tour Città</div>
+            <div className="text-sm text-gray-400">Pianifica e comunica le date in tour per le tue modelle.</div>
           </div>
-          <div className="pt-3"><Link href="/dashboard/tour-citta" className="px-4 py-2 rounded-md bg-neutral-800 text-white text-sm font-semibold">Gestisci Tour</Link></div>
+          <div className="pt-3"><Link href="/dashboard/tour-citta" className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Gestisci Tour</Link></div>
         </div>
       </div>
 
       {/* Promuovi Agenzia */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <div className="text-lg font-semibold">Promuovi la tua Agenzia</div>
+            <div className="text-lg font-semibold text-white">Promuovi la tua Agenzia</div>
             <div className="text-xs text-neutral-600">Saldo: {wallet ?? '—'} crediti</div>
           </div>
           <Link href="/dashboard/crediti" className="text-sm text-blue-600 hover:underline">Vedi tutti i pacchetti</Link>
@@ -192,7 +192,7 @@ export default function DashboardAgenziaPage() {
               return (
                 <div key={p.code} className={`relative rounded-2xl border p-4 transition-shadow hover:shadow-xl ${s.card}`}>
                   <div className="flex items-center gap-3 mb-2">
-                    <div className={`w-9 h-9 grid place-items-center rounded-full bg-white/80 ${s.ring} ring-2 text-neutral-800`}>
+                    <div className={`w-9 h-9 grid place-items-center rounded-full bg-gray-700 ${s.ring} ring-2 text-white`}>
                       <FontAwesomeIcon icon={tierIcon(p.code)} />
                     </div>
                     <div>
@@ -216,7 +216,7 @@ export default function DashboardAgenziaPage() {
       </div>
 
       {/* Richieste recenti */}
-      <div className="rounded-lg border bg-white p-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="font-semibold">Richieste recenti</div>
           <Link href="/dashboard/prenotazioni" className="text-blue-600 hover:underline text-sm">Vedi tutto</Link>
