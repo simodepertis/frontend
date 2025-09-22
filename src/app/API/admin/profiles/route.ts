@@ -55,15 +55,23 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 DEBUG Admin Profiles - Users with profiles:', profilesWithEscortProfile.length);
 
-    const formattedProfiles = profilesWithEscortProfile.map(user => ({
+    // FILTRO: Mostra solo escort che hanno pubblicato (con consenso)
+    const publishedProfiles = profilesWithEscortProfile.filter(user => 
+      user.escortProfile && user.escortProfile.consentAcceptedAt
+    );
+
+    console.log('🔍 DEBUG Admin Profiles - Profiles with consent:', publishedProfiles.length);
+
+    const formattedProfiles = publishedProfiles.map(user => ({
       id: user.escortProfile!.id, // Use escort profile ID for approval
       userId: user.id,
       nome: user.nome,
       email: user.email,
       tier: user.escortProfile!.tier || 'STANDARD',
-      verified: !!user.escortProfile!.consentAcceptedAt, // True if has consent
+      verified: true, // All these have consent
       createdAt: user.createdAt.toISOString().split('T')[0],
-      cities: user.escortProfile!.cities ? (Array.isArray(user.escortProfile!.cities) ? user.escortProfile!.cities : []) : []
+      cities: user.escortProfile!.cities ? (Array.isArray(user.escortProfile!.cities) ? user.escortProfile!.cities : []) : [],
+      consentDate: user.escortProfile!.consentAcceptedAt?.toISOString().split('T')[0]
     }));
 
     console.log('🔍 DEBUG Admin Profiles - Formatted profiles:', formattedProfiles.length);

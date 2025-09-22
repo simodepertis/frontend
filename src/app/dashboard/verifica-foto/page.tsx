@@ -426,10 +426,13 @@ export default function VerificaFotoPage() {
                 });
                 if (res.ok) {
                   const data = await res.json();
+                  console.log('✅ Consenso registrato:', data);
                   setConsentAcceptedAt(data?.consentAcceptedAt || new Date().toISOString());
-                  alert('Consenso registrato. Puoi procedere.');
+                  alert('Consenso registrato con successo! Il tuo profilo è ora in attesa di approvazione.');
                 } else {
-                  alert('Non è stato possibile registrare il consenso. Riprova.');
+                  const errorData = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
+                  console.error('❌ Errore consenso:', res.status, errorData);
+                  alert(`Errore: ${errorData.error || 'Non è stato possibile registrare il consenso'}. Controlla la console per dettagli.`);
                 }
               } finally {
                 setConsentSaving(false);
