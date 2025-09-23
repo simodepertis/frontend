@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 
 async function requireAdmin(req: NextApiRequest) {
   const token = req.headers.authorization?.replace('Bearer ', '')
@@ -26,21 +27,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (req.method === 'POST') {
       const { code, label, creditsCost, durationDays, pricePerDayCredits, minDays, maxDays } = req.body || {}
-      if (!code || !label || !Number.isFinite(creditsCost) || !Number.isFinite(durationDays)) {
-        return res.status(400).json({ error: 'Campi mancanti' })
+      if (!code || !label) {
+        return res.status(400).json({ error: 'Codice e label sono obbligatori' })
       }
-      const created = await prisma.creditProduct.create({
-        data: {
-          code: String(code),
-          label: String(label),
-          creditsCost: Number(creditsCost),
-          durationDays: Number(durationDays),
-          pricePerDayCredits: pricePerDayCredits != null ? Number(pricePerDayCredits) : null,
-          minDays: minDays != null ? Number(minDays) : null,
-          maxDays: maxDays != null ? Number(maxDays) : null,
+      const cc = Number(creditsCost)
+      const dd = Number(durationDays)
+      if (!Number.isFinite(cc) || cc <= 0) return res.status(400).json({ error: 'Crediti non validi' })
+      if (!Number.isFinite(dd) || dd <= 0) return res.status(400).json({ error: 'Durata (giorni) non valida' })
+      try {
+        const created = await prisma.creditProduct.create({
+          data: {
+            code: String(code),
+            label: String(label),
+            creditsCost: cc,
+            durationDays: dd,
+            pricePerDayCredits: pricePerDayCredits != null && pricePerDayCredits !== '' ? Number(pricePerDayCredits) : null,
+            minDays: minDays != null && minDays !== '' ? Number(minDays) : null,
+            maxDays: maxDays != null && maxDays !== '' ? Number(maxDays) : null,
+          }
+        })
+        return res.json({ product: created })
+      } catch (e:any) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+          return res.status(409).json({ error: 'Codice già esistente. Modifica il pacchetto esistente nelle card sotto.' })
         }
-      })
-      return res.json({ product: created })
+        console.error('Create product error', e)
+        return res.status(500).json({ error: 'Errore interno' })
+      }
     }
 
     if (req.method === 'PATCH') {

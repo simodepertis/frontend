@@ -84,6 +84,10 @@ export default function AdminCatalogoCreditiPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Admin · Catalogo Crediti" subtitle="Gestisci prodotti, prezzi in crediti e durata" />
+      <div className="rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-sm p-3">
+        <div className="font-semibold mb-1">Come modificare i pacchetti</div>
+        <div>Per cambiare il prezzo/giorno di un pacchetto ESISTENTE usa le card qui sotto (sezione "Imposta prezzo/giorno"). Il box sopra "Crea prodotto" serve solo per <strong>aggiungere</strong> un nuovo pacchetto.</div>
+      </div>
 
       {/* Tasso di conversione crediti/€ */}
       <div className="rounded-xl border border-gray-600 bg-gray-800 p-5 space-y-3 max-w-2xl">
@@ -188,32 +192,18 @@ export default function AdminCatalogoCreditiPage() {
                   </div>
                   <div className="text-xs text-gray-400 mt-1">1 € = {rate} crediti → {Math.max(0, Math.round((Number(euroMap[p.id]||0))*rate))} crediti</div>
                 </div>
-                {/* Aggiornamento variabile: prezzo/giorno e range giorni */}
-                <div className="grid md:grid-cols-3 gap-2">
+                {/* Aggiornamento variabile semplificato: prezzo/giorno (min=1, max=60 automatici) */}
+                <div className="grid md:grid-cols-2 gap-2">
                   <div className="flex items-center gap-2">
-                    <input type="number" placeholder="Prezzo/giorno" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`pd_${p.id}`]: e.target.value }))} value={(euroMap as any)[`pd_${p.id}`] ?? ''} />
+                    <input type="number" placeholder="Prezzo/giorno (crediti)" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`pd_${p.id}`]: e.target.value }))} value={(euroMap as any)[`pd_${p.id}`] ?? ''} />
                     <Button variant="secondary" disabled={updatingId === p.id} onClick={()=>{
                       const v = Number((euroMap as any)[`pd_${p.id}`] || 0);
                       if (!Number.isFinite(v) || v <= 0) { alert('Prezzo/giorno non valido'); return; }
-                      updateProduct(p.id, { pricePerDayCredits: v });
-                    }}>Aggiorna prezzo/giorno</Button>
+                      // Imposta anche min/max default per semplicità
+                      updateProduct(p.id, { pricePerDayCredits: v, minDays: (p.minDays ?? 1), maxDays: (p.maxDays ?? 60) });
+                    }}>Salva prezzo/giorno</Button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input type="number" placeholder="Min giorni" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`min_${p.id}`]: e.target.value }))} value={(euroMap as any)[`min_${p.id}`] ?? ''} />
-                    <Button variant="secondary" disabled={updatingId === p.id} onClick={()=>{
-                      const v = Number((euroMap as any)[`min_${p.id}`] || 0);
-                      if (!Number.isFinite(v) || v <= 0) { alert('Min giorni non valido'); return; }
-                      updateProduct(p.id, { minDays: v });
-                    }}>Aggiorna min</Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input type="number" placeholder="Max giorni" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`max_${p.id}`]: e.target.value }))} value={(euroMap as any)[`max_${p.id}`] ?? ''} />
-                    <Button variant="secondary" disabled={updatingId === p.id} onClick={()=>{
-                      const v = Number((euroMap as any)[`max_${p.id}`] || 0);
-                      if (!Number.isFinite(v) || v <= 0) { alert('Max giorni non valido'); return; }
-                      updateProduct(p.id, { maxDays: v });
-                    }}>Aggiorna max</Button>
-                  </div>
+                  <div className="text-xs text-gray-400 self-center">Se non impostati, min=1 e max=60 giorni verranno applicati automaticamente.</div>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
                   <Button variant="secondary" disabled={updatingId === p.id} onClick={() => updateProduct(p.id, { active: !p.active })}>{p.active ? 'Disattiva' : 'Attiva'}</Button>
