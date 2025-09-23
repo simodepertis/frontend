@@ -55,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         url: publicUrl,
         name: file.originalFilename || path.basename(finalPath),
         size: Number(file.size || 0),
-        // status defaults to DRAFT per schema
+        status: 'IN_REVIEW' as any,
       },
     })
 

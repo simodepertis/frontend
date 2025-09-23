@@ -29,7 +29,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Map action to status enum used by schema
   const status = act.startsWith('IN_') ? 'IN_REVIEW' : 'DRAFT'
+  console.log('🟡 Photo status PATCH escort:', { userId: user.id, photoId: pid, from: photo.status, to: status })
   const updated = await prisma.photo.update({ where: { id: pid }, data: { status: status as any } })
+  console.log('✅ Photo status updated:', { photoId: pid, newStatus: updated.status })
 
   return res.json({ ok: true, photo: updated })
 }
