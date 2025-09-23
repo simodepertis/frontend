@@ -38,6 +38,23 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      // Root of old flow -> nuova landing Compila (contatti)
+      { source: '/dashboard/mio-profilo', destination: '/dashboard/escort/compila/contatti', permanent: false },
+      { source: '/dashboard/mio-profilo/', destination: '/dashboard/escort/compila/contatti', permanent: false },
+
+      // Sezioni specifiche -> nuove sezioni
+      { source: '/dashboard/mio-profilo/contatti', destination: '/dashboard/escort/compila/contatti', permanent: false },
+      { source: '/dashboard/mio-profilo/biografia', destination: '/dashboard/escort/compila/biografia', permanent: false },
+      { source: '/dashboard/mio-profilo/lingue', destination: '/dashboard/escort/compila/lingue', permanent: false },
+      { source: '/dashboard/mio-profilo/citta-di-lavoro', destination: '/dashboard/escort/compila/citta-di-lavoro', permanent: false },
+      { source: '/dashboard/mio-profilo/servizi', destination: '/dashboard/escort/compila/servizi', permanent: false },
+      { source: '/dashboard/mio-profilo/orari', destination: '/dashboard/escort/compila/orari', permanent: false },
+      { source: '/dashboard/mio-profilo/tariffe', destination: '/dashboard/escort/compila/tariffe', permanent: false },
+      { source: '/dashboard/mio-profilo/foto-naturale', destination: '/dashboard/escort/compila/contatti', permanent: false },
+    ]
+  },
 };
 
 export default nextConfig;
