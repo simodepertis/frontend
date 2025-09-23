@@ -86,6 +86,10 @@ model AdminSettings {
   id               Int     @id @default(autoincrement())
   creditValueCents Int     @default(100) // default 1.00 EUR per credito
   currency         String  @default("EUR")
+  // New: pricing for placement per-day in credits, and allowed day range
+  placementPricePerDayCredits Int     @default(10)
+  placementMinDays            Int     @default(1)
+  placementMaxDays            Int     @default(60)
   updatedAt        DateTime @updatedAt
 }
 
