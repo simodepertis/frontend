@@ -38,5 +38,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.json({ ok: true })
   }
 
+  if (req.method === 'PATCH') {
+    const { id, isFace } = req.body || {}
+    const photoId = Number(id || 0)
+    if (!photoId || typeof isFace !== 'boolean') return res.status(400).json({ error: 'Parametri non validi' })
+    const p = await prisma.photo.findUnique({ where: { id: photoId } })
+    if (!p || p.userId !== user.id) return res.status(404).json({ error: 'Non trovato' })
+    const updated = await prisma.photo.update({ where: { id: photoId }, data: { isFace } })
+    return res.json({ ok: true, photo: updated })
+  }
+
   return res.status(405).json({ error: 'Method not allowed' })
 }

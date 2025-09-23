@@ -91,6 +91,11 @@ export default function AdminMediaFotoPage() {
             <div key={it.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-800">
               <div className="relative w-full aspect-[3/4]">
                 <Image src={it.url} alt={`Foto ${it.id}`} fill className="object-cover" />
+                {(it as any).isFace && (
+                  <div title="Foto del volto" className="absolute top-2 left-2 z-10 px-2 py-1 rounded-full text-[10px] font-bold bg-blue-600 text-white shadow">
+                    Volto
+                  </div>
+                )}
                 {it.status === 'APPROVED' && (
                   <div title="Foto verificata" className="absolute top-2 right-2 z-10 px-2 py-1 rounded-full text-[10px] font-bold bg-green-600 text-green-100 shadow">
                     ✓ Foto verificata

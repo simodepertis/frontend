@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 export default function VerificaFotoPage() {
-  type PhotoItem = { id: string; name: string; url: string; size: number; status: "bozza" | "in_review" | "approvata" | "rifiutata" };
+  type PhotoItem = { id: string; name: string; url: string; size: number; status: "bozza" | "in_review" | "approvata" | "rifiutata"; isFace?: boolean };
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -38,6 +38,7 @@ export default function VerificaFotoPage() {
               url: p.url,
               size: p.size,
               status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : p.status === 'IN_REVIEW' ? 'in_review' : 'bozza',
+              isFace: !!p.isFace,
             }));
             setPhotos((prev) => {
               // unisci evitando duplicati per id
@@ -122,17 +123,13 @@ export default function VerificaFotoPage() {
   const sendForReview = async () => {
     setSubmitting(true);
     try {
-      const drafts = photos.filter(p => p.status === 'bozza');
-      await Promise.all(drafts.map(async (p) => {
-        const idNum = Number(p.id);
-        if (Number.isNaN(idNum)) return;
-        try {
-          const token = localStorage.getItem('auth-token') || '';
-          await fetch('/api/escort/photos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, action: 'in_review' }) });
-        } catch {}
-      }));
-      setPhotos((prev) => prev.map(p => p.status === 'bozza' ? { ...p, status: 'in_review' } : p));
-      alert("Foto inviate per verifica. Riceverai un aggiornamento appena possibile.");
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/escort/photos/submit', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+      const j = await res.json().catch(()=>({}));
+      if (!res.ok) { alert(j?.error || 'Errore invio a verifica'); return; }
+      // porta tutte a in_review lato UI
+      setPhotos((prev) => prev.map(p => ({ ...p, status: 'in_review' })));
+      alert('Foto inviate in revisione. Requisiti: min 3 foto, almeno una col volto.');
     } finally {
       setSubmitting(false);
     }
@@ -154,7 +151,7 @@ export default function VerificaFotoPage() {
           <li>Carica immagini nitide, senza watermark invadenti, in cui tu sia presente.</li>
           <li>Formati supportati: JPG/PNG, fino a 5MB per immagine.</li>
           <li>Evita collage, testo eccessivo e foto duplicate.</li>
-          <li>Privilegiamo foto in cui il volto sia visibile o in alternativa segni distintivi.</li>
+          <li><strong>Obbligatorio</strong>: almeno 3 foto totali e <strong>minimo 1 foto del volto</strong>.</li>
         </ul>
       </div>
 
@@ -184,6 +181,9 @@ export default function VerificaFotoPage() {
               <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-700">
                 <div className="relative w-full h-56 bg-neutral-100">
                   <Image src={p.url} alt={p.name} fill className="object-cover" />
+                  {p.isFace && (
+                    <div className="absolute top-2 left-2 text-[10px] font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</div>
+                  )}
                 </div>
                 <div className="p-3 flex items-center justify-between">
                   <div>
@@ -195,7 +195,20 @@ export default function VerificaFotoPage() {
                       {p.status === 'bozza' ? 'Bozza' : p.status === 'in_review' ? 'In revisione' : p.status === 'approvata' ? 'Approvata' : 'Rifiutata'}
                     </span>
                     {p.status === 'bozza' && (
-                      <Button variant="secondary" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
+                      <>
+                        <Button variant="secondary" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
+                        <Button className={p.isFace ? 'bg-blue-700 hover:bg-blue-800' : ''} onClick={async()=>{
+                          const idNum = Number(p.id);
+                          if (Number.isNaN(idNum)) return;
+                          try {
+                            const token = localStorage.getItem('auth-token') || '';
+                            const r = await fetch('/api/escort/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, isFace: !p.isFace }) });
+                            const j = await r.json().catch(()=>({}));
+                            if (!r.ok) { alert(j?.error || 'Errore aggiornamento'); return; }
+                            setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: !p.isFace } : x));
+                          } catch {}
+                        }}>{p.isFace ? 'Rimuovi volto' : 'Segna come volto'}</Button>
+                      </>
                     )}
                   </div>
                 </div>
