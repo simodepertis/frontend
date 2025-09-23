@@ -1,9 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
-import { getTokenFromRequest, verifyToken } from '@/lib/auth'
+import { verifyToken } from '@/lib/auth'
+
+function getBearerTokenFromPagesReq(req: NextApiRequest): string | null {
+  const auth = req.headers.authorization
+  if (typeof auth === 'string' && auth.startsWith('Bearer ')) return auth.substring(7)
+  // also check cookies
+  const cookie = req.headers.cookie || ''
+  const match = cookie.match(/(?:^|;\s*)auth-token=([^;]+)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
 
 async function requireUser(req: NextApiRequest) {
-  const raw = getTokenFromRequest(req as any)
+  const raw = getBearerTokenFromPagesReq(req)
   if (!raw) return null
   const payload = verifyToken(raw)
   if (!payload) return null
