@@ -27,7 +27,8 @@ export default function VerificaFotoPage() {
     // Carica anche da API
     (async () => {
       try {
-        const res = await fetch('/api/escort/photos');
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch('/api/escort/photos', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
         if (res.ok) {
           const { photos } = await res.json();
           if (Array.isArray(photos)) {
@@ -51,7 +52,8 @@ export default function VerificaFotoPage() {
     // Carica documenti
     (async () => {
       try {
-        const res = await fetch('/api/escort/documents');
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch('/api/escort/documents', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
         if (res.ok) {
           const { documents } = await res.json();
           const mapped: DocItem[] = (documents || []).map((d: any) => ({
@@ -98,7 +100,8 @@ export default function VerificaFotoPage() {
       try {
         const fd = new FormData();
         fd.append('file', file);
-        const res = await fetch('/api/escort/photos/upload', { method: 'POST', body: fd });
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch('/api/escort/photos/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } as any : undefined, body: fd });
         if (res.ok) {
           const { photo } = await res.json();
           // aggiorna l'elemento con id/url reali
@@ -111,7 +114,10 @@ export default function VerificaFotoPage() {
 
   const removePhoto = async (id: string) => {
     setPhotos((prev) => prev.filter(p => p.id !== id));
-    try { await fetch('/api/escort/photos', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(id) }) }); } catch {}
+    try { 
+      const token = localStorage.getItem('auth-token') || '';
+      await fetch('/api/escort/photos', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: Number(id) }) }); 
+    } catch {}
   };
   const sendForReview = async () => {
     setSubmitting(true);
@@ -121,7 +127,8 @@ export default function VerificaFotoPage() {
         const idNum = Number(p.id);
         if (Number.isNaN(idNum)) return;
         try {
-          await fetch('/api/escort/photos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idNum, action: 'in_review' }) });
+          const token = localStorage.getItem('auth-token') || '';
+          await fetch('/api/escort/photos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, action: 'in_review' }) });
         } catch {}
       }));
       setPhotos((prev) => prev.map(p => p.status === 'bozza' ? { ...p, status: 'in_review' } : p));
@@ -456,7 +463,8 @@ export default function VerificaFotoPage() {
               const idNum = Number(p.id);
               if (Number.isNaN(idNum)) return;
               try {
-                await fetch('/api/escort/photos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idNum, action: 'draft' }) });
+                const token = localStorage.getItem('auth-token') || '';
+            await fetch('/api/escort/photos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, action: 'draft' }) });
               } catch {}
             }));
             setPhotos((prev) => prev.map(p => p.status === 'in_review' ? { ...p, status: 'bozza' } : p));
