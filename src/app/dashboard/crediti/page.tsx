@@ -162,7 +162,14 @@ export default function CreditiPage() {
 
   async function spend(code: string) {
     try {
-      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+      const res = await fetch('/api/credits/spend', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`,
+        },
+        body: JSON.stringify({ code })
+      });
       const data = await res.json();
       if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
       await loadAll();
