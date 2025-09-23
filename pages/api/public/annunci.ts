@@ -143,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .filter(x => x.hasApprovedDoc)
         .map(x => ({
           ...x,
-          coverUrl: x.coverUrl || '/images/placeholder.jpg',
+          coverUrl: x.coverUrl || '/placeholder.svg',
           priority: x.coverUrl ? x.priority : Math.min(x.priority, 10),
         }))
     }
