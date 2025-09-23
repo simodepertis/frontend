@@ -56,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } else {
       // Profili escort (annunci fisici)
       const profiles = await prisma.escortProfile.findMany({
-        include: { user: { select: { id: true, nome: true, slug: true } } },
+        include: { user: { select: { id: true, nome: true, slug: true, documents: { select: { status: true } } } } },
         orderBy: { updatedAt: 'desc' },
       })
 
@@ -66,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         const prio = tierPriority(p.tier as any, isGirl)
         const slug = p.user?.slug || `${kebab(p.user?.nome || '')}-${p.user?.id}`
+        const hasApprovedDoc = Array.isArray(p.user?.documents) && p.user.documents.some((d:any)=> d.status === 'APPROVED')
         return {
           id: p.userId,
           name: p.user?.nome || `User ${p.userId}`,
@@ -75,24 +76,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           girlOfTheDay: isGirl,
           priority: prio,
           updatedAt: p.updatedAt,
+          hasApprovedDoc,
         } as any
       }).filter((x: any) => (!city || x.cities.length === 0 || x.cities.some((c: any) => String(c).toLowerCase().includes(city))) && (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q)))))
 
-      // Allego cover APPROVED e calcolo verified
+      // Allego cover APPROVED
       const withMeta = await Promise.all(base.map(async (it: any) => {
         const cover = await prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' } })
-        const docs = await prisma.document.findMany({
-          where: { userId: it.id, status: 'APPROVED' as any, type: { in: ['ID_CARD_FRONT', 'ID_CARD_BACK', 'SELFIE_WITH_ID'] as any } },
-          select: { type: true }
-        })
-        const docTypes = new Set(docs.map(d => d.type))
-        const hasAllKyc = docTypes.has('ID_CARD_FRONT') && docTypes.has('ID_CARD_BACK') && docTypes.has('SELFIE_WITH_ID')
-        const isVerified = Boolean(cover) && hasAllKyc
-        return { ...it, coverUrl: cover?.url || null, isVerified }
+        return { ...it, coverUrl: cover?.url || null }
       }))
 
-      // PUBBLICAZIONE: mostra solo chi ha almeno una foto APPROVED (coverUrl non null)
-      mapped = withMeta.filter(x => x.coverUrl)
+      // PUBBLICAZIONE aggiornata:
+      // - Mostra SEMPRE chi ha almeno un documento APPROVED
+      // - Se manca cover APPROVED, usa placeholder ma con priorità bassa
+      mapped = withMeta
+        .filter(x => x.hasApprovedDoc)
+        .map(x => ({
+          ...x,
+          coverUrl: x.coverUrl || '/images/placeholder.jpg',
+          priority: x.coverUrl ? x.priority : Math.min(x.priority, 10),
+        }))
     }
 
     // Sort by priority desc then updatedAt desc
