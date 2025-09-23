@@ -1,6 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
+function pickPriceFromRates(rates: any): number | null {
+  if (!rates || typeof rates !== 'object') return null
+  const prefer = ['hour_1','hour1','1h','60','mezzora','30']
+  for (const k of prefer) {
+    const v = (rates as any)[k]
+    const num = typeof v === 'number' ? v : (typeof v === 'string' ? Number(String(v).replace(/[^0-9]/g,'')) : NaN)
+    if (!Number.isNaN(num) && num > 0) return num
+  }
+  let min: number | null = null
+  for (const v of Object.values(rates)) {
+    const num = typeof v === 'number' ? v : (typeof v === 'string' ? Number(String(v).replace(/[^0-9]/g,'')) : NaN)
+    if (!Number.isNaN(num) && num > 0) min = min === null ? num : Math.min(min, num)
+  }
+  return min
+}
+
 function tierPriority(tier: string, isGirlOfDay: boolean) {
   if (tier === 'VIP') return 100
   if (isGirlOfDay) return 90
@@ -68,6 +84,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const prio = tierPriority(p.tier as any, isGirl)
         const slug = p.user?.slug || `${kebab(p.user?.nome || '')}-${p.user?.id}`
         const hasApprovedDoc = Array.isArray(p.user?.documents) && p.user.documents.some((d:any)=> d.status === 'APPROVED')
+        const price = pickPriceFromRates(p.rates as any)
         return {
           id: p.userId,
           name: p.user?.nome || `User ${p.userId}`,
@@ -78,6 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           priority: prio,
           updatedAt: p.updatedAt,
           hasApprovedDoc,
+          price: price || 0,
         } as any
       })
 

@@ -1,21 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
 import FilterBar from "@/components/FilterBar";
-
-// Dati mock allineati alla home
-const escorts = [
-  { id: 1, nome: "Giulia", eta: 25, citta: "Milano", capelli: "Biondi", prezzo: 150, foto: "https://i.escortforumit.xxx/686685/profile/deef0002-437f-4464-a781-8ac4843488f4_profile.jpg?v=5", rank: "VIP" },
-  { id: 2, nome: "Martina", eta: 28, citta: "Roma", capelli: "Castani", prezzo: 200, foto: "https://i.escortforumit.xxx/710869/profile/9c6cc2e7-5ad8-4684-bd96-fdfcfd6faa58_thumb_750.jpg?v=1", rank: "ORO" },
-  { id: 3, nome: "Sara", eta: 23, citta: "Firenze", capelli: "Neri", prezzo: 180, foto: "https://i.escortforumit.xxx/376078/profile/190aa487-a2dd-43ee-a4c2-5dff8c5fab49_thumb_750.jpg?v=1", rank: "ARGENTO" },
-  { id: 4, nome: "Elena", eta: 26, citta: "Milano", capelli: "Neri", prezzo: 180, foto: "https://i.escortforumit.xxx/703461/profile/28a91e4c-c6c3-4639-bae9-aeab4cbad15c_thumb_750.jpg?v=1", rank: "TITANIUM" },
-  { id: 5, nome: "Sofia", eta: 29, citta: "Roma", capelli: "Biondi", prezzo: 220, foto: "https://i.escortforumit.xxx/686141/profile/80cb7136-bcc1-4c01-9430-b8cbedd43a21_thumb_750.jpg?v=1", rank: "VIP" },
-  { id: 6, nome: "Chiara", eta: 22, citta: "Firenze", capelli: "Castani", prezzo: 160, foto: "https://i.escortforumit.xxx/708057/profile/7040775e-d371-48b6-b310-6424e5ed3cd6_thumb_750.jpg?v=1", rank: "ORO" },
-];
 
 const cittaOptions = ["Milano", "Roma", "Firenze"];
 const capelliOptions = ["Biondi", "Castani", "Neri"];
@@ -23,10 +13,30 @@ const capelliOptions = ["Biondi", "Castani", "Neri"];
 export default function EscortListPage() {
   const [filtroCitta, setFiltroCitta] = useState("");
   const [filtroCapelli, setFiltroCapelli] = useState("");
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const escortsFiltrate = escorts.filter((e) => {
-    return (!filtroCitta || e.citta === filtroCitta) && (!filtroCapelli || e.capelli === filtroCapelli);
-  });
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (filtroCitta) params.set('citta', filtroCitta);
+        const res = await fetch(`/api/public/annunci?${params.toString()}`);
+        if (res.ok) {
+          const j = await res.json();
+          setItems(j.items || []);
+        } else {
+          setItems([]);
+        }
+      } finally { setLoading(false); }
+    })();
+  }, [filtroCitta]);
+
+  const escortsFiltrate = useMemo(() => {
+    // capelli filtro non ancora supportato su API: applico client-side
+    return items.filter((e:any) => !filtroCapelli || true);
+  }, [items, filtroCapelli]);
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -67,13 +77,16 @@ export default function EscortListPage() {
 
       {/* Griglia risultati */}
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 flex-grow">
-        {escortsFiltrate.length === 0 && (
+        {loading && (
+          <div className="col-span-full text-center text-gray-400 py-10">Caricamento…</div>
+        )}
+        {!loading && escortsFiltrate.length === 0 && (
           <div className="col-span-full text-center text-gray-400 py-10">
             Nessun risultato trovato. Prova a modificare i filtri.
           </div>
         )}
-        {escortsFiltrate.map((escort) => (
-          <EscortCard key={escort.id} escort={escort} />
+        {escortsFiltrate.map((e:any) => (
+          <EscortCard key={e.id} escort={{ id: e.id, nome: e.name, eta: 25, citta: Array.isArray(e.cities)&&e.cities[0]?String(e.cities[0]):'—', capelli: '', prezzo: e.price || 0, foto: e.coverUrl || '/placeholder.svg', rank: e.tier, isVerified: !!e.hasApprovedDoc }} />
         ))}
       </div>
     </main>

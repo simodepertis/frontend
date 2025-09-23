@@ -23,7 +23,8 @@ export default function EscortDetailPage() {
     tierExpiresAt?: string | null;
     girlOfTheDay?: boolean;
   };
-  const { slug } = useParams<{ slug: string }>();
+  const params = useParams();
+  const slug = String((params as any)?.slug || "");
   const [data, setData] = useState<any | null>(null);
   const [me, setMe] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,10 +49,27 @@ export default function EscortDetailPage() {
       foto: Array.isArray(data.photos) && data.photos.length ? data.photos : [data.coverUrl || '/placeholder.svg'],
       prezzo: (() => {
         try {
-          const r = (data.rates || []) as any[];
-          if (Array.isArray(r) && r.length) {
-            const first = r.find((x:any)=> typeof x?.price === 'number') || r[0];
-            return Number(first?.price) || fallback.prezzo;
+          const rates: any = (data as any)?.rates;
+          // If object map: try common keys, then min value
+          const prefer = ['hour_1','hour1','1h','60','mezzora','30'];
+          if (rates && typeof rates === 'object' && !Array.isArray(rates)) {
+            for (const k of prefer) {
+              const v = rates[k];
+              const num = typeof v === 'number' ? v : (typeof v === 'string' ? Number(String(v).replace(/[^0-9]/g,'')) : NaN);
+              if (!Number.isNaN(num) && num > 0) return num;
+            }
+            let min: number | null = null;
+            for (const v of Object.values(rates)) {
+              const num = typeof v === 'number' ? v : (typeof v === 'string' ? Number(String(v).replace(/[^0-9]/g,'')) : NaN);
+              if (!Number.isNaN(num) && num > 0) min = min === null ? num : Math.min(min, num);
+            }
+            if (min !== null) return min;
+          }
+          // If array: pick first price
+          if (Array.isArray(rates) && rates.length) {
+            const first = rates.find((x:any)=> typeof x?.price === 'number') || rates[0];
+            const num = typeof first?.price === 'number' ? first.price : Number(String(first?.price||'').replace(/[^0-9]/g,''));
+            if (!Number.isNaN(num) && num > 0) return num;
           }
         } catch {}
         return fallback.prezzo;
@@ -67,14 +85,14 @@ export default function EscortDetailPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/API/public/escort/${slug}`);
+        const res = await fetch(`/api/public/escort/${slug}`);
         if (res.ok) {
           const json = await res.json();
           setData(json);
         }
         // fetch current user for owner-only actions
         try {
-          const meRes = await fetch('/API/user/me');
+          const meRes = await fetch('/api/user/me');
           if (meRes.ok) { const j = await meRes.json(); setMe(j?.user || null); }
         } catch {}
       } finally { setLoading(false); }
@@ -217,7 +235,7 @@ export default function EscortDetailPage() {
         {/* Galleria */}
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
-            <Image src={escort.foto[active] || '/placeholder.svg'} alt={`${escort.nome} principale`} fill className="object-cover" />
+            <Image src={escort.foto[active] || '/placeholder.svg'} alt={`${escort.nome} principale`} fill unoptimized className="object-cover" />
             {escort.girlOfTheDay && (
               <div className="absolute top-3 right-3 rotate-3">
                 <span className="bg-rose-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
@@ -233,7 +251,7 @@ export default function EscortDetailPage() {
                 onClick={() => setActive(idx)}
                 className={`relative w-full aspect-square rounded-md overflow-hidden border ${active === idx ? 'ring-2 ring-red-500' : 'border-neutral-200'}`}
               >
-                <Image src={src || '/placeholder.svg'} alt={`${escort.nome} thumb ${idx+1}`} fill className="object-cover" />
+                <Image src={src || '/placeholder.svg'} alt={`${escort.nome} thumb ${idx+1}`} fill unoptimized className="object-cover" />
               </button>
             ))}
           </div>
