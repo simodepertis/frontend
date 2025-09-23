@@ -131,6 +131,10 @@ model CreditProduct {
   active       Boolean @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  // Optional: enable variable-duration purchase per package
+  pricePerDayCredits Int?
+  minDays            Int?
+  maxDays            Int?
 }
 
 enum CreditOrderStatus {

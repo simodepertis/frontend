@@ -5,10 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminCatalogoCreditiPage() {
-  type Product = { id: number; code: string; label: string; creditsCost: number; durationDays: number; active: boolean; updatedAt: string };
+  type Product = { id: number; code: string; label: string; creditsCost: number; durationDays: number; active: boolean; updatedAt: string; pricePerDayCredits?: number|null; minDays?: number|null; maxDays?: number|null };
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState<Product[]>([]);
-  const [form, setForm] = useState({ code: "", label: "", creditsCost: 0, durationDays: 0 });
+  const [form, setForm] = useState({ code: "", label: "", creditsCost: 0, durationDays: 0, pricePerDayCredits: "", minDays: "", maxDays: "" });
   const [saving, setSaving] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [rate, setRate] = useState<number>(10); // crediti per 1€
@@ -30,7 +30,7 @@ export default function AdminCatalogoCreditiPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch("/API/admin/credits/catalog", { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
+      const res = await fetch("/api/admin/credits/catalog", { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
       if (res.ok) {
         const { products } = await res.json();
         setList(products || []);
@@ -51,9 +51,18 @@ export default function AdminCatalogoCreditiPage() {
     setSaving(true);
     try {
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch("/API/admin/credits/catalog", { method: "POST", headers: { "Content-Type": "application/json", ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify(form) });
+      const payload:any = {
+        code: form.code,
+        label: form.label,
+        creditsCost: form.creditsCost,
+        durationDays: form.durationDays,
+      };
+      if (form.pricePerDayCredits) payload.pricePerDayCredits = Number(form.pricePerDayCredits);
+      if (form.minDays) payload.minDays = Number(form.minDays);
+      if (form.maxDays) payload.maxDays = Number(form.maxDays);
+      const res = await fetch("/api/admin/credits/catalog", { method: "POST", headers: { "Content-Type": "application/json", ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify(payload) });
       if (!res.ok) { const t = await res.text(); alert("Errore creazione: " + t); return; }
-      setForm({ code: "", label: "", creditsCost: 0, durationDays: 0 });
+      setForm({ code: "", label: "", creditsCost: 0, durationDays: 0, pricePerDayCredits: "", minDays: "", maxDays: "" });
       await load();
     } finally {
       setSaving(false);
@@ -64,7 +73,7 @@ export default function AdminCatalogoCreditiPage() {
     setUpdatingId(id);
     try {
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch("/API/admin/credits/catalog", { method: "PATCH", headers: { "Content-Type": "application/json", ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id, ...patch }) });
+      const res = await fetch("/api/admin/credits/catalog", { method: "PATCH", headers: { "Content-Type": "application/json", ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id, ...patch }) });
       if (!res.ok) { const t = await res.text(); alert("Errore aggiornamento: " + t); return; }
       await load();
     } finally {
@@ -106,6 +115,20 @@ export default function AdminCatalogoCreditiPage() {
             <label className="text-sm text-gray-300">Durata (giorni)</label>
             <input type="number" min={1} value={form.durationDays} onChange={(e)=>setForm(p=>({...p, durationDays: Number(e.target.value)}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
           </div>
+          <div className="md:col-span-4 grid md:grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm text-gray-300">Prezzo/giorno (crediti) — opzionale</label>
+              <input value={form.pricePerDayCredits} onChange={(e)=>setForm(p=>({...p, pricePerDayCredits: e.target.value}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="Es. 5" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm text-gray-300">Giorni min — opzionale</label>
+              <input value={form.minDays} onChange={(e)=>setForm(p=>({...p, minDays: e.target.value}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="Es. 1" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm text-gray-300">Giorni max — opzionale</label>
+              <input value={form.maxDays} onChange={(e)=>setForm(p=>({...p, maxDays: e.target.value}))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="Es. 60" />
+            </div>
+          </div>
           <div className="flex flex-col gap-1 md:col-span-2">
             <label className="text-sm text-gray-300">Prezzo in € (auto-converte in crediti)</label>
             <div className="grid grid-cols-[1fr,auto] gap-2">
@@ -137,6 +160,9 @@ export default function AdminCatalogoCreditiPage() {
                 <div className="text-xs text-gray-400">Codice: {p.code}</div>
                 <div className="text-sm text-gray-300">Costo: {p.creditsCost} crediti</div>
                 <div className="text-sm text-gray-300">Durata: {p.durationDays} giorni</div>
+                {p.pricePerDayCredits != null && (
+                  <div className="text-xs text-blue-300">Prezzo/giorno: {p.pricePerDayCredits} crediti · Range giorni: {p.minDays ?? 1}–{p.maxDays ?? 60}</div>
+                )}
                 <div className="text-xs text-gray-500">Aggiornato: {new Date(p.updatedAt).toLocaleString()}</div>
                 <div className="pt-1">
                   <label className="block text-xs text-gray-400 mb-1">Imposta prezzo in €</label>
@@ -161,6 +187,33 @@ export default function AdminCatalogoCreditiPage() {
                     >Aggiorna prezzo</Button>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">1 € = {rate} crediti → {Math.max(0, Math.round((Number(euroMap[p.id]||0))*rate))} crediti</div>
+                </div>
+                {/* Aggiornamento variabile: prezzo/giorno e range giorni */}
+                <div className="grid md:grid-cols-3 gap-2">
+                  <div className="flex items-center gap-2">
+                    <input type="number" placeholder="Prezzo/giorno" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`pd_${p.id}`]: e.target.value }))} value={(euroMap as any)[`pd_${p.id}`] ?? ''} />
+                    <Button variant="secondary" disabled={updatingId === p.id} onClick={()=>{
+                      const v = Number((euroMap as any)[`pd_${p.id}`] || 0);
+                      if (!Number.isFinite(v) || v <= 0) { alert('Prezzo/giorno non valido'); return; }
+                      updateProduct(p.id, { pricePerDayCredits: v });
+                    }}>Aggiorna prezzo/giorno</Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="number" placeholder="Min giorni" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`min_${p.id}`]: e.target.value }))} value={(euroMap as any)[`min_${p.id}`] ?? ''} />
+                    <Button variant="secondary" disabled={updatingId === p.id} onClick={()=>{
+                      const v = Number((euroMap as any)[`min_${p.id}`] || 0);
+                      if (!Number.isFinite(v) || v <= 0) { alert('Min giorni non valido'); return; }
+                      updateProduct(p.id, { minDays: v });
+                    }}>Aggiorna min</Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input type="number" placeholder="Max giorni" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`max_${p.id}`]: e.target.value }))} value={(euroMap as any)[`max_${p.id}`] ?? ''} />
+                    <Button variant="secondary" disabled={updatingId === p.id} onClick={()=>{
+                      const v = Number((euroMap as any)[`max_${p.id}`] || 0);
+                      if (!Number.isFinite(v) || v <= 0) { alert('Max giorni non valido'); return; }
+                      updateProduct(p.id, { maxDays: v });
+                    }}>Aggiorna max</Button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
                   <Button variant="secondary" disabled={updatingId === p.id} onClick={() => updateProduct(p.id, { active: !p.active })}>{p.active ? 'Disattiva' : 'Attiva'}</Button>

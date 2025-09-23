@@ -130,7 +130,8 @@ export default function CreditiPage() {
   const [balance, setBalance] = useState(0);
   const [tx, setTx] = useState<Array<{ id: number; amount: number; type: string; reference?: string; createdAt: string }>>([]);
   const [creditsToBuy, setCreditsToBuy] = useState(10);
-  const [catalog, setCatalog] = useState<Array<{ code: string; label: string; creditsCost: number; durationDays: number }>>([]);
+  const [catalog, setCatalog] = useState<Array<{ code: string; label: string; creditsCost: number; durationDays: number; pricePerDayCredits?: number|null; minDays?: number|null; maxDays?: number|null }>>([]);
+  const [daysByCode, setDaysByCode] = useState<Record<string, number>>({});
   const [spending, setSpending] = useState<string>("");
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const minCredits = 10;
@@ -346,13 +347,51 @@ export default function CreditiPage() {
                     </div>
                     <span className={`ml-auto text-[11px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm">
-                      <div className="text-neutral-600">Costo</div>
-                      <div className="font-semibold">{p.creditsCost} crediti</div>
+                  {p.pricePerDayCredits ? (
+                    <div className="mt-2 grid grid-cols-[1fr,auto,auto] items-end gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-sm text-neutral-600">Giorni</label>
+                        <input
+                          type="number"
+                          min={p.minDays || 1}
+                          max={p.maxDays || 60}
+                          value={daysByCode[p.code] ?? (p.minDays || 1)}
+                          onChange={(e)=>setDaysByCode(d=>({ ...d, [p.code]: Math.min(Math.max(Number(e.target.value|| (p.minDays||1)), p.minDays||1), p.maxDays||60) }))}
+                          className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                        <div className="text-xs text-neutral-500">Range: {p.minDays || 1}–{p.maxDays || 60} giorni</div>
+                      </div>
+                      <div className="text-sm">
+                        <div className="text-neutral-600">Costo</div>
+                        <div className="font-semibold">{(p.pricePerDayCredits||0) * (daysByCode[p.code] ?? (p.minDays||1))} crediti</div>
+                      </div>
+                      <Button onClick={async()=>{
+                        const days = daysByCode[p.code] ?? (p.minDays || 1);
+                        try {
+                          const res = await fetch('/api/credits/spend-by-product', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`,
+                            },
+                            body: JSON.stringify({ code: p.code, days })
+                          });
+                          const data = await res.json();
+                          if (!res.ok) { alert(data?.error || 'Errore attivazione'); return; }
+                          await loadAll();
+                          setNotice({ type: 'success', msg: `Pacchetto ${p.code} attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})` });
+                        } catch { alert('Errore attivazione'); }
+                      }} className={`px-4 ${s.cta}`}>Attiva</Button>
                     </div>
-                    <Button onClick={() => spend(p.code)} className={`px-4 ${s.cta}`}>Attiva</Button>
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm">
+                        <div className="text-neutral-600">Costo</div>
+                        <div className="font-semibold">{p.creditsCost} crediti</div>
+                      </div>
+                      <Button onClick={() => spend(p.code)} className={`px-4 ${s.cta}`}>Attiva</Button>
+                    </div>
+                  )}
                 </div>
               );
             })}
