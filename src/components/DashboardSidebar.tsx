@@ -66,7 +66,7 @@ export default function DashboardSidebar() {
   const baseItems = role === "escort"
     ? [
         { href: "/dashboard/escort", label: "Dashboard Escort", icon: faGaugeHigh },
-        { href: "/dashboard/mio-profilo", label: "Il Mio Profilo", icon: faUser },
+        { href: "/dashboard/impostazioni", label: "Il Mio Profilo", icon: faUser },
         { href: "/dashboard/escort/compila", label: "Profilo Escort", icon: faIdCard },
         { href: "/dashboard/verifica-foto", label: "Verifica Foto al 100%", icon: faCircleCheck },
         { href: "/dashboard/verifica-video", label: "Verifica Video", icon: faVideo },
@@ -93,7 +93,7 @@ export default function DashboardSidebar() {
     : role === "agency"
     ? [
         { href: "/dashboard/agenzia", label: "Dashboard Agenzia", icon: faGaugeHigh },
-        { href: "/dashboard/mio-profilo", label: "Il Mio Profilo", icon: faUser },
+        { href: "/dashboard/impostazioni", label: "Il Mio Profilo", icon: faUser },
         { href: "/dashboard/agenzia/compila", label: "Profilo Agenzia", icon: faIdCard },
         { href: "/dashboard/agenzia/escort", label: "Gestione Escort", icon: faUser },
         { href: "/dashboard/prenotazioni", label: "Prenotazioni", icon: faBolt },
@@ -112,7 +112,7 @@ export default function DashboardSidebar() {
       ]
     : [
         { href: "/dashboard", label: "Dashboard", icon: faGaugeHigh },
-        { href: "/dashboard/mio-profilo", label: "Il Mio Profilo", icon: faUser },
+        { href: "/dashboard/impostazioni", label: "Il Mio Profilo", icon: faUser },
         { href: "/dashboard/ricerca", label: "La Ricerca", icon: faMagnifyingGlass },
         { href: "/dashboard/recensioni", label: "Recensioni", icon: faStar },
         { href: "/dashboard/impostazioni", label: "Impostazioni", icon: faGear },

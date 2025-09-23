@@ -45,7 +45,16 @@ export default function EscortDetailPage() {
     return {
       ...fallback,
       nome: data.nome || fallback.nome,
-      citta: Array.isArray(data.cities) && data.cities.length ? String(data.cities[0]) : fallback.citta,
+      // Support both legacy array and new object shape for cities
+      citta: (() => {
+        try {
+          if (Array.isArray((data as any)?.cities) && (data as any).cities.length) {
+            return String((data as any).cities[0]);
+          }
+          const c = (data as any)?.cities || {};
+          return c.baseCity || c.base || c.city || fallback.citta;
+        } catch { return fallback.citta; }
+      })(),
       foto: Array.isArray(data.photos) && data.photos.length ? data.photos : [data.coverUrl || '/placeholder.svg'],
       prezzo: (() => {
         try {
@@ -150,6 +159,24 @@ export default function EscortDetailPage() {
         return raw.split(',').map((s)=>s.trim()).filter(Boolean);
       }
     } catch {}
+    return [];
+  }, [data]);
+
+  // Normalize rates for display: support array or {incall,outcall}
+  const ratesList = useMemo<any[]>(() => {
+    const raw = (data as any)?.rates;
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'object') {
+      const out: any[] = [];
+      if (Array.isArray(raw.incall)) {
+        out.push(...raw.incall.map((r: any) => ({ ...r, label: r?.label || `Incall ${r?.duration || ''}`.trim() })));
+      }
+      if (Array.isArray(raw.outcall)) {
+        out.push(...raw.outcall.map((r: any) => ({ ...r, label: r?.label || `Outcall ${r?.duration || ''}`.trim() })));
+      }
+      return out;
+    }
     return [];
   }, [data]);
 
@@ -259,7 +286,7 @@ export default function EscortDetailPage() {
               <button
                 key={idx}
                 onClick={() => setActive(idx)}
-                className={`relative w-full aspect-square rounded-md overflow-hidden border ${active === idx ? 'ring-2 ring-red-500' : 'border-neutral-200'}`}
+                className={`relative w-full aspect-square rounded-md overflow-hidden border ${active === idx ? 'ring-2 ring-blue-500' : 'border-neutral-200'}`}
               >
                 <img
                   src={src || '/placeholder.svg'}
@@ -416,11 +443,11 @@ export default function EscortDetailPage() {
           {/* Orari e Tariffe */}
           <div id="tariffe" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2 text-white">Orari e Tariffe</div>
-            {Array.isArray((data as any)?.rates) && (data as any).rates.length ? (
+            {ratesList.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-300">
-                {((data as any).rates as any[]).map((r:any,idx:number)=> (
+                {ratesList.map((r:any,idx:number)=> (
                   <div key={idx} className="border border-gray-600 rounded-md p-2 flex items-center justify-between">
-                    <div className="text-gray-300">{r?.label || r?.type || 'Sessione'}</div>
+                    <div className="text-gray-300">{r?.label || r?.type || r?.duration || 'Sessione'}</div>
                     <div className="font-semibold text-white">€ {r?.price ?? '-'}</div>
                   </div>
                 ))}
