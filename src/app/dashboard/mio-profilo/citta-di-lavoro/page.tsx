@@ -4,17 +4,55 @@ import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-// Lazy-load Leaflet only on client
-async function loadLeaflet() {
-  const L = await import("leaflet");
-  // Fix default icon path in Next
-  // @ts-ignore
-  const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
-  // @ts-ignore
-  const shadowUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
-  // @ts-ignore
-  L.Icon.Default.mergeOptions({ iconUrl, shadowUrl });
-  return L;
+// Load Leaflet from CDN (no npm package required)
+function loadLeafletFromCDN(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return reject(new Error('SSR'));
+    const w: any = window as any;
+    if (w.L) return resolve(w.L);
+    const cssId = 'leaflet-css';
+    if (!document.getElementById(cssId)) {
+      const link = document.createElement('link');
+      link.id = cssId;
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(link);
+    }
+    const jsId = 'leaflet-js';
+    if (!document.getElementById(jsId)) {
+      const s = document.createElement('script');
+      s.id = jsId;
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.async = true;
+      s.onload = () => {
+        try {
+          const L = (window as any).L;
+          // fix default icon paths
+          L.Icon.Default.mergeOptions({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          });
+          resolve(L);
+        } catch (e) { reject(e); }
+      };
+      s.onerror = () => reject(new Error('Leaflet CDN load failed'));
+      document.body.appendChild(s);
+    } else {
+      // script already present but L not ready yet
+      const iv = setInterval(() => {
+        if ((window as any).L) {
+          clearInterval(iv);
+          const L = (window as any).L;
+          L.Icon.Default.mergeOptions({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+          });
+          resolve(L);
+        }
+      }, 50);
+      setTimeout(() => { clearInterval(iv); reject(new Error('Leaflet not available')); }, 5000);
+    }
+  });
 }
 
 export default function CittaDiLavoroPage() {
@@ -66,7 +104,7 @@ export default function CittaDiLavoroPage() {
     // Initialize map when container ready
     if (!mapDivRef.current || mapRef.current || loading) return;
     (async () => {
-      const L = await loadLeaflet();
+      const L = await loadLeafletFromCDN();
       const map = L.map(mapDivRef.current!).setView([form.position.lat, form.position.lng], 12);
       mapRef.current = map;
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
