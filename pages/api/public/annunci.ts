@@ -25,6 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const city = String(req.query.citta || '').trim().toLowerCase()
+    const country = String(req.query.country || '').trim().toUpperCase()
     const type = String(req.query.type || '').trim().toUpperCase() // VIRTUAL|PHYSICAL
     const page = Math.max(1, Number(req.query.page || 1))
     const q = String(req.query.q || '').trim().toLowerCase()
@@ -78,10 +79,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           updatedAt: p.updatedAt,
           hasApprovedDoc,
         } as any
-      }).filter((x: any) => (!city || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(city)))) && (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q)))))
+      })
+
+      // Country sets (lowercase normalized)
+      const COUNTRY_CITIES: Record<string, string[]> = {
+        IT: ['milano','roma','torino','napoli','bologna','firenze','venezia','genova','palermo','bari','verona','brescia','catania','trieste','udine','lecce'],
+        FR: ['parigi','paris','marsiglia','marseille','lione','lyon','tolosa','toulouse','nizza','nice','bordeaux','lille','nantes','strasburgo','strasbourg'],
+        UK: ['londra','london','manchester','birmingham','leeds','liverpool','glasgow','edinburgh','bristol'],
+        DE: ['berlino','berlin','monaco','munich','amburgo','hamburg','colonia','koln','köln','francoforte','frankfurt','stoccarda','stuttgart'],
+        ES: ['madrid','barcellona','barcelona','valencia','siviglia','sevilla','bilbao','malaga','saragozza','zaragoza'],
+        CH: ['zurigo','zürich','ginevra','geneva','basilea','basel','losanna','lausanne','lugano','bern','berna'],
+        NL: ['amsterdam','rotterdam','l\'aia','the hague','den haag','utrecht','eindhoven'],
+        BE: ['bruxelles','brussels','anversa','antwerp','gand','ghent','liegi','liège'],
+      }
+
+      const norm = (s: any) => String(s || '').trim().toLowerCase()
+      const matchesCity = (list: any[], needle: string) => {
+        if (!needle) return true
+        const n = norm(needle)
+        return Array.isArray(list) && list.some((c:any) => norm(c).includes(n))
+      }
+      const matchesCountry = (list: any[], code: string) => {
+        if (!code) return true
+        const set = new Set((COUNTRY_CITIES[code] || []).map(norm))
+        if (set.size === 0) return true
+        return Array.isArray(list) && list.some((c:any) => set.has(norm(c)))
+      }
+
+      const filteredBase = base.filter((x: any) => (
+        (!city || matchesCity(x.cities, city)) &&
+        (!country || matchesCountry(x.cities, country)) &&
+        (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q))))
+      ))
 
       // Allego cover APPROVED
-      const withMeta = await Promise.all(base.map(async (it: any) => {
+      const withMeta = await Promise.all(filteredBase.map(async (it: any) => {
         const cover = await prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' } })
         return { ...it, coverUrl: cover?.url || null }
       }))
