@@ -14,59 +14,46 @@ export default async function handler(
   try {
     const { citta, capelli, eta_min, eta_max, prezzo_min, prezzo_max } = req.query
 
-    // LOGICA CORRETTA: Solo escort verificati con pacchetto attivo
-    const where: any = {
-      ruolo: 'escort',
-      // Solo escort indipendenti (non agenzie)
-      NOT: {
-        ruolo: 'agency'
-      },
-      // IMPORTANTE: Solo utenti che hanno:
-      // 1. Verificato l'identità (documenti approvati dall'admin)
-      // 2. Acquistato un pacchetto attivo (VIP/ORO/TITANIUM/ARGENTO)
-      // Questi campi saranno aggiunti al database quando implementati
-    }
-
-    // Cerca escort indipendenti
+    // Mostra escort indipendenti con almeno un documento APPROVATO
     const escorts = await prisma.user.findMany({
-      where,
+      where: {
+        ruolo: 'escort',
+        documents: { some: { status: 'APPROVED' } },
+      },
       select: {
         id: true,
         nome: true,
-        email: true,
         slug: true,
         createdAt: true,
-        // Nota: campo citta sarà aggiunto in futuro al database
+        escortProfile: { select: { tier: true, cities: true } },
+        photos: { where: { status: 'APPROVED' }, orderBy: { createdAt: 'desc' }, take: 1 },
       },
-      orderBy: [
-        { createdAt: 'desc' }
-      ],
-      take: 50 // Limite per performance
+      orderBy: [{ createdAt: 'desc' }],
+      take: 60,
     })
 
-    console.log(`🔍 Trovati ${escorts.length} utenti escort nel database`)
-
-    // IMPORTANTE: Al momento non ci sono escort verificati con pacchetto attivo
-    // Questo è corretto perché:
-    // 1. Gli utenti devono prima verificare l'identità (documenti)
-    // 2. Poi acquistare un pacchetto (VIP/ORO/TITANIUM/ARGENTO)
-    // 3. Solo allora appaiono nelle ricerche pubbliche
-    
-    console.log('ℹ️ Nessun escort verificato con pacchetto attivo trovato')
-    
-    const escortsFormatted: any[] = [] // Array vuoto - logica corretta
-
-    return res.status(200).json({
-      success: true,
-      escorts: escortsFormatted,
-      total: escortsFormatted.length,
-      filters: {
-        citta: citta || null,
-        capelli: capelli || null,
-        eta_range: eta_min && eta_max ? `${eta_min}-${eta_max}` : null,
-        prezzo_range: prezzo_min && prezzo_max ? `${prezzo_min}-${prezzo_max}` : null
+    const escortsFormatted = escorts.map((u) => {
+      const city = (() => {
+        const c = u.escortProfile?.cities as any
+        return (c && (c.base || c.city)) || 'Milano'
+      })()
+      const foto = u.photos[0]?.url || '/images/placeholder.jpg'
+      const rank = u.escortProfile?.tier || 'STANDARD'
+      return {
+        id: u.id,
+        nome: u.nome,
+        eta: 25,
+        citta: city,
+        capelli: undefined,
+        prezzo: 100,
+        foto,
+        rank,
+        verificata: true,
+        pacchettoAttivo: true,
       }
     })
+
+    return res.status(200).json({ success: true, escorts: escortsFormatted, total: escortsFormatted.length })
 
   } catch (error: unknown) {
     console.error('❌ ERRORE in /api/public/escort-indipendenti:', error)
