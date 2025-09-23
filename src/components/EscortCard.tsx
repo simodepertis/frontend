@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+// Using native img to avoid any optimizer/runtime issues with dynamic uploads
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faStar, faIdBadge, faUser, faShieldHalved, faGem } from "@fortawesome/free-solid-svg-icons";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
@@ -61,7 +61,7 @@ export default function EscortCard({ escort }: { escort: Escort }) {
             ✓ Verificato
           </div>
         )}
-        <Image src={escort.foto} alt={escort.nome} fill unoptimized className="object-cover w-full h-full" sizes="(max-width: 768px) 100vw, 33vw" />
+        <img src={escort.foto} alt={escort.nome} className="object-cover w-full h-full absolute inset-0" />
       </div>
       <div className="p-4 text-white flex-grow flex flex-col">
         <h3 className="text-lg font-bold mb-1">{escort.nome}, {escort.eta}</h3>
