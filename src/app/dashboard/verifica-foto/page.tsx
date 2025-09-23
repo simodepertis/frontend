@@ -140,6 +140,7 @@ export default function VerificaFotoPage() {
 
   const canSubmit = useMemo(() => photos.some(p => p.status === "bozza"), [photos]);
   const hasAnyDoc = docs.length > 0;
+  const hasApprovedDoc = docs.some(d => d.status === 'approvato');
   const hasConsent = !!consentAcceptedAt;
 
   return (
@@ -211,12 +212,15 @@ export default function VerificaFotoPage() {
             <div className="font-semibold text-lg">Documenti di Identità</div>
             <div className="text-sm text-neutral-600">Carica i tuoi documenti per la verifica dell'identità</div>
           </div>
-          <div className="text-xs text-neutral-500 bg-neutral-50 px-3 py-1 rounded-full">
-            Obbligatorio per la verifica
-          </div>
+          {hasApprovedDoc ? (
+            <div className="text-xs px-3 py-1 rounded-full bg-green-600 text-green-100">Documento approvato ✓</div>
+          ) : (
+            <div className="text-xs text-neutral-500 bg-neutral-50 px-3 py-1 rounded-full">Obbligatorio per la verifica</div>
+          )}
         </div>
 
         {/* Linee guida documenti */}
+        {!hasApprovedDoc && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
           <div className="font-medium text-red-900 mb-2 flex items-center gap-2">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -240,9 +244,10 @@ export default function VerificaFotoPage() {
             <li>Tutti i dati devono essere chiaramente visibili</li>
           </ul>
         </div>
+        )}
 
         {/* Upload documenti */}
-        <div className="border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center hover:border-red-400 transition-colors">
+        <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${hasApprovedDoc ? 'border-green-700 bg-green-900/20' : 'border-neutral-300 hover:border-red-400'}`}>
           <div className="flex flex-col items-center gap-3">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,8 +255,8 @@ export default function VerificaFotoPage() {
               </svg>
             </div>
             <div>
-              <div className="font-medium text-neutral-900">Carica i tuoi documenti</div>
-              <div className="text-sm text-neutral-600">Clicca per selezionare i file o trascinali qui</div>
+              <div className="font-medium text-neutral-900">{hasApprovedDoc ? 'Documento approvato' : 'Carica i tuoi documenti'}</div>
+              <div className="text-sm text-neutral-600">{hasApprovedDoc ? 'Puoi caricare documenti aggiuntivi, ma ora puoi procedere a caricare le FOTO.' : 'Clicca per selezionare i file o trascinali qui'}</div>
             </div>
             <input 
               type="file" 
@@ -334,9 +339,9 @@ export default function VerificaFotoPage() {
             />
             <label 
               htmlFor="document-upload" 
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg cursor-pointer transition-colors font-medium"
+              className={`${hasApprovedDoc ? 'bg-green-700 hover:bg-green-800' : 'bg-red-600 hover:bg-red-700'} text-white px-6 py-2 rounded-lg cursor-pointer transition-colors font-medium`}
             >
-              Seleziona Documenti
+              {hasApprovedDoc ? 'Carica altro documento (opzionale)' : 'Seleziona Documenti'}
             </label>
           </div>
         </div>
