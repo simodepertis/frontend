@@ -407,16 +407,16 @@ export default function EscortOnboardingPage() {
             <p className="text-sm text-gray-400 mb-3">Indica un numero valido (verifica in futuro) e i recapiti di prenotazione.</p>
             <div className="grid gap-3 max-w-xl">
               <div className="grid grid-cols-[140px,1fr] gap-2">
-                <select value={data.contacts.phoneCode} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phoneCode: e.target.value } })} className="border rounded-md px-3 py-2">
+                <select value={data.contacts.phoneCode} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phoneCode: e.target.value } })} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="+39">Italy (+39)</option>
                   <option value="+41">Switzerland (+41)</option>
                   <option value="+43">Austria (+43)</option>
                 </select>
-                <input value={data.contacts.phone} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phone: e.target.value } })} placeholder="Numero di Telefono" className="border rounded-md px-3 py-2" />
+                <input value={data.contacts.phone} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phone: e.target.value } })} placeholder="Numero di Telefono" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <input value={data.contacts.bookingEmail} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, bookingEmail: e.target.value } })} placeholder="E-mail di Prenotazione" className="border rounded-md px-3 py-2" />
-              <input value={data.contacts.website} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, website: e.target.value } })} placeholder="Sito Web / URL" className="border rounded-md px-3 py-2" />
-              <input value={data.contacts.address} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, address: e.target.value } })} placeholder="Dettagli Indirizzo (facoltativo)" className="border rounded-md px-3 py-2" />
+              <input value={data.contacts.bookingEmail} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, bookingEmail: e.target.value } })} placeholder="E-mail di Prenotazione" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={data.contacts.website} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, website: e.target.value } })} placeholder="Sito Web / URL" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input value={data.contacts.address} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, address: e.target.value } })} placeholder="Dettagli Indirizzo (facoltativo)" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </section>
         )}
@@ -453,21 +453,21 @@ function LangAdder({ data, setData }: { data: OnboardingData; setData: (d: Onboa
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl">
-        <select value={lang} onChange={(e) => setLang(e.target.value)} className="border rounded-md px-3 py-2">
+        <select value={lang} onChange={(e) => setLang(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">Lingue*</option>
           {LANGS.map((l) => (<option key={l}>{l}</option>))}
         </select>
-        <select value={level} onChange={(e) => setLevel(e.target.value)} className="border rounded-md px-3 py-2">
+        <select value={level} onChange={(e) => setLevel(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">Competenza*</option>
           {LEVELS.map((l) => (<option key={l}>{l}</option>))}
         </select>
         <Button onClick={add}>＋</Button>
       </div>
-      <ul className="text-sm text-neutral-700 space-y-1">
+      <ul className="text-sm text-gray-300 space-y-1">
         {data.languages.map((l) => (
-          <li key={l.lang} className="flex items-center justify-between border rounded-md px-3 py-2">
+          <li key={l.lang} className="flex items-center justify-between border border-gray-600 bg-gray-800 rounded-md px-3 py-2">
             <span>{l.lang} — {l.level}</span>
-            <button className="text-neutral-500 hover:text-red-600" onClick={() => remove(l.lang)}>×</button>
+            <button className="text-gray-400 hover:text-red-400" onClick={() => remove(l.lang)}>×</button>
           </li>
         ))}
       </ul>
