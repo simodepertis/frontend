@@ -123,7 +123,14 @@ export default function AdminProfiliPage() {
             <div key={profile.id} className="bg-gray-800 rounded-lg p-6 border border-gray-600">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{profile.nome}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white">{profile.nome}</h3>
+                    {profile.verified && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-green-600 text-green-100 font-semibold" title="Documento verificato e profilo approvato">
+                        ✓ Verificato
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-400">{profile.email}</p>
                   <p className="text-sm text-gray-500">
                     Tier: {profile.tier} • Città: {profile.cities.join(', ')}

@@ -71,12 +71,22 @@ export default function AdminMediaFotoPage() {
             <div key={it.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-800">
               <div className="relative w-full aspect-[3/4]">
                 <Image src={it.url} alt={`Foto ${it.id}`} fill className="object-cover" />
+                {it.status === 'APPROVED' && (
+                  <div title="Foto verificata" className="absolute top-2 right-2 z-10 px-2 py-1 rounded-full text-[10px] font-bold bg-green-600 text-green-100 shadow">
+                    ✓ Foto verificata
+                  </div>
+                )}
+                {it.status === 'REJECTED' && (
+                  <div title="Foto rifiutata" className="absolute top-2 right-2 z-10 px-2 py-1 rounded-full text-[10px] font-bold bg-red-600 text-red-100 shadow">
+                    ✕ Foto rifiutata
+                  </div>
+                )}
               </div>
               <div className="p-2 text-xs text-gray-300 flex items-center justify-between">
                 <span>Utente {it.userId}</span>
                 <span className={`px-2 py-0.5 rounded-full ${it.status==='APPROVED'?'bg-green-600 text-green-100':it.status==='REJECTED'?'bg-red-600 text-red-100':'bg-amber-600 text-amber-100'}`}>{it.status}</span>
               </div>
-              {status === 'IN_REVIEW' && (
+              {it.status === 'IN_REVIEW' && (
                 <div className="p-2 flex items-center gap-2">
                   <Button className="h-8 bg-green-600 hover:bg-green-700" onClick={()=>act(it.id,'approve')} disabled={actingId===it.id}>{actingId===it.id?'…':''} Approva</Button>
                   <Button className="h-8 bg-red-600 hover:bg-red-700" onClick={()=>act(it.id,'reject')} disabled={actingId===it.id}>Rifiuta</Button>
