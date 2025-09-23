@@ -78,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           updatedAt: p.updatedAt,
           hasApprovedDoc,
         } as any
-      }).filter((x: any) => (!city || x.cities.length === 0 || x.cities.some((c: any) => String(c).toLowerCase().includes(city))) && (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q)))))
+      }).filter((x: any) => (!city || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(city)))) && (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q)))))
 
       // Allego cover APPROVED
       const withMeta = await Promise.all(base.map(async (it: any) => {
