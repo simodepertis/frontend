@@ -1,0 +1,215 @@
+"use client";
+
+import SectionHeader from "@/components/SectionHeader";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+
+// Lazy-load Leaflet only on client
+async function loadLeaflet() {
+  const L = await import("leaflet");
+  // Fix default icon path in Next
+  // @ts-ignore
+  const iconUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png";
+  // @ts-ignore
+  const shadowUrl = "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png";
+  // @ts-ignore
+  L.Icon.Default.mergeOptions({ iconUrl, shadowUrl });
+  return L;
+}
+
+export default function CittaDiLavoroPage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<any>({
+    baseCity: "",
+    secondCity: "",
+    thirdCity: "",
+    fourthCity: "",
+    zones: [] as string[],
+    position: { lat: 41.9028, lng: 12.4964 }, // Roma default
+    availability: { incall: { address: "", cap: "" }, outcall: true },
+  });
+
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const [leafletReady, setLeafletReady] = useState(false);
+
+  useEffect(() => {
+    // inject Leaflet CSS once
+    const id = "leaflet-css";
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = localStorage.getItem("auth-token") || "";
+        const r = await fetch("/api/profile/citta", { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+        if (r.ok) {
+          const j = await r.json();
+          if (j?.cities) setForm((f: any) => ({ ...f, ...j.cities }));
+        }
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    // Initialize map when container ready
+    if (!mapDivRef.current || mapRef.current || loading) return;
+    (async () => {
+      const L = await loadLeaflet();
+      const map = L.map(mapDivRef.current!).setView([form.position.lat, form.position.lng], 12);
+      mapRef.current = map;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+      const marker = L.marker([form.position.lat, form.position.lng], { draggable: true }).addTo(map);
+      markerRef.current = marker;
+      marker.on("dragend", () => {
+        const p = marker.getLatLng();
+        setForm((f: any) => ({ ...f, position: { lat: p.lat, lng: p.lng } }));
+      });
+      map.on("click", (e: any) => {
+        const p = e.latlng;
+        marker.setLatLng(p);
+        setForm((f: any) => ({ ...f, position: { lat: p.lat, lng: p.lng } }));
+      });
+      setLeafletReady(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapDivRef.current, loading]);
+
+  useEffect(() => {
+    // center marker when form.position changes
+    if (leafletReady && mapRef.current && markerRef.current) {
+      markerRef.current.setLatLng([form.position.lat, form.position.lng]);
+      mapRef.current.setView([form.position.lat, form.position.lng]);
+    }
+  }, [form.position, leafletReady]);
+
+  function setZoneInput(idx: number, val: string) {
+    setForm((f: any) => {
+      const z = [...(f.zones || [])];
+      z[idx] = val;
+      return { ...f, zones: z };
+    });
+  }
+
+  function addZone() {
+    setForm((f: any) => ({ ...f, zones: [...(f.zones || []), ""] }));
+  }
+
+  function removeZone(i: number) {
+    setForm((f: any) => ({ ...f, zones: (f.zones || []).filter((_: any, ix: number) => ix !== i) }));
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("auth-token") || "";
+      const r = await fetch("/api/profile/citta", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(form),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        alert(j?.error || "Errore salvataggio città di lavoro");
+        return;
+      }
+      alert("Città di Lavoro salvate");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader title="Città di Lavoro" subtitle="Definisci fino a 4 città, zone e posizione esatta sulla mappa" />
+
+      <div className="rounded-xl border border-gray-600 bg-gray-800 p-5 space-y-4">
+        {/* Città base e secondarie */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <Field label="Città Base">
+            <input value={form.baseCity} onChange={(e)=>setForm((f:any)=>({ ...f, baseCity: e.target.value }))} className="inp" placeholder="Es. Milano" />
+          </Field>
+          <Field label="Seconda Città">
+            <input value={form.secondCity} onChange={(e)=>setForm((f:any)=>({ ...f, secondCity: e.target.value }))} className="inp" placeholder="Es. Monza" />
+          </Field>
+          <Field label="Terza Città">
+            <input value={form.thirdCity} onChange={(e)=>setForm((f:any)=>({ ...f, thirdCity: e.target.value }))} className="inp" />
+          </Field>
+          <Field label="Quarta Città">
+            <input value={form.fourthCity} onChange={(e)=>setForm((f:any)=>({ ...f, fourthCity: e.target.value }))} className="inp" />
+          </Field>
+        </div>
+
+        {/* Zone per città base */}
+        <div>
+          <div className="text-sm text-gray-300 mb-1">Seleziona le tue zone (per la città base)</div>
+          <div className="space-y-2">
+            {(form.zones || []).map((z:string, i:number)=> (
+              <div key={i} className="flex items-center gap-2">
+                <input value={z} onChange={(e)=>setZoneInput(i, e.target.value)} className="inp flex-1" placeholder={`Zona #${i+1}`} />
+                <Button variant="secondary" onClick={()=>removeZone(i)}>Rimuovi</Button>
+              </div>
+            ))}
+            <Button variant="secondary" onClick={addZone}>+ Aggiungi zona</Button>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Suggerimento: es. Centro, Navigli, Porta Romana…</div>
+        </div>
+
+        {/* Posizione esatta su mappa */}
+        <div>
+          <div className="text-sm text-gray-300 mb-2">Posizione esatta sulla mappa</div>
+          <div ref={mapDivRef} className="w-full h-[360px] rounded-md overflow-hidden border border-gray-600" />
+          <div className="grid md:grid-cols-2 gap-4 mt-2">
+            <Field label="Latitudine"><input value={form.position.lat} onChange={(e)=>setForm((f:any)=>({ ...f, position: { ...f.position, lat: Number(e.target.value)||0 } }))} className="inp" /></Field>
+            <Field label="Longitudine"><input value={form.position.lng} onChange={(e)=>setForm((f:any)=>({ ...f, position: { ...f.position, lng: Number(e.target.value)||0 } }))} className="inp" /></Field>
+          </div>
+        </div>
+
+        {/* Disponibilità per */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <div className="text-sm text-gray-300">Disponibile per Incall</div>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={form.availability.incall.address} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, incall: { ...f.availability.incall, address: e.target.value } } }))} className="inp" placeholder="Indirizzo" />
+              <input value={form.availability.incall.cap} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, incall: { ...f.availability.incall, cap: e.target.value } } }))} className="inp" placeholder="CAP" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="text-sm text-gray-300">Disponibile per Outcall</div>
+            <label className="text-sm text-gray-300 flex items-center gap-2"><input type="checkbox" checked={!!form.availability.outcall} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, outcall: e.target.checked } }))} /> Outcall attivo</label>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva modifiche'}</Button>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .inp { background:#374151; border:1px solid #4b5563; color:#fff; border-radius:0.375rem; padding:0.5rem 0.75rem; }
+      `}</style>
+    </div>
+  );
+}
+
+function Field({ label, children, className="" }: any){
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      <label className="text-sm text-gray-300">{label}</label>
+      {children}
+    </div>
+  );
+}
