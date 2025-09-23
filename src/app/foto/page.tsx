@@ -85,7 +85,12 @@ export default function FotoPage() {
         {items.map((p, idx) => (
           <div key={p.id} className="relative group overflow-hidden rounded-xl border border-gray-600 shadow-sm hover:shadow-lg transition bg-gray-800 cursor-pointer" onClick={()=>setLightboxIdx(idx)}>
             <div className="relative w-full aspect-[3/4]">
-              <img src={p.url || p.src} alt={`Foto ${p.id}`} className="object-cover group-hover:scale-105 transition-transform absolute inset-0 w-full h-full" />
+              <img
+                src={p.url || p.src}
+                alt={`Foto ${p.id}`}
+                className="object-cover group-hover:scale-105 transition-transform absolute inset-0 w-full h-full"
+                onError={(e)=>{ const t=e.currentTarget; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+              />
               <div className="absolute top-2 left-2 flex gap-1">
                 {(p.verified || p.status === 'APPROVED') && (
                   <span className="text-[10px] font-bold bg-green-600 text-white rounded px-1.5 py-0.5">Verificata</span>
@@ -123,7 +128,12 @@ export default function FotoPage() {
           aria-label="Precedente"
         >‹</button>
         <div className="relative w-[90vw] max-w-[900px] aspect-[3/4]" onClick={(e)=>e.stopPropagation()}>
-          <img src={(items[lightboxIdx!].url || items[lightboxIdx!].src)} alt={`Foto ${items[lightboxIdx!].id}`} className="object-contain absolute inset-0 w-full h-full" />
+          <img
+            src={(items[lightboxIdx!].url || items[lightboxIdx!].src)}
+            alt={`Foto ${items[lightboxIdx!].id}`}
+            className="object-contain absolute inset-0 w-full h-full"
+            onError={(e)=>{ const t=e.currentTarget; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+          />
         </div>
         <button
           className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-3xl px-2"

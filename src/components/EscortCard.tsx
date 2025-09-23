@@ -61,7 +61,12 @@ export default function EscortCard({ escort }: { escort: Escort }) {
             ✓ Verificato
           </div>
         )}
-        <img src={escort.foto} alt={escort.nome} className="object-cover w-full h-full absolute inset-0" />
+        <img
+          src={escort.foto}
+          alt={escort.nome}
+          className="object-cover w-full h-full absolute inset-0"
+          onError={(e) => { const t = e.currentTarget; if (t.src.indexOf('/placeholder.svg') === -1) t.src = '/placeholder.svg'; }}
+        />
       </div>
       <div className="p-4 text-white flex-grow flex flex-col">
         <h3 className="text-lg font-bold mb-1">{escort.nome}, {escort.eta}</h3>

@@ -51,9 +51,29 @@ export default function AdminMediaFotoPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <SectionHeader title="Admin · Moderazione Foto" subtitle="Approva o rifiuta foto caricate dagli utenti" />
+    <div className="space-y-4">
+      <SectionHeader title="🖼️ Moderazione Foto" subtitle="Approva o rifiuta le foto caricate dalle escort" />
 
+      {/* Migrazione URL Foto */}
+      <div className="flex items-center justify-between bg-gray-800 border border-gray-600 rounded-md p-3">
+        <div className="text-sm text-gray-300">Se alcune foto storiche non si vedono, converti gli URL legacy da /uploads a /api/uploads.</div>
+        <Button
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={async ()=>{
+            try {
+              const token = localStorage.getItem('auth-token');
+              const res = await fetch('/api/admin/migrate/photo-urls', { method: 'POST', headers: { 'Authorization': `Bearer ${token || ''}` } });
+              const j = await res.json();
+              alert(res.ok ? `Migrazione completata. Aggiornati ${j.updated || 0} su ${j.scanned || 0}.` : (j.error || 'Errore migrazione'));
+              await load();
+            } catch (e) {
+              alert('Errore migrazione');
+            }
+          }}
+        >Migra URL Foto</Button>
+      </div>
+
+      {/* Filtro stato */}
       <div className="flex items-center gap-2">
         <select className="bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-sm text-white" value={status} onChange={(e)=>setStatus(e.target.value as any)}>
           <option value="IN_REVIEW">In revisione</option>

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+// Use native <img> to avoid optimizer issues with runtime uploads
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -235,7 +235,12 @@ export default function EscortDetailPage() {
         {/* Galleria */}
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
-            <Image src={escort.foto[active] || '/placeholder.svg'} alt={`${escort.nome} principale`} fill unoptimized className="object-cover" />
+            <img
+              src={escort.foto[active] || '/placeholder.svg'}
+              alt={`${escort.nome} principale`}
+              className="object-cover absolute inset-0 w-full h-full"
+              onError={(e)=>{ const t=e.currentTarget; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+            />
             {escort.girlOfTheDay && (
               <div className="absolute top-3 right-3 rotate-3">
                 <span className="bg-rose-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
@@ -251,7 +256,12 @@ export default function EscortDetailPage() {
                 onClick={() => setActive(idx)}
                 className={`relative w-full aspect-square rounded-md overflow-hidden border ${active === idx ? 'ring-2 ring-red-500' : 'border-neutral-200'}`}
               >
-                <Image src={src || '/placeholder.svg'} alt={`${escort.nome} thumb ${idx+1}`} fill unoptimized className="object-cover" />
+                <img
+                  src={src || '/placeholder.svg'}
+                  alt={`${escort.nome} thumb ${idx+1}`}
+                  className="object-cover absolute inset-0 w-full h-full"
+                  onError={(e)=>{ const t=e.currentTarget; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                />
               </button>
             ))}
           </div>
