@@ -42,6 +42,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.json({ ok: true, item })
     }
 
+    if (req.method === 'DELETE') {
+      const idParam = (req.query.id ?? (req.body && (req.body as any).id)) as any
+      const photoId = Number(idParam || 0)
+      if (!photoId) return res.status(400).json({ error: 'ID mancante' })
+      try {
+        const deleted = await prisma.photo.delete({ where: { id: photoId } })
+        return res.json({ ok: true, deleted })
+      } catch (e:any) {
+        // Se non esiste più, consideralo già eliminato
+        return res.status(404).json({ error: 'Foto non trovata' })
+      }
+    }
+
     return res.status(405).json({ error: 'Method not allowed' })
   } catch (e) {
     console.error('❌ Errore API admin/media/photos:', e)

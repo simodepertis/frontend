@@ -112,6 +112,19 @@ export default function AdminMediaFotoPage() {
                   <Button className="h-8 bg-red-600 hover:bg-red-700" onClick={()=>act(it.id,'reject')} disabled={actingId===it.id}>Rifiuta</Button>
                 </div>
               )}
+              <div className="p-2 pt-0 flex items-center justify-end">
+                <Button
+                  className="h-8 bg-gray-700 hover:bg-gray-600"
+                  onClick={async ()=>{
+                    if (!confirm('Eliminare definitivamente questa foto dal database?')) return;
+                    const token = localStorage.getItem('auth-token');
+                    const r = await fetch(`/api/admin/media/photos?id=${it.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token||''}` } });
+                    const j = await r.json().catch(()=>({}));
+                    if (!r.ok) { alert(j?.error || 'Errore eliminazione'); return; }
+                    await load();
+                  }}
+                >Elimina</Button>
+              </div>
             </div>
           ))}
         </div>

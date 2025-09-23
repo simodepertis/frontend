@@ -21,6 +21,13 @@ function pickPriceFromRates(rates: any): number | null {
 function normalizeUrl(u: string | null | undefined): string {
   const s = String(u || '')
   if (s.startsWith('/uploads/')) return '/api' + s
+  // handle absolute URLs with pathname /uploads/...
+  try {
+    const url = new URL(s)
+    if (url.pathname.startsWith('/uploads/')) {
+      return '/api' + url.pathname
+    }
+  } catch {}
   return s
 }
 
