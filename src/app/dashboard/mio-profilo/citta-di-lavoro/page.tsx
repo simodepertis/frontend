@@ -67,7 +67,10 @@ export default function CittaDiLavoroPage() {
     fourthCity: "",
     zones: [] as string[],
     position: { lat: 41.9028, lng: 12.4964 }, // Roma default
-    availability: { incall: { address: "", cap: "" }, outcall: true },
+    availability: {
+      incall: { address: "", cap: "", type: "", other: "" },
+      outcall: { enabled: true, type: "", other: "" },
+    },
   });
 
   const mapRef = useRef<any>(null);
@@ -345,10 +348,43 @@ export default function CittaDiLavoroPage() {
               <input value={form.availability.incall.address} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, incall: { ...f.availability.incall, address: e.target.value } } }))} className="inp" placeholder="Indirizzo" />
               <input value={form.availability.incall.cap} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, incall: { ...f.availability.incall, cap: e.target.value } } }))} className="inp" placeholder="CAP" />
             </div>
+            <div className="grid md:grid-cols-2 gap-2">
+              <select
+                className="inp"
+                value={form.availability.incall.type}
+                onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, incall: { ...f.availability.incall, type: e.target.value } } }))}
+              >
+                <option value="">- non selezionato -</option>
+                <option value="appartamento_privato">Appartamento privato</option>
+                <option value="camera_albergo">Camera d'albergo</option>
+                <option value="studio_club">Studio Club</option>
+                <option value="altro">Altro (si prega di fornire dettagli)</option>
+              </select>
+              {form.availability.incall.type === 'altro' && (
+                <input className="inp" placeholder="Dettagli incall" value={form.availability.incall.other} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, incall: { ...f.availability.incall, other: e.target.value } } }))} />
+              )}
+            </div>
           </div>
           <div className="space-y-2">
             <div className="text-sm text-gray-300">Disponibile per Outcall</div>
-            <label className="text-sm text-gray-300 flex items-center gap-2"><input type="checkbox" checked={!!form.availability.outcall} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, outcall: e.target.checked } }))} /> Outcall attivo</label>
+            <label className="text-sm text-gray-300 flex items-center gap-2"><input type="checkbox" checked={!!form.availability.outcall?.enabled} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, outcall: { ...(f.availability.outcall||{}), enabled: e.target.checked } } }))} /> Outcall attivo</label>
+            <div className="grid md:grid-cols-2 gap-2">
+              <select
+                className="inp"
+                value={form.availability.outcall?.type || ''}
+                onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, outcall: { ...(f.availability.outcall||{}), type: e.target.value } } }))}
+                disabled={!form.availability.outcall?.enabled}
+              >
+                <option value="">- non selezionato -</option>
+                <option value="solo_hotel">All'uomo solo in hotel</option>
+                <option value="solo_domicilio">All'uomo solo a domicilio</option>
+                <option value="domicilio_e_hotel">All'uomo a domicilio e hotel</option>
+                <option value="altro">Altro (si prega di fornire dettagli)</option>
+              </select>
+              {form.availability.outcall?.enabled && form.availability.outcall?.type === 'altro' && (
+                <input className="inp" placeholder="Dettagli outcall" value={form.availability.outcall?.other || ''} onChange={(e)=>setForm((f:any)=>({ ...f, availability: { ...f.availability, outcall: { ...(f.availability.outcall||{}), other: e.target.value } } }))} />
+              )}
+            </div>
           </div>
         </div>
 
