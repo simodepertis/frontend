@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faUserCheck, faStar } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
+import Link from "next/link";
 import FilterBar from "@/components/FilterBar";
 
 export default function EscortIndipendentiPage() {
@@ -227,8 +228,8 @@ export default function EscortIndipendentiPage() {
           {/* Griglia escort */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {escortsOrdinati.map((escort) => (
-              <div key={escort.id} className="relative">
-                <EscortCard escort={escort} />
+              <Link key={escort.id} href={`/escort/${escort.slug}`} className="relative block">
+                <EscortCard escort={{ id: escort.id, nome: escort.nome, eta: escort.eta, citta: escort.citta, prezzo: escort.prezzo, foto: escort.foto, rank: escort.rank, isVerified: escort.verificata }} />
                 {/* Badge Indipendente */}
                 <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
                   <FontAwesomeIcon icon={faUserCheck} className="mr-1" />
@@ -241,7 +242,7 @@ export default function EscortIndipendentiPage() {
                     Verificata
                   </div>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         </>

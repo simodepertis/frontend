@@ -41,6 +41,7 @@ export default async function handler(
       const rank = u.escortProfile?.tier || 'STANDARD'
       return {
         id: u.id,
+        slug: u.slug || `${u.nome?.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${u.id}`,
         nome: u.nome,
         eta: 25,
         citta: city,
