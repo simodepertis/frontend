@@ -73,6 +73,49 @@ function PaymentInstructions({ instructions, order }: { instructions: any; order
         )}
       </div>
 
+      {/* Posizionamento personalizzato (giorni a scelta) */}
+      {placementCfg && (
+        <div className="rounded-xl border bg-gray-800 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-semibold">Posizionamento personalizzato</div>
+            <div className="text-xs text-neutral-500">Prezzo: {placementCfg.pricePerDayCredits} crediti/giorno</div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-3 items-end">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm text-gray-400">Giorni</label>
+              <input type="number" min={placementCfg.minDays} max={placementCfg.maxDays} value={placementDays}
+                onChange={(e)=>setPlacementDays(Math.min(Math.max(Number(e.target.value||placementCfg.minDays), placementCfg.minDays), placementCfg.maxDays))}
+                className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-32" />
+              <div className="text-xs text-neutral-500">Range: {placementCfg.minDays}–{placementCfg.maxDays} giorni</div>
+            </div>
+            <div>
+              <div className="text-sm text-neutral-600">Costo</div>
+              <div className="font-semibold text-white">{placementCfg.pricePerDayCredits * (placementDays||0)} crediti</div>
+            </div>
+            <div className="flex md:justify-end">
+              <Button onClick={async ()=>{
+                const days = placementDays;
+                if (!days || days < placementCfg.minDays || days > placementCfg.maxDays) { alert('Numero giorni non valido'); return; }
+                try {
+                  const res = await fetch('/api/credits/spend-custom', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`,
+                    },
+                    body: JSON.stringify({ days })
+                  });
+                  const data = await res.json();
+                  if (!res.ok) { alert(data?.error || 'Errore attivazione posizionamento'); return; }
+                  await loadAll();
+                  setNotice({ type: 'success', msg: `Posizionamento attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})` });
+                } catch { alert('Errore attivazione posizionamento'); }
+              }}>Attiva personalizzato</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 p-3 rounded-md bg-gray-700 border border-gray-600 text-xs text-gray-300">
         - Conserva la ricevuta in formato immagine o PDF.\n
         - Dopo il versamento, carica la ricevuta nella sezione "I miei ordini" qui sotto.\n
@@ -97,6 +140,9 @@ export default function CreditiPage() {
   const [orderInstructions, setOrderInstructions] = useState<any | null>(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [uploadingOrderId, setUploadingOrderId] = useState<number | null>(null);
+  // Custom placement settings and form
+  const [placementCfg, setPlacementCfg] = useState<{ pricePerDayCredits: number; minDays: number; maxDays: number } | null>(null);
+  const [placementDays, setPlacementDays] = useState<number>(7);
 
   useEffect(() => {
     loadAll();
@@ -108,11 +154,12 @@ export default function CreditiPage() {
         'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`
       };
       
-      const [w, c, t, o] = await Promise.all([
+      const [w, c, t, o, s] = await Promise.all([
         fetch('/api/credits/wallet', { headers: authHeaders }),
         fetch('/api/credits/catalog'),
         fetch('/api/credits/transactions', { headers: authHeaders }),
         fetch('/api/credits/orders', { headers: authHeaders }),
+        fetch('/api/credits/settings')
       ]);
       
       if (w.ok) { 
@@ -146,6 +193,18 @@ export default function CreditiPage() {
       } else {
         console.error('❌ Errore caricamento ordini:', await o.text());
       }
+      // Load custom placement settings
+      try {
+        const s = await fetch('/api/credits/settings');
+        if (s.ok) {
+          const j = await s.json();
+          const p = j?.placement;
+          if (p) {
+            setPlacementCfg(p);
+            setPlacementDays(Math.min(Math.max(p.minDays, placementDays || p.minDays), p.maxDays));
+          }
+        }
+      } catch {}
     } catch (e) {
       console.error('❌ Errore caricamento dati:', e);
     }
