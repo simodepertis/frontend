@@ -72,6 +72,10 @@ export default function CittaDiLavoroPage() {
   const markerRef = useRef<any>(null);
   const mapDivRef = useRef<HTMLDivElement>(null);
   const [leafletReady, setLeafletReady] = useState(false);
+  // Autocomplete state
+  const [addrQuery, setAddrQuery] = useState("");
+  const [addrResults, setAddrResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     // inject Leaflet CSS once
@@ -209,6 +213,45 @@ export default function CittaDiLavoroPage() {
         {/* Posizione esatta su mappa */}
         <div>
           <div className="text-sm text-gray-300 mb-2">Posizione esatta sulla mappa</div>
+          {/* Autocomplete indirizzo (Nominatim) */}
+          <div className="grid md:grid-cols-[1fr,auto] gap-2 mb-2">
+            <input
+              value={addrQuery}
+              onChange={(e)=>setAddrQuery(e.target.value)}
+              className="inp"
+              placeholder="Cerca indirizzo o luogo (es. Via Torino Milano)"
+            />
+            <Button variant="secondary" onClick={async()=>{
+              const q = addrQuery.trim();
+              if (!q) { setAddrResults([]); return; }
+              setSearching(true);
+              try{
+                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=6`;
+                const r = await fetch(url, { headers: { 'Accept':'application/json' } });
+                const j = await r.json();
+                if (Array.isArray(j)) setAddrResults(j);
+              } finally { setSearching(false); }
+            }}>{searching? 'Cerco…':'Cerca'}</Button>
+          </div>
+          {addrResults.length > 0 && (
+            <div className="max-h-56 overflow-auto rounded-md border border-gray-600 mb-2 divide-y divide-gray-700 bg-gray-900">
+              {addrResults.map((it:any, idx:number)=> (
+                <button
+                  key={idx}
+                  onClick={()=>{
+                    const lat = Number(it.lat); const lon = Number(it.lon);
+                    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                      setForm((f:any)=>({ ...f, position: { lat, lng: lon }, baseCity: f.baseCity || (it.display_name?.split(',')[1]?.trim() || '') }));
+                      // center marker subito se mappa pronta
+                      try { if (markerRef.current) markerRef.current.setLatLng([lat, lon]); if (mapRef.current) mapRef.current.setView([lat, lon], 13); } catch {}
+                    }
+                    setAddrResults([]);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                >{it.display_name}</button>
+              ))}
+            </div>
+          )}
           <div ref={mapDivRef} className="w-full h-[360px] rounded-md overflow-hidden border border-gray-600" />
           <div className="grid md:grid-cols-2 gap-4 mt-2">
             <Field label="Latitudine"><input value={form.position.lat} onChange={(e)=>setForm((f:any)=>({ ...f, position: { ...f.position, lat: Number(e.target.value)||0 } }))} className="inp" /></Field>
