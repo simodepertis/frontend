@@ -109,6 +109,11 @@ export default function EscortDetailPage() {
   const [commentBody, setCommentBody] = useState("");
   const [submittingRev, setSubmittingRev] = useState(false);
   const [submittingCom, setSubmittingCom] = useState(false);
+  const [showReportProblem, setShowReportProblem] = useState(false);
+  const [reportMsg, setReportMsg] = useState("");
+  const [showReportPhoto, setShowReportPhoto] = useState(false);
+  const [reportPhotoUrl, setReportPhotoUrl] = useState<string>("");
+  const [reportReason, setReportReason] = useState<string>("");
 
   // Normalize services to array<string>
   const servicesList = useMemo<string[]>(() => {
@@ -492,6 +497,67 @@ export default function EscortDetailPage() {
           </div>
         </section>
       </div>
+      {/* Bottom action bar */}
+      <div className="sticky bottom-0 left-0 right-0 bg-gray-900/90 backdrop-blur border-t border-gray-700 mt-10">
+        <div className="container mx-auto px-4 py-3 flex flex-wrap gap-3 justify-center">
+          <Button
+            variant="secondary"
+            onClick={async()=>{
+              try { await navigator.clipboard.writeText(window.location.href); alert('Link copiato'); } catch { alert('Copia link non supportata'); }
+            }}
+          >Copia link</Button>
+          <Button variant="secondary" onClick={()=>{ setReportMsg(""); setShowReportProblem(true); }}>Segnala un problema</Button>
+          <Button variant="secondary" onClick={()=>{ setReportPhotoUrl(escort.foto[active]||""); setReportReason(""); setShowReportPhoto(true); }}>Segnala foto</Button>
+        </div>
+      </div>
+
+      {/* Modal: Segnala un problema */}
+      {showReportProblem && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
+          <div className="w-full max-w-lg bg-gray-800 border border-gray-600 rounded-xl p-5">
+            <div className="text-lg font-semibold text-white mb-2">Segnala un problema</div>
+            <textarea value={reportMsg} onChange={e=>setReportMsg(e.target.value)} className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 min-h-[120px]" placeholder="Descrivi il problema riscontrato" />
+            <div className="flex justify-end gap-2 mt-3">
+              <Button variant="secondary" onClick={()=>setShowReportProblem(false)}>Annulla</Button>
+              <Button onClick={async()=>{
+                try{
+                  const token = localStorage.getItem('auth-token')||'';
+                  const r = await fetch('/api/report/problem', { method:'POST', headers:{ 'Content-Type':'application/json', ...(token? { Authorization:`Bearer ${token}` }: {}) }, body: JSON.stringify({ slug, message: reportMsg }) });
+                  const j = await r.json().catch(()=>({}));
+                  if(!r.ok){ alert(j?.error||'Errore invio segnalazione'); return; }
+                  alert('Segnalazione inviata'); setShowReportProblem(false); setReportMsg("");
+                }catch{ alert('Errore rete'); }
+              }}>Invia</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Segnala foto */}
+      {showReportPhoto && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60">
+          <div className="w-full max-w-lg bg-gray-800 border border-gray-600 rounded-xl p-5">
+            <div className="text-lg font-semibold text-white mb-2">Segnala foto</div>
+            <div className="text-sm text-gray-300 mb-2">Stai segnalando la foto corrente.</div>
+            <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-gray-700 mb-3">
+              <img src={reportPhotoUrl || escort.foto[active] || '/placeholder.svg'} alt="Foto da segnalare" className="object-cover absolute inset-0 w-full h-full" />
+            </div>
+            <input value={reportReason} onChange={e=>setReportReason(e.target.value)} placeholder="Motivo (opzionale)" className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
+            <div className="flex justify-end gap-2 mt-3">
+              <Button variant="secondary" onClick={()=>setShowReportPhoto(false)}>Annulla</Button>
+              <Button onClick={async()=>{
+                try{
+                  const token = localStorage.getItem('auth-token')||'';
+                  const r = await fetch('/api/report/photo', { method:'POST', headers:{ 'Content-Type':'application/json', ...(token? { Authorization:`Bearer ${token}` }: {}) }, body: JSON.stringify({ slug, photoUrl: reportPhotoUrl || escort.foto[active], reason: reportReason }) });
+                  const j = await r.json().catch(()=>({}));
+                  if(!r.ok){ alert(j?.error||'Errore invio segnalazione foto'); return; }
+                  alert('Segnalazione foto inviata'); setShowReportPhoto(false); setReportReason("");
+                }catch{ alert('Errore rete'); }
+              }}>Invia</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
