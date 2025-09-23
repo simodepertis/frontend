@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
-import { getTokenFromRequest, verifyToken } from '@/lib/auth'
+import { verifyToken } from '@/lib/auth'
 
 async function requireUser(req: NextApiRequest) {
-  const raw = getTokenFromRequest(req as any)
+  const auth = req.headers.authorization || ''
+  const raw = auth.startsWith('Bearer ') ? auth.slice(7) : ''
   if (!raw) return null
   const payload = verifyToken(raw)
   if (!payload) return null
