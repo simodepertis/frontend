@@ -59,6 +59,7 @@ export default function EscortOnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [okMsg, setOkMsg] = useState("");
   const [errMsg, setErrMsg] = useState("");
+  const [lastErrorAt, setLastErrorAt] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
 
   // Carica/salva bozza su localStorage
@@ -71,6 +72,8 @@ export default function EscortOnboardingPage() {
   useEffect(() => {
     try { localStorage.setItem("escort-onboarding", JSON.stringify(data)); } catch {}
     if (!loading) setDirty(true);
+    // Pulisco eventuali error vecchi quando l'utente modifica
+    setErrMsg(""); setOkMsg("");
   }, [data]);
 
   // Autosave every 20s if there are unsaved changes
@@ -78,7 +81,7 @@ export default function EscortOnboardingPage() {
     if (loading) return;
     const id = setInterval(async () => {
       if (dirty && !saving) {
-        try { await saveToServer(); setDirty(false); } catch {}
+        try { await saveToServer(true); setDirty(false); } catch {}
       }
     }, 20000);
     return () => clearInterval(id);
@@ -88,7 +91,8 @@ export default function EscortOnboardingPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/me/profile');
+        const token = localStorage.getItem('auth-token');
+        const res = await fetch('/api/me/profile', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
         if (res.ok) {
           const { profile } = await res.json();
           if (profile) {
@@ -110,8 +114,8 @@ export default function EscortOnboardingPage() {
     })();
   }, []);
 
-  const next = () => setStep((s) => Math.min(6, s + 1));
-  const prev = () => setStep((s) => Math.max(1, s - 1));
+  const next = () => { setStep((s) => Math.min(6, s + 1)); setErrMsg(""); setOkMsg(""); };
+  const prev = () => { setStep((s) => Math.max(1, s - 1)); setErrMsg(""); setOkMsg(""); };
 
   const stepTitle = useMemo(() => {
     return ["", "Su di me", "Lingue", "Città di lavoro", "Servizi", "Tariffe", "Contatti"][step];
@@ -163,23 +167,40 @@ export default function EscortOnboardingPage() {
     return Math.round((done / checks.length) * 100);
   }, [data]);
 
-  const saveToServer = async () => {
+  const saveToServer = async (silent: boolean = false) => {
     setSaving(true);
     try {
+      const token = localStorage.getItem('auth-token');
       const res = await fetch('/api/me/profile', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify(data),
       });
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || 'Salvataggio fallito');
       }
-      setOkMsg('Bozza salvata.'); setErrMsg("");
+      setOkMsg('Bozza salvata.'); setErrMsg(""); setLastErrorAt(null);
+    } catch (e: any) {
+      if (!silent) {
+        const msg = e?.message || 'Errore salvataggio';
+        setErrMsg(msg);
+        setLastErrorAt(Date.now());
+      } else {
+        // in autosave non disturbiamo l'utente
+        console.warn('Autosave failed:', e);
+      }
     } finally {
       setSaving(false);
     }
   };
+
+  // Nasconde automaticamente l'errore dopo 4 secondi
+  useEffect(() => {
+    if (!errMsg) return;
+    const id = setTimeout(() => { setErrMsg(""); }, 4000);
+    return () => clearTimeout(id);
+  }, [errMsg]);
 
   const saveAndExit = async () => {
     try { await saveToServer(); setOkMsg('Bozza salvata. Potrai riprendere in qualsiasi momento.'); setErrMsg("");
@@ -407,7 +428,7 @@ export default function EscortOnboardingPage() {
           <div className="flex gap-2">
             <Button variant="secondary" disabled={step === 1} onClick={prev}>Indietro</Button>
             {step < 6 ? (
-              <Button onClick={async () => { await saveToServer(); next(); }} disabled={!stepValid}>
+              <Button onClick={async () => { try { await saveToServer(false); next(); } catch (e:any) { setErrMsg(e?.message || 'Errore salvataggio'); setOkMsg(''); } }} disabled={!stepValid}>
                 {stepValid ? (saving ? '...' : 'Avanti') : 'Completa campi richiesti'}
               </Button>
             ) : (
