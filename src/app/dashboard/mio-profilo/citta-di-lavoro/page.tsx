@@ -3,6 +3,7 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 // Load Leaflet from CDN (no npm package required)
 function loadLeafletFromCDN(): Promise<any> {
@@ -56,6 +57,7 @@ function loadLeafletFromCDN(): Promise<any> {
 }
 
 export default function CittaDiLavoroPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>({
@@ -163,12 +165,13 @@ export default function CittaDiLavoroPage() {
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(form),
       });
-      const j = await r.json().catch(() => ({}));
       if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
         alert(j?.error || "Errore salvataggio città di lavoro");
         return;
       }
-      alert("Città di Lavoro salvate");
+      // Avanza a Servizi
+      router.push("/dashboard/escort/compila/servizi");
     } finally {
       setSaving(false);
     }
@@ -275,7 +278,7 @@ export default function CittaDiLavoroPage() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva modifiche'}</Button>
+          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva e continua'}</Button>
         </div>
       </div>
 

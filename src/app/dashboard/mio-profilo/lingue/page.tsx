@@ -3,6 +3,7 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 type LangItem = { language: string; level: string };
 
@@ -15,6 +16,7 @@ const LEVELS = [
 ];
 
 export default function LinguePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [list, setList] = useState<LangItem[]>([]);
@@ -53,9 +55,9 @@ export default function LinguePage() {
         headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` }: {}) },
         body: JSON.stringify({ languages: list })
       });
-      const j = await r.json().catch(()=>({}));
-      if (!r.ok) { alert(j?.error || 'Errore salvataggio lingue'); return; }
-      alert('Lingue salvate');
+      if (!r.ok) { const j = await r.json().catch(()=>({})); alert(j?.error || 'Errore salvataggio lingue'); return; }
+      // Avanza a Città di Lavoro
+      router.push('/dashboard/escort/compila/citta-di-lavoro');
     } finally { setSaving(false); }
   }
 
@@ -95,7 +97,7 @@ export default function LinguePage() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva modifiche'}</Button>
+          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva e continua'}</Button>
         </div>
       </div>
     </div>

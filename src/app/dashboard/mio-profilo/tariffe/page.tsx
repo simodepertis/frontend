@@ -3,6 +3,7 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 type RateItem = { duration: string; price: number };
 
@@ -16,6 +17,7 @@ const DURATE = [
 ];
 
 export default function TariffePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [incall, setIncall] = useState<RateItem[]>([]);
@@ -73,9 +75,9 @@ export default function TariffePage() {
         headers: { "Content-Type": "application/json", ...(token? { Authorization: `Bearer ${token}` }: {}) },
         body: JSON.stringify({ incall, outcall })
       });
-      const j = await r.json().catch(()=>({}));
-      if (!r.ok) { alert(j?.error || "Errore salvataggio tariffe"); return; }
-      alert("Tariffe salvate");
+      if (!r.ok) { const j = await r.json().catch(()=>({})); alert(j?.error || "Errore salvataggio tariffe"); return; }
+      // Fine flusso: ritorna in Dashboard
+      router.push("/dashboard");
     } finally { setSaving(false); }
   }
 
@@ -152,7 +154,7 @@ export default function TariffePage() {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={save} disabled={saving}>{saving ? "Salvo…" : "Salva modifiche"}</Button>
+        <Button onClick={save} disabled={saving}>{saving ? "Salvo…" : "Salva e continua"}</Button>
       </div>
     </div>
   );

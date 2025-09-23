@@ -3,6 +3,7 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 // Lista predefinita (esempio, estendibile) come nello screenshot
 const DEFAULT_GROUPS: Array<{ name: string; items: Array<{ key: string; label: string }> }> = [
@@ -26,6 +27,7 @@ type ServiceState = {
 };
 
 export default function ServiziPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [state, setState] = useState<ServiceState>({});
@@ -70,12 +72,13 @@ export default function ServiziPage() {
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ services: state }),
       });
-      const j = await r.json().catch(() => ({}));
       if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
         alert(j?.error || "Errore salvataggio servizi");
         return;
       }
-      alert("Servizi salvati");
+      // Avanza a Orari
+      router.push("/dashboard/escort/compila/orari");
     } finally {
       setSaving(false);
     }
@@ -121,7 +124,7 @@ export default function ServiziPage() {
         ))}
 
         <div className="flex justify-end">
-          <Button onClick={save} disabled={saving}>{saving ? "Salvo…" : "Salva modifiche"}</Button>
+          <Button onClick={save} disabled={saving}>{saving ? "Salvo…" : "Salva e continua"}</Button>
         </div>
       </div>
     </div>

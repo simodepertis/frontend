@@ -3,8 +3,10 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function BiografiaPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -52,9 +54,9 @@ export default function BiografiaPage() {
         headers: { 'Content-Type': 'application/json', ...(token? { Authorization: `Bearer ${token}`}: {}) },
         body: JSON.stringify({ bioIt: form.bioIt, info: { ...form, bioIt: undefined } })
       });
-      const j = await r.json().catch(()=>({}));
-      if (!r.ok) { alert(j?.error || 'Errore salvataggio biografia'); return; }
-      alert('Biografia salvata');
+      if (!r.ok) { const j = await r.json().catch(()=>({})); alert(j?.error || 'Errore salvataggio biografia'); return; }
+      // Avanza allo step successivo: Lingue
+      router.push('/dashboard/escort/compila/lingue');
     } finally { setSaving(false); }
   }
 
@@ -93,7 +95,7 @@ export default function BiografiaPage() {
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva modifiche'}</Button>
+          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva e continua'}</Button>
         </div>
       </div>
 

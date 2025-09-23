@@ -3,6 +3,7 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 type Day = 'Lun' | 'Mar' | 'Mer' | 'Gio' | 'Ven' | 'Sab' | 'Dom';
 const DAYS: Day[] = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
@@ -17,6 +18,7 @@ type WorkingHours = {
 };
 
 export default function OrariPage(){
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [wh, setWh] = useState<WorkingHours>({ mode: '247', same: [{ from: '00:00', to: '23:59' }] });
@@ -48,9 +50,9 @@ export default function OrariPage(){
     try{
       const token = localStorage.getItem('auth-token')||'';
       const r = await fetch('/api/profile/orari', { method:'PATCH', headers:{ 'Content-Type':'application/json', ...(token? { Authorization: `Bearer ${token}`}: {}) }, body: JSON.stringify({ workingHours: wh }) });
-      const j = await r.json().catch(()=>({}));
-      if (!r.ok){ alert(j?.error || 'Errore salvataggio orari'); return; }
-      alert('Orari salvati');
+      if (!r.ok){ const j = await r.json().catch(()=>({})); alert(j?.error || 'Errore salvataggio orari'); return; }
+      // Avanza a Tariffe
+      router.push('/dashboard/escort/compila/tariffe');
     } finally { setSaving(false); }
   }
 
@@ -122,7 +124,7 @@ export default function OrariPage(){
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva modifiche'}</Button>
+          <Button onClick={save} disabled={saving}>{saving? 'Salvo…':'Salva e continua'}</Button>
         </div>
       </div>
 
