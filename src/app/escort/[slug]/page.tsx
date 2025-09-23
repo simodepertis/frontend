@@ -288,9 +288,9 @@ export default function EscortDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <aside className="bg-neutral-50 rounded-xl border shadow-sm p-4 h-fit">
-          <div className="text-2xl font-bold">€ {escort.prezzo}</div>
-          <div className="mt-2 text-xs text-neutral-500">Tariffa indicativa</div>
+        <aside className="bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
+          <div className="text-2xl font-bold text-white">€ {escort.prezzo}</div>
+          <div className="mt-2 text-xs text-gray-400">Tariffa indicativa</div>
           {/* Contatti */}
           {data?.contacts && (
             <div className="mt-4 space-y-2">
@@ -302,17 +302,17 @@ export default function EscortDetailPage() {
               )}
             </div>
           )}
-          <button className="mt-2 w-full bg-neutral-200 hover:bg-neutral-300 text-neutral-800 rounded-md py-2">Salva profilo</button>
+          <button className="mt-2 w-full bg-gray-700 hover:bg-gray-600 text-white rounded-md py-2">Salva profilo</button>
           {me && data && me.id === data.userId && (
             <a href="/dashboard/crediti" className="mt-2 block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center rounded-md py-2 font-semibold">Promuovi</a>
           )}
           {escort.tier && escort.tier !== 'STANDARD' && (
-            <div className="mt-4 border-t pt-4 text-sm">
-              <div className="font-semibold">Promozione attiva</div>
+            <div className="mt-4 border-t border-gray-700 pt-4 text-sm">
+              <div className="font-semibold text-white">Promozione attiva</div>
               <div className="text-gray-300">{escort.tier} {escort.tierExpiresAt ? `fino al ${new Date(escort.tierExpiresAt).toLocaleDateString()}${countdown ? ` (${countdown})` : ''}` : ''}</div>
             </div>
           )}
-          <div className="mt-4 border-t pt-4 space-y-2 text-sm">
+          <div className="mt-4 border-t border-gray-700 pt-4 space-y-2 text-sm">
             <div className="flex items-center gap-2 text-gray-300">
               <FontAwesomeIcon icon={faShieldHeart} className="text-green-600" /> Verificata manualmente
             </div>
@@ -326,32 +326,32 @@ export default function EscortDetailPage() {
       <div className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-6" id="quick-access">
         <aside className="md:col-span-1 bg-gray-800 border rounded-xl shadow-sm p-4 h-fit sticky top-24">
           <div className="text-sm font-semibold mb-2 text-gray-300">Quick Access</div>
-          <nav className="space-y-1 text-sm">
-            <a href="#bio" className="block px-2 py-1 rounded hover:bg-neutral-100">Bio</a>
-            <a href="#lingue" className="block px-2 py-1 rounded hover:bg-neutral-100">Lingue</a>
-            <a href="#su-di-me" className="block px-2 py-1 rounded hover:bg-neutral-100">Su di me</a>
-            <a href="#servizi" className="block px-2 py-1 rounded hover:bg-neutral-100">Servizi</a>
-            <a href="#tariffe" className="block px-2 py-1 rounded hover:bg-neutral-100">Orari e Tariffe</a>
-            <a href="#recensioni" className="block px-2 py-1 rounded hover:bg-neutral-100">Recensioni</a>
-            <a href="#commenti" className="block px-2 py-1 rounded hover:bg-neutral-100">Commenti</a>
+          <nav className="space-y-1 text-sm text-gray-300">
+            <a href="#bio" className="block px-2 py-1 rounded hover:bg-gray-700">Bio</a>
+            <a href="#lingue" className="block px-2 py-1 rounded hover:bg-gray-700">Lingue</a>
+            <a href="#su-di-me" className="block px-2 py-1 rounded hover:bg-gray-700">Su di me</a>
+            <a href="#servizi" className="block px-2 py-1 rounded hover:bg-gray-700">Servizi</a>
+            <a href="#tariffe" className="block px-2 py-1 rounded hover:bg-gray-700">Orari e Tariffe</a>
+            <a href="#recensioni" className="block px-2 py-1 rounded hover:bg-gray-700">Recensioni</a>
+            <a href="#commenti" className="block px-2 py-1 rounded hover:bg-gray-700">Commenti</a>
           </nav>
         </aside>
         <section className="md:col-span-3 space-y-6">
           {/* Bio */}
           <div id="bio" className="bg-gray-800 border rounded-xl shadow-sm p-4">
-            <div className="text-lg font-semibold mb-2">Bio</div>
+            <div className="text-lg font-semibold mb-2 text-white">Bio</div>
             {escort.descrizione ? (
-              <div className="grid md:grid-cols-2 gap-4 text-sm text-neutral-800">
+              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-300">
                 <div className="whitespace-pre-wrap break-words leading-6">{escort.descrizione}</div>
-                <div className="text-neutral-600">
+                <div className="text-gray-400">
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <div className="font-medium">Città</div><div>{escort.citta}</div>
+                    <div className="font-medium text-white">Città</div><div>{escort.citta}</div>
                     {typeof (data as any)?.contacts?.website === 'string' && (
                       <>
-                        <div className="font-medium">Sito</div><div className="truncate">{(data as any)?.contacts?.website}</div>
+                        <div className="font-medium text-white">Sito</div><div className="truncate">{(data as any)?.contacts?.website}</div>
                       </>
                     )}
-                    <div className="font-medium">Promozione</div><div>{escort.tier || 'STANDARD'}</div>
+                    <div className="font-medium text-white">Promozione</div><div>{escort.tier || 'STANDARD'}</div>
                   </div>
                 </div>
               </div>
@@ -362,7 +362,7 @@ export default function EscortDetailPage() {
 
           {/* Lingue */}
           <div id="lingue" className="bg-gray-800 border rounded-xl shadow-sm p-4">
-            <div className="text-lg font-semibold mb-2">Lingue</div>
+            <div className="text-lg font-semibold mb-2 text-white">Lingue</div>
             {Array.isArray((data as any)?.languages) && (data as any).languages.length ? (
               <div className="flex flex-wrap gap-2">
                 {((data as any).languages as any[]).map((l:any,idx:number)=> {
@@ -372,7 +372,7 @@ export default function EscortDetailPage() {
                         ? [l.lang, l.level].filter(Boolean).join(' — ')
                         : (l?.label || l?.name || l?.code || JSON.stringify(l)));
                   return (
-                    <span key={idx} className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-neutral-100 border">{label}</span>
+                    <span key={idx} className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-gray-700 text-gray-200 border border-gray-600">{label}</span>
                   );
                 })}
               </div>
@@ -383,9 +383,9 @@ export default function EscortDetailPage() {
 
           {/* Su di me */}
           <div id="su-di-me" className="bg-gray-800 border rounded-xl shadow-sm p-4">
-            <div className="text-lg font-semibold mb-2">Su di me</div>
+            <div className="text-lg font-semibold mb-2 text-white">Su di me</div>
             {escort.descrizione ? (
-              <div className="text-sm text-neutral-800 whitespace-pre-line leading-6">{escort.descrizione}</div>
+              <div className="text-sm text-gray-300 whitespace-pre-line leading-6">{escort.descrizione}</div>
             ) : (
               <div className="text-sm text-neutral-500">Nessuna descrizione aggiuntiva.</div>
             )}
@@ -393,9 +393,9 @@ export default function EscortDetailPage() {
 
           {/* Servizi */}
           <div id="servizi" className="bg-gray-800 border rounded-xl shadow-sm p-4">
-            <div className="text-lg font-semibold mb-2">Servizi</div>
+            <div className="text-lg font-semibold mb-2 text-white">Servizi</div>
             {servicesList.length ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-gray-300">
                 {servicesList.map((s:string,idx:number)=> (
                   <div key={idx} className="flex items-start gap-2">
                     <span className="mt-[6px] inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -410,13 +410,13 @@ export default function EscortDetailPage() {
 
           {/* Orari e Tariffe */}
           <div id="tariffe" className="bg-gray-800 border rounded-xl shadow-sm p-4">
-            <div className="text-lg font-semibold mb-2">Orari e Tariffe</div>
+            <div className="text-lg font-semibold mb-2 text-white">Orari e Tariffe</div>
             {Array.isArray((data as any)?.rates) && (data as any).rates.length ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-300">
                 {((data as any).rates as any[]).map((r:any,idx:number)=> (
-                  <div key={idx} className="border rounded-md p-2 flex items-center justify-between">
+                  <div key={idx} className="border border-gray-600 rounded-md p-2 flex items-center justify-between">
                     <div className="text-gray-300">{r?.label || r?.type || 'Sessione'}</div>
-                    <div className="font-semibold">€ {r?.price ?? '-'}</div>
+                    <div className="font-semibold text-white">€ {r?.price ?? '-'}</div>
                   </div>
                 ))}
               </div>
