@@ -34,6 +34,13 @@ function kebab(s: string) {
     .replace(/(^-|-$)+/g, '')
 }
 
+function normalizeUrl(u: string | null | undefined): string | null {
+  const s = String(u || '')
+  if (!s) return null
+  if (s.startsWith('/uploads/')) return '/api' + s
+  return s
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -133,7 +140,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Allego cover APPROVED
       const withMeta = await Promise.all(filteredBase.map(async (it: any) => {
         const cover = await prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' } })
-        return { ...it, coverUrl: cover?.url || null }
+        return { ...it, coverUrl: normalizeUrl(cover?.url) }
       }))
 
       // PUBBLICAZIONE aggiornata:
@@ -143,7 +150,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .filter(x => x.hasApprovedDoc)
         .map(x => ({
           ...x,
-          coverUrl: x.coverUrl || '/placeholder.svg',
+          coverUrl: normalizeUrl(x.coverUrl) || '/placeholder.svg',
           priority: x.coverUrl ? x.priority : Math.min(x.priority, 10),
         }))
     }

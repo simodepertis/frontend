@@ -18,6 +18,12 @@ function pickPriceFromRates(rates: any): number | null {
   return min
 }
 
+function normalizeUrl(u: string | null | undefined): string {
+  const s = String(u || '')
+  if (s.startsWith('/uploads/')) return '/api' + s
+  return s
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -50,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const price = pickPriceFromRates(p.user?.escortProfile?.rates as any)
       return {
         id: p.id,
-        url: p.url,
+        url: normalizeUrl(p.url),
         status: p.status,
         userId: p.userId,
         city: firstCity,

@@ -1,6 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
+function normalizeUrl(u: string | null | undefined): string | null {
+  const s = String(u || '')
+  if (!s) return null
+  if (s.startsWith('/uploads/')) return '/api' + s
+  return s
+}
+
 function titleCase(s: string) {
   return s.split(/\s+/).filter(Boolean).map(w => w[0]?.toUpperCase() + w.slice(1)).join(' ')
 }
@@ -70,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // In sviluppo, se non ci sono APPROVED, mostra anche bozze/in review per facilitare i test
       photos = await prisma.photo.findMany({ where: { userId: user.id }, orderBy: { updatedAt: 'desc' }, take: 24 })
     }
-    const coverUrl = photos[0]?.url || null
+    const coverUrl = normalizeUrl(photos[0]?.url) || null
     const p: any = (user as any).escortProfile
 
     return res.json({
@@ -87,7 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       contacts: p?.contacts ?? {},
       languages: p?.languages ?? [],
       bio: p?.bioIt ?? p?.bioEn ?? null,
-      photos: photos.map(ph => ph.url),
+      photos: photos.map(ph => normalizeUrl(ph.url)).filter(Boolean) as string[],
       booking: (user as any).bookingSettings ? {
         enabled: (user as any).bookingSettings.enabled,
         minNotice: (user as any).bookingSettings.minNotice,
