@@ -47,7 +47,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const finalPath = path.join(uploadDir, `${Date.now()}_${fileNameSafe}`)
     await fs.promises.copyFile(file.filepath, finalPath)
 
-    const publicUrl = `/uploads/${path.basename(finalPath)}`
+    // Serve via API route to avoid static hosting issues on Render
+    const publicUrl = `/api/uploads/${path.basename(finalPath)}`
 
     const created = await prisma.photo.create({
       data: {
