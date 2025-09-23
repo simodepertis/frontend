@@ -4,23 +4,7 @@ import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-
-// Lista predefinita (esempio, estendibile) come nello screenshot
-const DEFAULT_GROUPS: Array<{ name: string; items: Array<{ key: string; label: string }> }> = [
-  {
-    name: "Servizi Generali",
-    items: [
-      { key: "pos_69", label: "69 posizione" },
-      { key: "sesso_anale", label: "Sesso anale" },
-      { key: "venuta_bocca", label: "Venuta in bocca" },
-      { key: "venuta_faccia", label: "Venuta sulla faccia" },
-      { key: "dildo_play", label: "Dildo Play / Toys" },
-      { key: "bacio_francese", label: "Bacio alla Francese" },
-      { key: "gfe", label: "Girlfriend Experience (GFE)" },
-    ],
-  },
-  // altri gruppi espandibili qui
-];
+import { SERVICE_GROUPS } from "@/data/services";
 
 type ServiceState = {
   [key: string]: { enabled: boolean; price?: number };
@@ -89,7 +73,7 @@ export default function ServiziPage() {
       <SectionHeader title="Servizi" subtitle="Seleziona i servizi e opzionalmente il prezzo per ciascuno" />
 
       <div className="rounded-xl border border-gray-600 bg-gray-800 p-5 space-y-6">
-        {DEFAULT_GROUPS.map((g) => (
+        {SERVICE_GROUPS.map((g) => (
           <div key={g.name} className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="font-semibold text-white">{g.name}</div>

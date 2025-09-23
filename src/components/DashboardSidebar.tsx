@@ -77,7 +77,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/ragazza-del-giorno", label: "Ragazza Del Giorno", icon: faWandMagicSparkles },
         { href: "/dashboard/bump-profilo", label: "Bump Profilo", icon: faArrowUp },
         { href: "/dashboard/recensioni", label: "Recensioni", icon: faStar },
-        { href: "/dashboard/impostazioni", label: "Impostazioni", icon: faGear },
+        // impostazioni duplicato rimosso (usa 'Il Mio Profilo')
         { href: "/dashboard/supporto", label: "Supporto", icon: faLifeRing },
         { href: "/dashboard/statistiche", label: "Statistiche del Profilo", icon: faChartBar },
         { href: "/dashboard/crediti", label: "Crediti", icon: faBolt },
@@ -101,7 +101,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/tour-citta", label: "Tour Città", icon: faPlane },
         { href: "/dashboard/pubblicita", label: "Acquista Pubblicità", icon: faBullhorn },
         { href: "/dashboard/recensioni", label: "Recensioni", icon: faStar },
-        { href: "/dashboard/impostazioni", label: "Impostazioni", icon: faGear },
+        // impostazioni duplicato rimosso (usa 'Il Mio Profilo')
         { href: "/dashboard/supporto", label: "Supporto", icon: faLifeRing },
         { href: "/dashboard/statistiche", label: "Statistiche", icon: faChartBar },
         { href: "/dashboard/crediti", label: "Crediti", icon: faBolt },
@@ -115,7 +115,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/impostazioni", label: "Il Mio Profilo", icon: faUser },
         { href: "/dashboard/ricerca", label: "La Ricerca", icon: faMagnifyingGlass },
         { href: "/dashboard/recensioni", label: "Recensioni", icon: faStar },
-        { href: "/dashboard/impostazioni", label: "Impostazioni", icon: faGear },
+        // impostazioni duplicato rimosso (usa 'Il Mio Profilo')
         { href: "/dashboard/crediti", label: "Crediti", icon: faBolt },
         { href: "/dashboard/supporto", label: "Supporto", icon: faLifeRing },
         { href: "/dashboard/avvisi", label: "Avvisi", icon: faBell },

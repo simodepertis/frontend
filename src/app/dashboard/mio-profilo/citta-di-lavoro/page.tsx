@@ -79,6 +79,11 @@ export default function CittaDiLavoroPage() {
   const [addrResults, setAddrResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
 
+  // City autocomplete states per field
+  const [cityQ, setCityQ] = useState<{ [k:string]: string }>({});
+  const [cityRes, setCityRes] = useState<{ [k:string]: any[] }>({});
+  const [cityLoading, setCityLoading] = useState<{ [k:string]: boolean }>({});
+
   useEffect(() => {
     // inject Leaflet CSS once
     const id = "leaflet-css";
@@ -156,6 +161,34 @@ export default function CittaDiLavoroPage() {
     setForm((f: any) => ({ ...f, zones: (f.zones || []).filter((_: any, ix: number) => ix !== i) }));
   }
 
+  // Debounced fetch for city suggestions
+  useEffect(() => {
+    const keys = Object.keys(cityQ);
+    if (keys.length === 0) return;
+    const ctrls: any[] = [];
+    keys.forEach((k) => {
+      const q = (cityQ[k] || '').trim();
+      if (!q) { setCityRes(prev=>({ ...prev, [k]: [] })); return; }
+      setCityLoading(prev=>({ ...prev, [k]: true }));
+      const ctrl = setTimeout(async () => {
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=it&q=${encodeURIComponent(q)}`;
+          const r = await fetch(url, { headers: { 'Accept':'application/json' } });
+          const j = await r.json();
+          const filtered = Array.isArray(j) ? j.filter((it:any)=> it.class==='place' && ['city','town','village','hamlet','municipality'].includes(it.type)).map((it:any)=> ({
+            label: it.display_name,
+            city: it.address?.city || it.address?.town || it.address?.village || it.address?.hamlet || it.address?.municipality || it.display_name.split(',')[0],
+            lat: Number(it.lat), lon: Number(it.lon)
+          })) : [];
+          setCityRes(prev=>({ ...prev, [k]: filtered }));
+        } catch { setCityRes(prev=>({ ...prev, [k]: [] })); }
+        finally { setCityLoading(prev=>({ ...prev, [k]: false })); }
+      }, 300);
+      ctrls.push(ctrl);
+    });
+    return () => { ctrls.forEach(clearTimeout); };
+  }, [cityQ]);
+
   async function save() {
     setSaving(true);
     try {
@@ -185,16 +218,58 @@ export default function CittaDiLavoroPage() {
         {/* Città base e secondarie */}
         <div className="grid md:grid-cols-2 gap-4">
           <Field label="Città Base">
-            <input value={form.baseCity} onChange={(e)=>setForm((f:any)=>({ ...f, baseCity: e.target.value }))} className="inp" placeholder="Es. Milano" />
+            <div className="relative">
+              <input
+                value={form.baseCity}
+                onChange={(e)=>{ setForm((f:any)=>({ ...f, baseCity: e.target.value })); setCityQ(prev=>({ ...prev, baseCity: e.target.value })); }}
+                className="inp w-full"
+                placeholder="Es. Milano"
+                autoComplete="off"
+              />
+              {((cityRes.baseCity||[]).length>0) && (
+                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {(cityRes.baseCity||[]).map((it:any, idx:number)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, baseCity: it.city })); setCityRes(p=>({ ...p, baseCity: [] })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{it.city}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
           <Field label="Seconda Città">
-            <input value={form.secondCity} onChange={(e)=>setForm((f:any)=>({ ...f, secondCity: e.target.value }))} className="inp" placeholder="Es. Monza" />
+            <div className="relative">
+              <input value={form.secondCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, secondCity: e.target.value })); setCityQ(prev=>({ ...prev, secondCity: e.target.value })); }} className="inp w-full" placeholder="Es. Monza" autoComplete="off" />
+              {((cityRes.secondCity||[]).length>0) && (
+                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {(cityRes.secondCity||[]).map((it:any, idx:number)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, secondCity: it.city })); setCityRes(p=>({ ...p, secondCity: [] })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{it.city}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
           <Field label="Terza Città">
-            <input value={form.thirdCity} onChange={(e)=>setForm((f:any)=>({ ...f, thirdCity: e.target.value }))} className="inp" />
+            <div className="relative">
+              <input value={form.thirdCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, thirdCity: e.target.value })); setCityQ(prev=>({ ...prev, thirdCity: e.target.value })); }} className="inp w-full" autoComplete="off" />
+              {((cityRes.thirdCity||[]).length>0) && (
+                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {(cityRes.thirdCity||[]).map((it:any, idx:number)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, thirdCity: it.city })); setCityRes(p=>({ ...p, thirdCity: [] })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{it.city}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
           <Field label="Quarta Città">
-            <input value={form.fourthCity} onChange={(e)=>setForm((f:any)=>({ ...f, fourthCity: e.target.value }))} className="inp" />
+            <div className="relative">
+              <input value={form.fourthCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, fourthCity: e.target.value })); setCityQ(prev=>({ ...prev, fourthCity: e.target.value })); }} className="inp w-full" autoComplete="off" />
+              {((cityRes.fourthCity||[]).length>0) && (
+                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {(cityRes.fourthCity||[]).map((it:any, idx:number)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, fourthCity: it.city })); setCityRes(p=>({ ...p, fourthCity: [] })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{it.city}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           </Field>
         </div>
 
