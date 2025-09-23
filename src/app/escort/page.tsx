@@ -13,8 +13,20 @@ const capelliOptions = ["Biondi", "Castani", "Neri"];
 export default function EscortListPage() {
   const [filtroCitta, setFiltroCitta] = useState("");
   const [filtroCapelli, setFiltroCapelli] = useState("");
+  const [country, setCountry] = useState("");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Initialize from URL params (?country=XX&citta=YYY)
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const c = sp.get('citta') || "";
+      const co = sp.get('country') || "";
+      if (c) setFiltroCitta(c);
+      if (co) setCountry(co);
+    } catch {}
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -22,6 +34,7 @@ export default function EscortListPage() {
       try {
         const params = new URLSearchParams();
         if (filtroCitta) params.set('citta', filtroCitta);
+        if (country) params.set('country', country);
         const res = await fetch(`/api/public/annunci?${params.toString()}`);
         if (res.ok) {
           const j = await res.json();
@@ -31,7 +44,7 @@ export default function EscortListPage() {
         }
       } finally { setLoading(false); }
     })();
-  }, [filtroCitta]);
+  }, [filtroCitta, country]);
 
   const escortsFiltrate = useMemo(() => {
     // capelli filtro non ancora supportato su API: applico client-side

@@ -7,33 +7,33 @@ import EscortCard from "@/components/EscortCard";
 
 export default function InternazionalePage() {
   const flags = [
-    { code: "fr", label: "Francia", href: "/annunci?country=FR", img: "/flags/fr.svg" },
-    { code: "it", label: "Italia", href: "/annunci?country=IT", img: "/flags/it.svg" },
-    { code: "de", label: "Germania", href: "/annunci?country=DE", img: "/flags/de.svg" },
-    { code: "es", label: "Spagna", href: "/annunci?country=ES", img: "/flags/es.svg" },
-    { code: "gb", label: "UK", href: "/annunci?country=UK", img: "/flags/gb.svg" },
-    { code: "ch", label: "Svizzera", href: "/annunci?country=CH", img: "/flags/ch.svg" },
-    { code: "nl", label: "Olanda", href: "/annunci?country=NL", img: "/flags/nl.svg" },
-    { code: "be", label: "Belgio", href: "/annunci?country=BE", img: "/flags/be.svg" },
+    { code: "fr", label: "Francia", href: "/escort?country=FR", img: "/flags/fr.svg" },
+    { code: "it", label: "Italia", href: "/escort?country=IT", img: "/flags/it.svg" },
+    { code: "de", label: "Germania", href: "/escort?country=DE", img: "/flags/de.svg" },
+    { code: "es", label: "Spagna", href: "/escort?country=ES", img: "/flags/es.svg" },
+    { code: "gb", label: "UK", href: "/escort?country=UK", img: "/flags/gb.svg" },
+    { code: "ch", label: "Svizzera", href: "/escort?country=CH", img: "/flags/ch.svg" },
+    { code: "nl", label: "Olanda", href: "/escort?country=NL", img: "/flags/nl.svg" },
+    { code: "be", label: "Belgio", href: "/escort?country=BE", img: "/flags/be.svg" },
   ];
 
   const cities: { name: string; count: number; href: string; highlight?: boolean }[] = [
-    { name: "Paris", count: 331, href: "/annunci?country=FR&citta=Parigi", highlight: true },
-    { name: "London", count: 179, href: "/annunci?country=UK&citta=London" },
-    { name: "Zurich", count: 25, href: "/annunci?country=CH&citta=Zurigo" },
-    { name: "Amsterdam", count: 60, href: "/annunci?country=NL&citta=Amsterdam" },
-    { name: "Berlin", count: 42, href: "/annunci?country=DE&citta=Berlin" },
-    { name: "Madrid", count: 35, href: "/annunci?country=ES&citta=Madrid" },
-    { name: "Barcelona", count: 34, href: "/annunci?country=ES&citta=Barcellona" },
-    { name: "Lisbon", count: 36, href: "/annunci?country=PT&citta=Lisbon" },
-    { name: "Warsaw", count: 65, href: "/annunci?country=PL&citta=Warsaw" },
-    { name: "Moscow", count: 54, href: "/annunci?country=RU&citta=Moscow", highlight: true },
-    { name: "Abu Dhabi", count: 159, href: "/annunci?country=AE&citta=Abu%20Dhabi" },
-    { name: "Doha", count: 149, href: "/annunci?country=QA&citta=Doha" },
-    { name: "Dubai", count: 331, href: "/annunci?country=AE&citta=Dubai", highlight: true },
-    { name: "Hong Kong", count: 38, href: "/annunci?country=HK&citta=Hong%20Kong" },
-    { name: "Bucharest", count: 44, href: "/annunci?country=RO&citta=Bucarest" },
-    { name: "Montreal", count: 31, href: "/annunci?country=CA&citta=Montreal" },
+    { name: "Paris", count: 331, href: "/escort?country=FR&citta=Parigi", highlight: true },
+    { name: "London", count: 179, href: "/escort?country=UK&citta=London" },
+    { name: "Zurich", count: 25, href: "/escort?country=CH&citta=Zurigo" },
+    { name: "Amsterdam", count: 60, href: "/escort?country=NL&citta=Amsterdam" },
+    { name: "Berlin", count: 42, href: "/escort?country=DE&citta=Berlin" },
+    { name: "Madrid", count: 35, href: "/escort?country=ES&citta=Madrid" },
+    { name: "Barcelona", count: 34, href: "/escort?country=ES&citta=Barcellona" },
+    { name: "Lisbon", count: 36, href: "/escort?country=PT&citta=Lisbon" },
+    { name: "Warsaw", count: 65, href: "/escort?country=PL&citta=Warsaw" },
+    { name: "Moscow", count: 54, href: "/escort?country=RU&citta=Moscow", highlight: true },
+    { name: "Abu Dhabi", count: 159, href: "/escort?country=AE&citta=Abu%20Dhabi" },
+    { name: "Doha", count: 149, href: "/escort?country=QA&citta=Doha" },
+    { name: "Dubai", count: 331, href: "/escort?country=AE&citta=Dubai", highlight: true },
+    { name: "Hong Kong", count: 38, href: "/escort?country=HK&citta=Hong%20Kong" },
+    { name: "Bucharest", count: 44, href: "/escort?country=RO&citta=Bucarest" },
+    { name: "Montreal", count: 31, href: "/escort?country=CA&citta=Montreal" },
   ];
 
   // Distribuisci in 4 colonne come nello screenshot
@@ -99,7 +99,7 @@ export default function InternazionalePage() {
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Escort in evidenza</h2>
-          <Link href="/annunci" className="text-sm text-blue-400 hover:underline">Vedi tutti »</Link>
+          <Link href="/escort" className="text-sm text-blue-400 hover:underline">Vedi tutte »</Link>
         </div>
         {loading ? (
           <div className="text-sm text-gray-400">Caricamento…</div>
