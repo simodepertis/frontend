@@ -61,7 +61,7 @@ export default function EscortCard({ escort }: { escort: Escort }) {
             ✓ Verificato
           </div>
         )}
-        <Image src={escort.foto} alt={escort.nome} fill className="object-cover w-full h-full" sizes="(max-width: 768px) 100vw, 33vw" />
+        <Image src={escort.foto} alt={escort.nome} fill unoptimized className="object-cover w-full h-full" sizes="(max-width: 768px) 100vw, 33vw" />
       </div>
       <div className="p-4 text-white flex-grow flex flex-col">
         <h3 className="text-lg font-bold mb-1">{escort.nome}, {escort.eta}</h3>
