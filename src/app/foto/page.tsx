@@ -87,7 +87,7 @@ export default function FotoPage() {
         {items.map((p, idx) => (
           <div key={p.id} className="relative group overflow-hidden rounded-xl border border-gray-600 shadow-sm hover:shadow-lg transition bg-gray-800 cursor-pointer" onClick={()=>setLightboxIdx(idx)}>
             <div className="relative w-full aspect-[3/4]">
-              <Image src={p.url || p.src} alt={`Foto ${p.id}`} fill className="object-cover group-hover:scale-105 transition-transform" />
+              <Image src={p.url || p.src} alt={`Foto ${p.id}`} fill unoptimized className="object-cover group-hover:scale-105 transition-transform" />
               <div className="absolute top-2 left-2 flex gap-1">
                 {(p.verified || p.status === 'APPROVED') && (
                   <span className="text-[10px] font-bold bg-green-600 text-white rounded px-1.5 py-0.5">Verificata</span>
@@ -101,7 +101,7 @@ export default function FotoPage() {
               </div>
               <div className="absolute bottom-2 left-2 right-2 flex justify-between text-[10px] text-white">
                 <span className="bg-black/60 rounded px-1.5 py-0.5">{p.city || '—'}</span>
-                <span className="bg-black/60 rounded px-1.5 py-0.5">Foto</span>
+                <span className="bg-black/60 rounded px-1.5 py-0.5">{p.price ? `€ ${p.price}` : 'Foto'}</span>
               </div>
             </div>
           </div>
