@@ -15,11 +15,13 @@ export default function PubblicitaPage() {
   useEffect(() => {
     (async () => {
       try {
+        const token = localStorage.getItem('auth-token') || '';
         const [c, w] = await Promise.all([
-          fetch('/API/credits/catalog'),
-          fetch('/API/credits/wallet'),
+          fetch('/api/credits/catalog'),
+          fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }),
         ]);
         if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
+        if (w.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
         if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); }
       } catch {}
     })();
@@ -28,11 +30,13 @@ export default function PubblicitaPage() {
   async function spend(code: string) {
     setSpending(code);
     try {
-      const res = await fetch('/API/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ code }) });
       const data = await res.json();
+      if (res.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
       if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
       // refresh balance
-      try { const w = await fetch('/API/credits/wallet'); if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } } catch {}
+      try { const w = await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } } catch {}
       alert(`Attivato ${data?.activated?.tier} fino al ${new Date(data?.activated?.expiresAt).toLocaleDateString()}`);
     } finally {
       setSpending("");
