@@ -115,35 +115,12 @@ export default function EscortDashboardPage() {
     return faStar;
   }
   function tierClasses(code: string) {
-    if (code.startsWith('VIP')) return {
-      card: 'bg-gradient-to-br from-yellow-900 to-amber-800 border-amber-600 hover:shadow-amber-900/60',
-      pill: 'bg-yellow-600 text-yellow-100',
-      cta: 'bg-yellow-600 hover:bg-yellow-700 text-white',
-      ring: 'ring-yellow-500',
-    };
-    if (code.startsWith('TITANIO')) return {
-      card: 'bg-gradient-to-br from-sky-900 to-blue-800 border-blue-600 hover:shadow-blue-900/60',
-      pill: 'bg-sky-600 text-sky-100',
-      cta: 'bg-sky-600 hover:bg-sky-700 text-white',
-      ring: 'ring-sky-500',
-    };
-    if (code.startsWith('ORO')) return {
-      card: 'bg-gradient-to-br from-amber-900 to-yellow-800 border-amber-600 hover:shadow-amber-900/60',
-      pill: 'bg-amber-600 text-amber-100',
-      cta: 'bg-amber-600 hover:bg-amber-700 text-white',
-      ring: 'ring-amber-500',
-    };
-    if (code.startsWith('ARGENTO')) return {
-      card: 'bg-gradient-to-br from-zinc-800 to-gray-700 border-gray-500 hover:shadow-gray-800/60',
-      pill: 'bg-zinc-600 text-zinc-100',
-      cta: 'bg-zinc-600 hover:bg-zinc-700 text-white',
-      ring: 'ring-zinc-500',
-    };
+    // Stile UNIFICATO scuro (coerente con /dashboard/crediti)
     return {
-      card: 'bg-gray-800 border-gray-600',
-      pill: 'bg-gray-600 text-gray-200',
+      card: 'bg-gray-900 border border-gray-600 hover:border-blue-400',
+      pill: 'bg-blue-600 text-white',
       cta: 'bg-blue-600 hover:bg-blue-700 text-white',
-      ring: 'ring-gray-500',
+      ring: 'ring-blue-500',
     };
   }
   useEffect(() => {
@@ -189,13 +166,13 @@ export default function EscortDashboardPage() {
                     </div>
                     <div>
                       <div className="font-semibold text-white">{p.label}</div>
-                      <div className="text-[11px] text-gray-400">Durata {p.durationDays} giorni</div>
+                      {/* Durata rimossa: l'utente sceglie i giorni nella pagina Crediti */}
                     </div>
                     <span className={`ml-auto text-[10px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="text-xs">
-                      <div className="text-gray-400">Costo</div>
+                      <div className="text-gray-300">Costo</div>
                       <div className="font-semibold text-white">{p.creditsCost} crediti</div>
                     </div>
                     <Button onClick={() => spend(p.code)} disabled={spending === p.code} className={`px-4 ${s.cta}`}>{spending === p.code ? 'Attivazione…' : 'Attiva'}</Button>
