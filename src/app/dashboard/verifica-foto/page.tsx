@@ -9,6 +9,7 @@ export default function VerificaFotoPage() {
   type PhotoItem = { id: string; name: string; url: string; size: number; status: "bozza" | "in_review" | "approvata" | "rifiutata"; isFace?: boolean };
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [togglingFaceId, setTogglingFaceId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   type DocItem = { id: string; type: 'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'; url: string; status: 'in_review' | 'approvato' | 'rifiutato' };
   const [docs, setDocs] = useState<DocItem[]>([]);
@@ -184,8 +185,8 @@ export default function VerificaFotoPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {photos.map((p) => (
               <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-700">
-                <div className="relative w-full h-56 bg-neutral-100">
-                  <Image src={p.url} alt={p.name} fill className="object-cover" />
+                <div className="relative w-full h-56 bg-black">
+                  <Image src={p.url} alt={p.name} fill className="object-contain" />
                   {p.isFace && (
                     <div className="absolute top-2 left-2 text-[10px] font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</div>
                   )}
@@ -202,16 +203,32 @@ export default function VerificaFotoPage() {
                     {p.status === 'bozza' && (
                       <>
                         <Button variant="secondary" className="px-2 py-1 h-7 text-xs whitespace-nowrap" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
-                        <Button className={`${p.isFace ? 'bg-blue-700 hover:bg-blue-800' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} onClick={async()=>{
+                        <Button 
+                          className={`${p.isFace ? 'bg-blue-700 hover:bg-blue-800' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} 
+                          disabled={Number.isNaN(Number(p.id)) || togglingFaceId === p.id}
+                          title={Number.isNaN(Number(p.id)) ? 'Attendi: foto in caricamento' : (togglingFaceId === p.id ? 'Aggiornamento in corso…' : '')}
+                          onClick={async()=>{
                           const idNum = Number(p.id);
                           if (Number.isNaN(idNum)) return;
                           try {
+                            setTogglingFaceId(p.id);
+                            // Ottimistico
+                            setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: !p.isFace } : x));
                             const token = localStorage.getItem('auth-token') || '';
                             const r = await fetch('/api/escort/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, isFace: !p.isFace }) });
                             const j = await r.json().catch(()=>({}));
-                            if (!r.ok) { alert(j?.error || 'Errore aggiornamento'); return; }
-                            setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: !p.isFace } : x));
-                          } catch {}
+                            if (!r.ok) {
+                              // rollback
+                              setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: p.isFace } : x));
+                              alert(j?.error || 'Errore aggiornamento');
+                              return;
+                            }
+                          } catch {
+                            // rollback
+                            setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: p.isFace } : x));
+                          } finally {
+                            setTogglingFaceId(null);
+                          }
                         }}>{p.isFace ? 'Rimuovi volto' : 'Segna come volto'}</Button>
                       </>
                     )}
