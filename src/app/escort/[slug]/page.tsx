@@ -7,7 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import SectionHeader from "@/components/SectionHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationDot, faBirthdayCake, faEuroSign, faShieldHeart, faStar, faComments } from "@fortawesome/free-solid-svg-icons";
-import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
+import { faWhatsapp, faTelegram, faViber } from "@fortawesome/free-brands-svg-icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
@@ -355,6 +355,25 @@ export default function EscortDetailPage() {
                 {Array.isArray(data.contacts.apps) && data.contacts.apps.includes('whatsapp') && (
                   <a href={`https://wa.me/${String(data.contacts.phone).replace(/\D/g,'')}`} target="_blank" className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-1.5 text-sm">
                     <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
+                  </a>
+                )}
+                {/* Telegram (prefer username/link if provided) */}
+                {((Array.isArray(data.contacts.apps) && data.contacts.apps.includes('telegram')) || data.contacts.telegram) && (
+                  (() => {
+                    const raw = String(data.contacts.telegram || '').trim();
+                    const isUrl = /^https?:\/\//i.test(raw);
+                    const href = raw ? (isUrl ? raw : `https://t.me/${raw.replace(/^@/, '')}`) : undefined;
+                    return href ? (
+                      <a href={href} target="_blank" className="inline-flex items-center gap-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md px-3 py-1.5 text-sm">
+                        <FontAwesomeIcon icon={faTelegram} /> Telegram
+                      </a>
+                    ) : null;
+                  })()
+                )}
+                {/* Viber (requires phone) */}
+                {Array.isArray(data.contacts.apps) && data.contacts.apps.includes('viber') && (
+                  <a href={`viber://chat?number=%2B${String(data.contacts.phone).replace(/\D/g,'')}`} className="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white rounded-md px-3 py-1.5 text-sm">
+                    <FontAwesomeIcon icon={faViber} /> Viber
                   </a>
                 )}
               </div>
