@@ -17,6 +17,11 @@ async function ensureDefaults() {
       { code: 'ARGENTO_30D', label: 'Argento 30 Giorni', creditsCost: 40, durationDays: 30, active: true },
     ]})
   }
+  // Ensure Girl of the Day exists
+  const girl = await prisma.creditProduct.findUnique({ where: { code: 'GIRL_1D' } })
+  if (!girl) {
+    await prisma.creditProduct.create({ data: { code: 'GIRL_1D', label: 'Ragazza del Giorno', creditsCost: 30, durationDays: 1, active: true } })
+  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

@@ -4,7 +4,7 @@ import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown, faStar, faGem, faShieldHalved, faCircleCheck, faCircleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { faCrown, faStar, faGem, faShieldHalved, faCircleCheck, faCircleExclamation, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
 
 function Copy({ text, label }: { text: string; label?: string }) {
   return (
@@ -240,6 +240,7 @@ export default function CreditiPage() {
   const sortedTx = useMemo(() => tx.slice().sort((a,b) => a.id < b.id ? 1 : -1), [tx]);
 
   const tierIcon = (code: string) => {
+    if (code.startsWith('GIRL')) return faWandMagicSparkles;
     if (code.startsWith('VIP')) return faCrown;
     if (code.startsWith('TITANIO')) return faShieldHalved;
     if (code.startsWith('ORO')) return faStar;
@@ -249,6 +250,14 @@ export default function CreditiPage() {
 
   const tierClasses = (code: string) => {
     // Ripristino stile precedente: card chiare per ciascun tier
+    if (code.startsWith('GIRL')) {
+      return {
+        card: 'bg-gradient-to-br from-pink-50 to-rose-100 border-rose-200 hover:shadow-rose-200/60',
+        pill: 'bg-rose-500 text-white',
+        cta: 'bg-rose-600 hover:bg-rose-700 text-white',
+        ring: 'ring-rose-400'
+      };
+    }
     if (code.startsWith('VIP')) {
       return {
         card: 'bg-gradient-to-br from-yellow-50 to-amber-100 border-amber-200 hover:shadow-amber-200/60',

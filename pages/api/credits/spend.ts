@@ -62,6 +62,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           remainingDays: product.durationDays,
         }
         await tx.escortProfile.update({ where: { userId: payload.userId }, data: { contacts } })
+      } else if (product.code.startsWith('GIRL_')) {
+        // Ragazza del Giorno: attiva badge per il giorno corrente
+        const today = new Date()
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+        await tx.escortProfile.upsert({
+          where: { userId: payload.userId },
+          update: { girlOfTheDayDate: startOfDay },
+          create: { userId: payload.userId, girlOfTheDayDate: startOfDay },
+        })
       } else {
         await tx.escortProfile.upsert({
           where: { userId: payload.userId },

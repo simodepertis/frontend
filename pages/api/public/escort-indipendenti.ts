@@ -25,10 +25,13 @@ export default async function handler(
         nome: true,
         slug: true,
         createdAt: true,
-        escortProfile: { select: { tier: true, cities: true } },
+        escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true } },
         photos: { where: { status: 'APPROVED' }, orderBy: { createdAt: 'desc' }, take: 1 },
       },
-      orderBy: [{ createdAt: 'desc' }],
+      orderBy: [
+        { escortProfile: { girlOfTheDayDate: 'desc' } as any }, // Prisma consente orderBy per relazioni 1-1
+        { createdAt: 'desc' }
+      ],
       take: 60,
     })
 
@@ -39,6 +42,13 @@ export default async function handler(
       })()
       const foto = u.photos[0]?.url || '/images/placeholder.jpg'
       const rank = u.escortProfile?.tier || 'STANDARD'
+      const girl = (() => {
+        const d: any = (u as any).escortProfile?.girlOfTheDayDate
+        if (!d) return false
+        const today = new Date().toISOString().slice(0,10)
+        const dd = new Date(d).toISOString().slice(0,10)
+        return dd === today
+      })()
       return {
         id: u.id,
         slug: u.slug || `${u.nome?.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${u.id}`,
@@ -51,6 +61,7 @@ export default async function handler(
         rank,
         verificata: true,
         pacchettoAttivo: true,
+        girlOfTheDay: girl,
       }
     })
 
