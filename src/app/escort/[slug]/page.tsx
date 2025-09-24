@@ -368,23 +368,7 @@ export default function EscortDetailPage() {
             ))}
           </div>
 
-          {/* Sezione Video (se disponibili) */}
-          {Array.isArray(escort.videos) && escort.videos.length > 0 && (
-            <div className="mt-5">
-              <div className="text-white font-semibold mb-2">Video</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {escort.videos.map((u, i) => {
-                  const src = u?.startsWith('/uploads/') ? ('/api' + u) : u;
-                  return (
-                    <video key={i} controls className="w-full rounded-md border border-gray-700 bg-black" preload="metadata">
-                      <source src={src} />
-                      Il tuo browser non supporta il video.
-                    </video>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          
 
           {/* Contatti sintetici sotto galleria */}
           {data?.contacts?.phone && (
@@ -476,6 +460,23 @@ export default function EscortDetailPage() {
               <FontAwesomeIcon icon={faStar} className="text-amber-500" /> Preferita da 128 utenti
             </div>
           </div>
+
+          {/* Sezione Video nella sidebar (se disponibili) */}
+          {Array.isArray(escort.videos) && escort.videos.length > 0 && (
+            <div className="mt-4 border-t border-gray-700 pt-4">
+              <div className="text-sm font-semibold text-white mb-2">Video</div>
+              <div className="grid gap-3">
+                {escort.videos.map((u, i) => {
+                  const src = u?.startsWith('/uploads/') ? ('/api' + u) : u;
+                  return (
+                    <video key={i} controls preload="metadata" className="w-full rounded-md border border-gray-700 bg-black aspect-video object-contain">
+                      <source src={src} />
+                    </video>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </aside>
       </div>
       {/* Quick Access + Content */}
