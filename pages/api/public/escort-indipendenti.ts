@@ -25,7 +25,7 @@ export default async function handler(
         nome: true,
         slug: true,
         createdAt: true,
-        escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true } },
+        escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true, contacts: true } },
         photos: { where: { status: 'APPROVED' }, orderBy: { createdAt: 'desc' }, take: 1 },
       },
       orderBy: [
@@ -38,9 +38,10 @@ export default async function handler(
     const escortsFormatted = escorts.map((u) => {
       const city = (() => {
         const c = u.escortProfile?.cities as any
-        return (c && (c.base || c.city)) || 'Milano'
+        return (c && (c.base || c.city || c.baseCity)) || 'Milano'
       })()
-      const foto = u.photos[0]?.url || '/images/placeholder.jpg'
+      const fotoRaw = u.photos[0]?.url || '/images/placeholder.jpg'
+      const foto = fotoRaw.startsWith('/uploads/') ? ('/api' + fotoRaw) : fotoRaw
       const rank = u.escortProfile?.tier || 'STANDARD'
       const girl = (() => {
         const d: any = (u as any).escortProfile?.girlOfTheDayDate
@@ -49,10 +50,16 @@ export default async function handler(
         const dd = new Date(d).toISOString().slice(0,10)
         return dd === today
       })()
+      const displayName = (() => {
+        try {
+          const cts: any = (u.escortProfile as any)?.contacts || {}
+          return (cts.bioInfo?.nomeProfilo) || u.nome
+        } catch { return u.nome }
+      })()
       return {
         id: u.id,
         slug: u.slug || `${u.nome?.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${u.id}`,
-        nome: u.nome,
+        nome: displayName,
         eta: 25,
         citta: city,
         capelli: undefined,

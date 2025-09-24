@@ -373,15 +373,17 @@ export default function VerificaFotoPage() {
                 <div key={doc.id} className="border rounded-lg p-3 bg-neutral-50">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="block">
+                      {(() => { const u = doc.url?.startsWith('/uploads/') ? ('/api' + doc.url) : doc.url; return (
+                      <a href={u} target="_blank" rel="noopener noreferrer" className="block">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={doc.url}
+                          src={u}
                           alt={doc.type}
                           className="w-20 h-14 object-cover rounded-md border border-gray-300"
                           onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
                         />
                       </a>
+                      ) })()}
                       <div>
                         <div className="font-medium text-sm">{doc.type}</div>
                         <div className="text-xs text-neutral-600">Documento di identità</div>
@@ -395,11 +397,13 @@ export default function VerificaFotoPage() {
                       }`}>
                         {doc.status === 'approvato' ? 'Approvato' : doc.status === 'rifiutato' ? 'Rifiutato' : 'In Revisione'}
                       </span>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800" title="Apri documento">
+                      {(() => { const u = doc.url?.startsWith('/uploads/') ? ('/api' + doc.url) : doc.url; return (
+                      <a href={u} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800" title="Apri documento">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       </a>
+                      ) })()}
                     </div>
                   </div>
                 </div>

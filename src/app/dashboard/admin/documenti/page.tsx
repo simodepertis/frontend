@@ -99,13 +99,13 @@ export default function AdminDocumentiPage() {
               <div className="relative w-full aspect-[4/3]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={doc.url}
+                  src={doc.url?.startsWith('/uploads/') ? ('/api' + doc.url) : doc.url}
                   alt={`Documento ${doc.id}`}
                   className="object-cover absolute inset-0 w-full h-full"
                   onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
                 />
                 <a
-                  href={doc.url}
+                  href={doc.url?.startsWith('/uploads/') ? ('/api' + doc.url) : doc.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="absolute top-2 right-2 text-xs px-2 py-1 rounded-md bg-black/60 hover:bg-black/80 text-white border border-white/20"

@@ -206,9 +206,9 @@ export default function VerificaVideoPage() {
                 <div className="relative w-full aspect-video bg-black grid place-items-center">
                   {v.thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={v.thumb} alt={v.title} className="w-full h-full object-cover" />
+                    <img src={v.thumb?.startsWith('/uploads/') ? ('/api' + v.thumb) : v.thumb} alt={v.title} className="w-full h-full object-cover" />
                   ) : (
-                    <video src={v.url} className="w-full h-full" controls preload="metadata" />
+                    <video src={v.url?.startsWith('/uploads/') ? ('/api' + v.url) : v.url} className="w-full h-full" controls preload="metadata" />
                   )}
                 </div>
                 <div className="p-3 flex items-center justify-between">
