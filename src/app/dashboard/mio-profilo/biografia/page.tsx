@@ -55,8 +55,8 @@ export default function BiografiaPage() {
         body: JSON.stringify({ bioIt: form.bioIt, info: { ...form, bioIt: undefined } })
       });
       if (!r.ok) { const j = await r.json().catch(()=>({})); alert(j?.error || 'Errore salvataggio biografia'); return; }
-      // Avanza allo step successivo: Lingue
-      router.push('/dashboard/escort/compila/lingue');
+      // Avanza allo step successivo: Lingue (percorso corretto)
+      router.push('/dashboard/mio-profilo/lingue');
     } finally { setSaving(false); }
   }
 
