@@ -100,11 +100,10 @@ export default function VerificaVideoPage() {
   // Upload da dispositivo (galleria/desktop)
   const onSelectVideoFiles = async (files: FileList | null) => {
     if (!files) return;
-    const tempItems: VideoItem[] = [];
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('video/')) continue;
       if (file.size > 200 * 1024 * 1024) { alert(`${file.name}: file troppo grande (max 200MB)`); continue; }
-      if (videos.length + tempItems.length >= MAX_VIDEOS) { alert(`Limite massimo di ${MAX_VIDEOS} video raggiunto`); break; }
+      if (videos.length >= MAX_VIDEOS) { alert(`Limite massimo di ${MAX_VIDEOS} video raggiunto`); break; }
       // Anteprima locale
       const tempUrl = URL.createObjectURL(file);
       const tempId = `temp-${file.name}-${file.size}-${Date.now()}`;
@@ -116,7 +115,8 @@ export default function VerificaVideoPage() {
         duration: '',
         status: 'bozza',
       };
-      tempItems.push(temp);
+      // Inserisci subito il temporaneo nello state
+      setVideos((prev) => [temp, ...prev]);
       // Upload reale
       try {
         const fd = new FormData();
@@ -146,7 +146,6 @@ export default function VerificaVideoPage() {
         setVideos((prev) => prev.filter(v => v.id !== tempId));
       }
     }
-    if (tempItems.length) setVideos((prev) => [...tempItems, ...prev]);
     // reset input
     try { if (fileInputRef.current) fileInputRef.current.value = ''; } catch {}
   };
@@ -206,9 +205,9 @@ export default function VerificaVideoPage() {
                 <div className="relative w-full aspect-video bg-black grid place-items-center">
                   {v.thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={v.thumb?.startsWith('/uploads/') ? ('/api' + v.thumb) : v.thumb} alt={v.title} className="w-full h-full object-cover" />
+                    <img src={v.thumb?.startsWith('/uploads/') ? ('/api' + v.thumb) : v.thumb} alt={v.title} className="w-full h-full object-contain bg-black" />
                   ) : (
-                    <video src={v.url?.startsWith('/uploads/') ? ('/api' + v.url) : v.url} className="w-full h-full" controls preload="metadata" />
+                    <video src={v.url?.startsWith('/uploads/') ? ('/api' + v.url) : v.url} className="w-full h-full object-contain bg-black" controls preload="metadata" />
                   )}
                 </div>
                 <div className="p-3 flex items-center justify-between">
