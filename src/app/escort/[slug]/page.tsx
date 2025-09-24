@@ -1,12 +1,13 @@
 "use client";
 
 // Use native <img> to avoid optimizer issues with runtime uploads
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import SectionHeader from "@/components/SectionHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLocationDot, faBirthdayCake, faEuroSign, faShieldHeart, faStar, faComments } from "@fortawesome/free-solid-svg-icons";
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
@@ -123,6 +124,51 @@ export default function EscortDetailPage() {
   const [showReportPhoto, setShowReportPhoto] = useState(false);
   const [reportPhotoUrl, setReportPhotoUrl] = useState<string>("");
   const [reportReason, setReportReason] = useState<string>("");
+
+  // Leaflet map for public profile (load via CDN to avoid deps)
+  const [leafletReady, setLeafletReady] = useState(false);
+  const mapDivRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  // Helper to load leaflet
+  function loadLeafletFromCDN(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined') return reject(new Error('SSR'));
+      const w: any = window as any;
+      if (w.L) return resolve(w.L);
+      const cssId = 'leaflet-css';
+      if (!document.getElementById(cssId)) {
+        const link = document.createElement('link');
+        link.id = cssId;
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      const jsId = 'leaflet-js';
+      if (!document.getElementById(jsId)) {
+        const s = document.createElement('script');
+        s.id = jsId;
+        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        s.async = true;
+        s.onload = () => {
+          try {
+            const L = (window as any).L;
+            L.Icon.Default.mergeOptions({
+              iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+              shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            });
+            resolve(L);
+          } catch (e) { reject(e); }
+        };
+        s.onerror = () => reject(new Error('Leaflet load failed'));
+        document.body.appendChild(s);
+      } else {
+        const iv = setInterval(() => { if ((window as any).L) { clearInterval(iv); resolve((window as any).L); } }, 50);
+        setTimeout(() => { clearInterval(iv); reject(new Error('Leaflet not available')); }, 5000);
+      }
+    });
+  }
 
   // Normalize services to array<string>
   const servicesList = useMemo<string[]>(() => {
@@ -297,6 +343,23 @@ export default function EscortDetailPage() {
               </button>
             ))}
           </div>
+
+          {/* Contatti sintetici sotto galleria */}
+          {data?.contacts?.phone && (
+            <div className="mt-4 border border-gray-700 bg-gray-900 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-white">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-blue-400"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.05-.24c1.12.37 2.33.57 3.54.57a1 1 0 011 1V21a1 1 0 01-1 1C10.85 22 2 13.15 2 2a1 1 0 011-1h3.5a1 1 0 011 1c0 1.21.2 2.42.57 3.54a1 1 0 01-.24 1.05l-2.2 2.2z"/></svg>
+                <a href={`tel:${data.contacts.phone}`} className="hover:underline">{data.contacts.phone}</a>
+              </div>
+              <div className="flex items-center gap-2">
+                {Array.isArray(data.contacts.apps) && data.contacts.apps.includes('whatsapp') && (
+                  <a href={`https://wa.me/${String(data.contacts.phone).replace(/\D/g,'')}`} target="_blank" className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-1.5 text-sm">
+                    <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-2 bg-neutral-100 border rounded-full px-3 py-1">

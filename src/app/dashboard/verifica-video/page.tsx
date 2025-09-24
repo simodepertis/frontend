@@ -17,7 +17,8 @@ export default function VerificaVideoPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/API/escort/videos');
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch('/API/escort/videos', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
         if (res.ok) {
           const { videos } = await res.json();
           const mapped: VideoItem[] = (videos || []).map((v: any) => ({
@@ -44,7 +45,8 @@ export default function VerificaVideoPage() {
       if (thumb) fd.append('thumb', thumb);
       if (duration) fd.append('duration', duration);
       fd.append('hd', String(hd));
-      const res = await fetch('/API/escort/videos/upload', { method: 'POST', body: fd });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/API/escort/videos/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined, body: fd });
       if (res.ok) {
         const { video } = await res.json();
         setVideos((prev) => [{
@@ -62,7 +64,10 @@ export default function VerificaVideoPage() {
 
   const removeVideo = async (id: string) => {
     setVideos((prev) => prev.filter(v => v.id !== id));
-    try { await fetch('/API/escort/videos', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: Number(id) }) }); } catch {}
+    try { 
+      const token = localStorage.getItem('auth-token') || '';
+      await fetch('/API/escort/videos', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` }: {}) }, body: JSON.stringify({ id: Number(id) }) }); 
+    } catch {}
   };
 
   const sendForReview = async () => {
@@ -72,7 +77,10 @@ export default function VerificaVideoPage() {
       await Promise.all(drafts.map(async (v) => {
         const idNum = Number(v.id);
         if (Number.isNaN(idNum)) return;
-        try { await fetch('/API/escort/videos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: idNum, action: 'in_review' }) }); } catch {}
+        try { 
+          const token = localStorage.getItem('auth-token') || '';
+          await fetch('/API/escort/videos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}`}: {}) }, body: JSON.stringify({ id: idNum, action: 'in_review' }) }); 
+        } catch {}
       }));
       setVideos((prev) => prev.map(v => v.status === 'bozza' ? { ...v, status: 'in_review' } : v));
       alert('Video inviati per verifica.');

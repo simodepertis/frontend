@@ -11,6 +11,8 @@ const voci = [
   { href: "/dashboard/mio-profilo/servizi", label: "Servizi" },
   { href: "/dashboard/mio-profilo/orari", label: "Orari di Lavoro" },
   { href: "/dashboard/mio-profilo/tariffe", label: "Tariffe" },
+  { href: "/dashboard/mio-profilo/galleria-foto", label: "Galleria Foto" },
+  { href: "/dashboard/mio-profilo/video", label: "Video" },
   { href: "/dashboard/mio-profilo/foto-naturale", label: "Foto Naturale" },
 ];
 
