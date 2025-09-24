@@ -3,7 +3,8 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
+// Nota: per anteprime documenti usiamo <img> al posto di next/image
+// per evitare problemi di domini esterni/signed URL non whitelisted.
 
 export default function AdminDocumentiPage() {
   type Document = { 
@@ -96,7 +97,13 @@ export default function AdminDocumentiPage() {
           {documents.map(doc => (
             <div key={doc.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-800">
               <div className="relative w-full aspect-[4/3]">
-                <Image src={doc.url} alt={`Documento ${doc.id}`} fill className="object-cover" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={doc.url}
+                  alt={`Documento ${doc.id}`}
+                  className="object-cover absolute inset-0 w-full h-full"
+                  onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                />
               </div>
               <div className="p-3">
                 <div className="text-sm text-white font-semibold">{getTypeLabel(doc.type)}</div>
