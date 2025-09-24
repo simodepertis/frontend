@@ -71,6 +71,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/verifica-foto", label: "Verifica Foto al 100%", icon: faCircleCheck },
         { href: "/dashboard/verifica-video", label: "Verifica Video", icon: faVideo },
         { href: "/dashboard/prenotazioni", label: "Prenotazioni Istantanee", icon: faBolt },
+        { href: "/dashboard/annunci/nuovo", label: "Nuovo Annuncio", icon: faBullhorn },
         { href: "/dashboard/lui-cerca", label: "Lui Cerca", icon: faMagnifyingGlass },
         { href: "/dashboard/tour-citta", label: "Tour Città", icon: faPlane },
         { href: "/dashboard/pubblicita", label: "Acquista Pubblicità", icon: faBullhorn },
