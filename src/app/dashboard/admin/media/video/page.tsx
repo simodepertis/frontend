@@ -70,13 +70,24 @@ export default function AdminMediaVideoPage() {
           {items.map(it => (
             <div key={it.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-800">
               <div className="relative w-full aspect-video">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={(it.thumb && it.thumb.startsWith('/uploads/')) ? ('/api' + it.thumb) : (it.thumb || '/placeholder.png')}
-                  alt={`Video ${it.id}`}
-                  className="object-cover absolute inset-0 w-full h-full"
-                  onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
-                />
+                {it.thumb ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={it.thumb.startsWith('/uploads/') ? ('/api' + it.thumb) : it.thumb}
+                    alt={`Video ${it.id}`}
+                    className="object-cover absolute inset-0 w-full h-full"
+                    onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                  />
+                ) : (
+                  <video
+                    className="object-cover absolute inset-0 w-full h-full bg-black"
+                    preload="metadata"
+                    muted
+                    controls
+                  >
+                    <source src={it.url?.startsWith('/uploads/') ? ('/api' + it.url) : it.url} />
+                  </video>
+                )}
                 <a
                   href={it.url?.startsWith('/uploads/') ? ('/api' + it.url) : it.url}
                   target="_blank"
