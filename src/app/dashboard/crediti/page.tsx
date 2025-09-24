@@ -73,48 +73,7 @@ function PaymentInstructions({ instructions, order }: { instructions: any; order
         )}
       </div>
 
-      {/* Posizionamento personalizzato (giorni a scelta) */}
-      {placementCfg && (
-        <div className="rounded-xl border bg-gray-800 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold">Posizionamento personalizzato</div>
-            <div className="text-xs text-neutral-500">Prezzo: {placementCfg.pricePerDayCredits} crediti/giorno</div>
-          </div>
-          <div className="grid md:grid-cols-3 gap-3 items-end">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm text-gray-400">Giorni</label>
-              <input type="number" min={placementCfg.minDays} max={placementCfg.maxDays} value={placementDays}
-                onChange={(e)=>setPlacementDays(Math.min(Math.max(Number(e.target.value||placementCfg.minDays), placementCfg.minDays), placementCfg.maxDays))}
-                className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-32" />
-              <div className="text-xs text-neutral-500">Range: {placementCfg.minDays}–{placementCfg.maxDays} giorni</div>
-            </div>
-            <div>
-              <div className="text-sm text-neutral-600">Costo</div>
-              <div className="font-semibold text-white">{placementCfg.pricePerDayCredits * (placementDays||0)} crediti</div>
-            </div>
-            <div className="flex md:justify-end">
-              <Button onClick={async ()=>{
-                const days = placementDays;
-                if (!days || days < placementCfg.minDays || days > placementCfg.maxDays) { alert('Numero giorni non valido'); return; }
-                try {
-                  const res = await fetch('/api/credits/spend-custom', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`,
-                    },
-                    body: JSON.stringify({ days })
-                  });
-                  const data = await res.json();
-                  if (!res.ok) { alert(data?.error || 'Errore attivazione posizionamento'); return; }
-                  await loadAll();
-                  setNotice({ type: 'success', msg: `Posizionamento attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})` });
-                } catch { alert('Errore attivazione posizionamento'); }
-              }}>Attiva personalizzato</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Se necessario, la sezione posizionamento personalizzato verrà mostrata altrove nella pagina crediti */}
 
       <div className="mt-4 p-3 rounded-md bg-gray-700 border border-gray-600 text-xs text-gray-300">
         - Conserva la ricevuta in formato immagine o PDF.\n
@@ -144,6 +103,9 @@ export default function CreditiPage() {
   // Custom placement settings and form
   const [placementCfg, setPlacementCfg] = useState<{ pricePerDayCredits: number; minDays: number; maxDays: number } | null>(null);
   const [placementDays, setPlacementDays] = useState<number>(7);
+  // Placement stato corrente dal profilo (contacts.placement)
+  const [placement, setPlacement] = useState<null | { code: string; status: 'ACTIVE'|'PAUSED'; startedAt?: string; lastStartAt?: string; lastPauseAt?: string; remainingDays?: number }>(null);
+  const [actingPlacement, setActingPlacement] = useState<null | 'pause' | 'resume'>(null);
 
   useEffect(() => {
     loadAll();
@@ -155,12 +117,13 @@ export default function CreditiPage() {
         'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`
       };
       
-      const [w, c, t, o, s] = await Promise.all([
+      const [w, c, t, o, s, me] = await Promise.all([
         fetch('/api/credits/wallet', { headers: authHeaders }),
         fetch('/api/credits/catalog'),
         fetch('/api/credits/transactions', { headers: authHeaders }),
         fetch('/api/credits/orders', { headers: authHeaders }),
-        fetch('/api/credits/settings')
+        fetch('/api/credits/settings'),
+        fetch('/api/profile/me', { headers: authHeaders }),
       ]);
       
       if (w.ok) { 
@@ -204,6 +167,22 @@ export default function CreditiPage() {
             setPlacementCfg(p);
             setPlacementDays(Math.min(Math.max(p.minDays, placementDays || p.minDays), p.maxDays));
           }
+        }
+      } catch {}
+
+      // Load placement from profile
+      try {
+        if (me.ok) {
+          const jm = await me.json();
+          const plc = jm?.profile?.contacts?.placement || null;
+          setPlacement(plc ? {
+            code: plc.code,
+            status: plc.status,
+            startedAt: plc.startedAt,
+            lastStartAt: plc.lastStartAt,
+            lastPauseAt: plc.lastPauseAt,
+            remainingDays: plc.remainingDays,
+          } : null);
         }
       } catch {}
     } catch (e) {
@@ -318,6 +297,53 @@ export default function CreditiPage() {
 
       {tab === 'crediti' && (
       <>
+      {/* Stato posizionamento attuale con pausa/ripresa */}
+      <div className="rounded-xl border bg-gray-800 p-5">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-semibold">Stato posizionamento</div>
+          {placement ? (
+            <span className={`text-xs px-2 py-1 rounded-full ${placement.status==='ACTIVE' ? 'bg-green-600 text-green-100' : 'bg-amber-600 text-amber-100'}`}>
+              {placement.status==='ACTIVE' ? 'Attivo' : 'In pausa'}
+            </span>
+          ) : (
+            <span className="text-xs text-neutral-500">Nessun posizionamento attivo</span>
+          )}
+        </div>
+        {placement && (
+          <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-300">
+            {typeof placement.remainingDays === 'number' && (
+              <div>Giorni residui: <span className="font-semibold text-white">{placement.remainingDays}</span></div>
+            )}
+            {placement.lastStartAt && <div>Ripreso: {new Date(placement.lastStartAt).toLocaleDateString()}</div>}
+            {placement.lastPauseAt && <div>Pausa: {new Date(placement.lastPauseAt).toLocaleDateString()}</div>}
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="secondary"
+                disabled={actingPlacement==='pause' || placement.status!=='ACTIVE'}
+                onClick={async()=>{
+                  setActingPlacement('pause');
+                  try {
+                    const res = await fetch('/api/credits/placement', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` }, body: JSON.stringify({ action: 'pause' }) });
+                    const j = await res.json().catch(()=>({}));
+                    if (!res.ok) { alert(j?.error || 'Errore pausa'); return; }
+                    await loadAll();
+                  } finally { setActingPlacement(null); }
+                }}>Metti in pausa</Button>
+              <Button
+                disabled={actingPlacement==='resume' || placement.status!=='PAUSED'}
+                onClick={async()=>{
+                  setActingPlacement('resume');
+                  try {
+                    const res = await fetch('/api/credits/placement', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` }, body: JSON.stringify({ action: 'resume' }) });
+                    const j = await res.json().catch(()=>({}));
+                    if (!res.ok) { alert(j?.error || 'Errore ripresa'); return; }
+                    await loadAll();
+                  } finally { setActingPlacement(null); }
+                }}>Riprendi</Button>
+            </div>
+          </div>
+        )}
+      </div>
       {/* Hero saldo + acquisto */}
       <div className="rounded-xl border bg-gray-800 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
