@@ -282,7 +282,7 @@ export default function EscortDetailPage() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch(`/API/public/recensioni/${slug}`);
+        const r = await fetch(`/api/public/recensioni/${slug}`);
         if (r.ok) { const j = await r.json(); setReviews(j.items || []); }
       } catch {}
       try {
@@ -296,12 +296,14 @@ export default function EscortDetailPage() {
     if (!data?.userId) { alert('Profilo non caricato'); return; }
     setSubmittingRev(true);
     try {
-      const res = await fetch('/API/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, rating: revRating, title: revTitle, body: revBody }) });
+      const token = localStorage.getItem('auth-token') || '';
+      if (!token) { window.location.href = `/autenticazione?redirect=/escort/${slug}`; return; }
+      const res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ targetUserId: data.userId, rating: revRating, title: revTitle, body: revBody }) });
       const j = await res.json();
       if (res.status === 401) { window.location.href = `/autenticazione?redirect=/escort/${slug}`; return; }
       if (!res.ok) { alert(j?.error || 'Errore invio recensione'); return; }
-      // In dev viene approvata: ricarico lista
-      try { const r = await fetch(`/API/public/recensioni/${slug}`); if (r.ok) { const jr = await r.json(); setReviews(jr.items || []); } } catch {}
+      alert('Recensione inviata, in attesa di approvazione.');
+      try { const r = await fetch(`/api/public/recensioni/${slug}`); if (r.ok) { const jr = await r.json(); setReviews(jr.items || []); } } catch {}
       setRevTitle(""); setRevBody(""); setRevRating(5);
     } finally { setSubmittingRev(false); }
   }

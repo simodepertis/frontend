@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           rating: r,
           title: String(title),
           body: String(body),
-          status: 'APPROVED', // auto-approve per ambiente dev
+          status: 'IN_REVIEW',
         },
         include: { author: { select: { id: true, nome: true } } }
       })
