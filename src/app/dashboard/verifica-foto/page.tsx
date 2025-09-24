@@ -435,7 +435,7 @@ export default function VerificaFotoPage() {
           Leggi attentamente il documento di liberatoria prima di procedere:
         </p>
         <div className="flex flex-col gap-1">
-          <a href="/docs/liberatoria.pdf" target="_blank" className="inline-block text-blue-600 underline text-sm" rel="noopener noreferrer">
+          <a href="/docs/Liberatoria.pdf" target="_blank" className="inline-block text-blue-600 underline text-sm" rel="noopener noreferrer">
             Apri il documento di consenso (PDF)
           </a>
           <a href="/consenso-legale" target="_blank" className="inline-block text-neutral-600 underline text-xs" rel="noopener noreferrer">
