@@ -8,9 +8,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faShieldHalved, faStar, faGem, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
 
 export default function PubblicitaPage() {
-  const [catalog, setCatalog] = useState<Array<{ code: string; label: string; creditsCost: number; durationDays: number }>>([]);
+  const [catalog, setCatalog] = useState<Array<{ code: string; label: string; creditsCost: number; durationDays: number; pricePerDayCredits?: number|null; minDays?: number|null; maxDays?: number|null }>>([]);
   const [balance, setBalance] = useState(0);
   const [spending, setSpending] = useState<string>("");
+  const [daysByCode, setDaysByCode] = useState<Record<string, number>>({});
 
   useEffect(() => {
     (async () => {
@@ -41,6 +42,26 @@ export default function PubblicitaPage() {
     } finally {
       setSpending("");
     }
+
+  async function spendByProduct(code: string, days: number) {
+    setSpending(code);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/credits/spend-by-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ code, days })
+      });
+      const data = await res.json();
+      if (res.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
+      if (!res.ok) { alert(data?.error || 'Errore attivazione'); return; }
+      // refresh balance
+      try { const w = await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } } catch {}
+      alert(`Pacchetto ${code} attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})`);
+    } finally {
+      setSpending("");
+    }
+  }
   }
 
   function tierIcon(code: string) {
@@ -115,22 +136,43 @@ export default function PubblicitaPage() {
                   </div>
                 )}
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-10 h-10 grid place-items-center rounded-full bg-white/80 ${s.ring} ring-2 text-neutral-800`}>
+                  <div className={`w-10 h-10 grid place-items-center rounded-full bg-gray-800/80 ${s.ring} ring-2 text-neutral-800`}>
                     <FontAwesomeIcon icon={tierIcon(p.code)} />
                   </div>
                   <div>
-                    <div className="font-extrabold text-lg">{p.label}</div>
-                    <div className="text-xs text-neutral-600">Durata {p.durationDays} giorni</div>
+                    <div className="font-extrabold text-lg text-neutral-900">{p.label}</div>
                   </div>
                   <span className={`ml-auto text-[11px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <div className="text-neutral-600">Costo</div>
-                    <div className="font-semibold">{p.creditsCost} crediti</div>
+                {p.pricePerDayCredits ? (
+                  <div className="mt-2 grid grid-cols-[1fr,auto,auto] items-end gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-sm text-neutral-600">Giorni</label>
+                      <input
+                        type="number"
+                        min={p.minDays || 1}
+                        max={p.maxDays || 60}
+                        value={daysByCode[p.code] ?? (p.minDays || 1)}
+                        onChange={(e)=>setDaysByCode(d=>({ ...d, [p.code]: Math.min(Math.max(Number(e.target.value|| (p.minDays||1)), p.minDays||1), p.maxDays||60) }))}
+                        className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="text-xs text-neutral-500">Range: {p.minDays || 1}–{p.maxDays || 60} giorni</div>
+                    </div>
+                    <div className="text-sm">
+                      <div className="text-neutral-700">Costo</div>
+                      <div className="font-semibold text-neutral-900">{(p.pricePerDayCredits||0) * (daysByCode[p.code] ?? (p.minDays||1))} crediti</div>
+                    </div>
+                    <Button onClick={() => spendByProduct(p.code, daysByCode[p.code] ?? (p.minDays || 1))} disabled={spending===p.code} className={`px-4 ${s.cta}`}>{spending===p.code ? 'Attivazione…' : 'Attiva'}</Button>
                   </div>
-                  <Button onClick={() => spend(p.code)} disabled={spending===p.code} className={`px-4 ${s.cta}`}>{spending===p.code ? 'Attivazione…' : 'Attiva'}</Button>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm">
+                      <div className="text-neutral-600">Costo</div>
+                      <div className="font-semibold text-neutral-900">{p.creditsCost} crediti</div>
+                    </div>
+                    <Button onClick={() => spend(p.code)} disabled={spending===p.code} className={`px-4 ${s.cta}`}>{spending===p.code ? 'Attivazione…' : 'Attiva'}</Button>
+                  </div>
+                )}
               </div>
             )
           })}
