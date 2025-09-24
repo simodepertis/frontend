@@ -92,9 +92,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const slug = p.user?.slug || `${kebab(p.user?.nome || '')}-${p.user?.id}`
         const hasApprovedDoc = Array.isArray(p.user?.documents) && p.user.documents.some((d:any)=> d.status === 'APPROVED')
         const price = pickPriceFromRates(p.rates as any)
+        const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         return {
           id: p.userId,
-          name: p.user?.nome || `User ${p.userId}`,
+          name: displayName,
           slug,
           cities,
           tier: p.tier,
