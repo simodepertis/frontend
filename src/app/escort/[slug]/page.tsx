@@ -21,6 +21,7 @@ export default function EscortDetailPage() {
     prezzo: number;
     descrizione: string;
     foto: string[];
+    videos?: string[];
     tier?: string;
     tierExpiresAt?: string | null;
     girlOfTheDay?: boolean;
@@ -39,6 +40,7 @@ export default function EscortDetailPage() {
       prezzo: 150,
       descrizione: "",
       foto: ["/placeholder.svg"],
+      videos: [],
       tier: undefined,
       tierExpiresAt: null,
       girlOfTheDay: false,
@@ -58,6 +60,7 @@ export default function EscortDetailPage() {
         } catch { return fallback.citta; }
       })(),
       foto: Array.isArray(data.photos) && data.photos.length ? data.photos : [data.coverUrl || '/placeholder.svg'],
+      videos: Array.isArray((data as any)?.videos) ? (data as any).videos : [],
       prezzo: (() => {
         try {
           const rates: any = (data as any)?.rates;
@@ -223,6 +226,15 @@ export default function EscortDetailPage() {
     return [];
   }, [data]);
 
+  // Media combinati (foto + video) per la galleria
+  const mediaList = useMemo(() => {
+    const norm = (u: string) => (u?.startsWith('/uploads/') ? ('/api' + u) : u) || '/placeholder.svg';
+    const imgs = (escort.foto || []).map((u) => ({ type: 'image' as const, src: norm(u) }));
+    const vids = (escort.videos || []).map((u) => ({ type: 'video' as const, src: norm(u) }));
+    const combined = [...imgs, ...vids];
+    return combined.length ? combined : [{ type: 'image' as const, src: '/placeholder.svg' }];
+  }, [escort.foto, escort.videos]);
+
   // Normalize rates for display: support array or {incall,outcall}
   const ratesList = useMemo<any[]>(() => {
     const raw = (data as any)?.rates;
@@ -331,12 +343,24 @@ export default function EscortDetailPage() {
         {/* Galleria */}
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
-            <img
-              src={escort.foto[active] || '/placeholder.svg'}
-              alt={`${escort.nome} principale`}
-              className="object-cover absolute inset-0 w-full h-full"
-              onError={(e)=>{ const t=e.currentTarget; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
-            />
+            {(() => {
+              const cur = mediaList[active] || mediaList[0];
+              if (cur?.type === 'video') {
+                return (
+                  <video controls className="object-cover absolute inset-0 w-full h-full bg-black">
+                    <source src={cur.src} />
+                  </video>
+                );
+              }
+              return (
+                <img
+                  src={cur?.src || '/placeholder.svg'}
+                  alt={`${escort.nome} principale`}
+                  className="object-cover absolute inset-0 w-full h-full"
+                  onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                />
+              );
+            })()}
             {escort.girlOfTheDay && (
               <div className="absolute top-3 right-3 rotate-3">
                 <span className="bg-rose-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
@@ -346,21 +370,35 @@ export default function EscortDetailPage() {
             )}
           </div>
           <div className="mt-3 grid grid-cols-4 sm:grid-cols-6 gap-2">
-            {escort.foto.map((src, idx) => (
+            {mediaList.map((m, idx) => (
               <button
                 key={idx}
                 onClick={() => setActive(idx)}
                 className={`relative w-full aspect-square rounded-md overflow-hidden border ${active === idx ? 'ring-2 ring-blue-500' : 'border-neutral-200'}`}
+                title={m.type === 'video' ? 'Video' : `Foto ${idx+1}`}
               >
-                <img
-                  src={src || '/placeholder.svg'}
-                  alt={`${escort.nome} thumb ${idx+1}`}
-                  className="object-cover absolute inset-0 w-full h-full"
-                  onError={(e)=>{ const t=e.currentTarget; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
-                />
+                {m.type === 'video' ? (
+                  <>
+                    <video muted preload="metadata" className="object-cover absolute inset-0 w-full h-full bg-black">
+                      <source src={m.src + '#t=0.1'} />
+                    </video>
+                    <div className="absolute inset-0 grid place-items-center">
+                      <span className="bg-black/50 text-white rounded-full px-2 py-1 text-[10px]">VIDEO</span>
+                    </div>
+                  </>
+                ) : (
+                  <img
+                    src={m.src || '/placeholder.svg'}
+                    alt={`${escort.nome} thumb ${idx+1}`}
+                    className="object-cover absolute inset-0 w-full h-full"
+                    onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                  />
+                )}
               </button>
             ))}
           </div>
+
+          
 
           {/* Contatti sintetici sotto galleria */}
           {data?.contacts?.phone && (

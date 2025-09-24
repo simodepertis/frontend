@@ -73,6 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!user) return res.status(404).json({ error: 'Profilo non trovato' })
 
     let photos = await prisma.photo.findMany({ where: { userId: user.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' }, take: 24 })
+    let videos = await prisma.video.findMany({ where: { userId: user.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' }, take: 12 })
     if (photos.length === 0 && process.env.NODE_ENV !== 'production') {
       // In sviluppo, se non ci sono APPROVED, mostra anche bozze/in review per facilitare i test
       photos = await prisma.photo.findMany({ where: { userId: user.id }, orderBy: { updatedAt: 'desc' }, take: 24 })
@@ -98,6 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       languages: p?.languages ?? [],
       bio: p?.bioIt ?? p?.bioEn ?? null,
       photos: photos.map(ph => normalizeUrl(ph.url)).filter(Boolean) as string[],
+      videos: videos.map(v => normalizeUrl(v.url)).filter(Boolean) as string[],
       booking: (user as any).bookingSettings ? {
         enabled: (user as any).bookingSettings.enabled,
         minNotice: (user as any).bookingSettings.minNotice,
