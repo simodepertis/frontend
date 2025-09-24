@@ -248,12 +248,44 @@ export default function CreditiPage() {
   };
 
   const tierClasses = (code: string) => {
-    // Stile unificato scuro per tutti i pacchetti (coerente con pagina crediti)
+    // Ripristino stile precedente: card chiare per ciascun tier
+    if (code.startsWith('VIP')) {
+      return {
+        card: 'bg-gradient-to-br from-yellow-50 to-amber-100 border-amber-200 hover:shadow-amber-200/60',
+        pill: 'bg-yellow-400 text-black',
+        cta: 'bg-yellow-500 hover:bg-yellow-600 text-black',
+        ring: 'ring-yellow-400'
+      };
+    }
+    if (code.startsWith('TITANIO')) {
+      return {
+        card: 'bg-gradient-to-br from-sky-50 to-blue-100 border-blue-200 hover:shadow-blue-200/60',
+        pill: 'bg-sky-700 text-white',
+        cta: 'bg-sky-700 hover:bg-sky-800 text-white',
+        ring: 'ring-sky-500'
+      };
+    }
+    if (code.startsWith('ORO')) {
+      return {
+        card: 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-200 hover:shadow-amber-200/60',
+        pill: 'bg-amber-300 text-black',
+        cta: 'bg-amber-400 hover:bg-amber-500 text-black',
+        ring: 'ring-amber-400'
+      };
+    }
+    if (code.startsWith('ARGENTO')) {
+      return {
+        card: 'bg-gradient-to-br from-zinc-50 to-gray-100 border-gray-200 hover:shadow-gray-200/60',
+        pill: 'bg-zinc-300 text-neutral-900',
+        cta: 'bg-zinc-700 hover:bg-zinc-800 text-white',
+        ring: 'ring-zinc-400'
+      };
+    }
     return {
-      card: 'bg-gray-900 border border-gray-600 hover:border-blue-400',
-      pill: 'bg-blue-600 text-white',
-      cta: 'bg-blue-600 hover:bg-blue-700 text-white',
-      ring: 'ring-blue-500'
+      card: 'bg-gray-800 border-neutral-200',
+      pill: 'bg-neutral-200 text-neutral-800',
+      cta: 'bg-neutral-900 hover:bg-black text-white',
+      ring: 'ring-neutral-300'
     };
   };
 
@@ -311,8 +343,8 @@ export default function CreditiPage() {
                       <FontAwesomeIcon icon={tierIcon(p.code)} />
                     </div>
                     <div>
-                      <div className="font-extrabold text-lg text-white">{p.label}</div>
-                      {/* Durata rimossa: l'utente sceglie i giorni */}
+                      <div className="font-extrabold text-lg text-neutral-900">{p.label}</div>
+                      <div className="text-xs text-neutral-700">Durata {p.durationDays} giorni</div>
                     </div>
                     <span className={`ml-auto text-[11px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                   </div>
@@ -331,8 +363,8 @@ export default function CreditiPage() {
                         <div className="text-xs text-neutral-500">Range: {p.minDays || 1}–{p.maxDays || 60} giorni</div>
                       </div>
                       <div className="text-sm">
-                        <div className="text-gray-300">Costo</div>
-                        <div className="font-semibold text-white">{(p.pricePerDayCredits||0) * (daysByCode[p.code] ?? (p.minDays||1))} crediti</div>
+                        <div className="text-neutral-700">Costo</div>
+                        <div className="font-semibold text-neutral-900">{(p.pricePerDayCredits||0) * (daysByCode[p.code] ?? (p.minDays||1))} crediti</div>
                       </div>
                       <Button onClick={async()=>{
                         const days = daysByCode[p.code] ?? (p.minDays || 1);
@@ -355,8 +387,8 @@ export default function CreditiPage() {
                   ) : (
                     <div className="flex items-center justify-between">
                       <div className="text-sm">
-                        <div className="text-gray-300">Costo</div>
-                        <div className="font-semibold text-white">{p.creditsCost} crediti</div>
+                        <div className="text-neutral-700">Costo</div>
+                        <div className="font-semibold text-neutral-900">{p.creditsCost} crediti</div>
                       </div>
                       <Button onClick={() => spend(p.code)} className={`px-4 ${s.cta}`}>Attiva</Button>
                     </div>
