@@ -2,7 +2,7 @@
 
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
-import Image from "next/image";
+// Nota: usiamo <img> per le anteprime per evitare blocchi di domini/signed URL con next/image
 import { Button } from "@/components/ui/button";
 
 export default function AdminMediaVideoPage() {
@@ -70,7 +70,22 @@ export default function AdminMediaVideoPage() {
           {items.map(it => (
             <div key={it.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-800">
               <div className="relative w-full aspect-video">
-                <Image src={it.thumb || '/placeholder.png'} alt={`Video ${it.id}`} fill className="object-cover" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={(it.thumb && it.thumb.startsWith('/uploads/')) ? ('/api' + it.thumb) : (it.thumb || '/placeholder.png')}
+                  alt={`Video ${it.id}`}
+                  className="object-cover absolute inset-0 w-full h-full"
+                  onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                />
+                <a
+                  href={it.url?.startsWith('/uploads/') ? ('/api' + it.url) : it.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute top-2 right-2 text-xs px-2 py-1 rounded-md bg-black/60 hover:bg-black/80 text-white border border-white/20"
+                  title="Apri in nuova scheda"
+                >
+                  Apri
+                </a>
               </div>
               <div className="p-2 text-xs text-gray-300 flex items-center justify-between">
                 <span className="line-clamp-1">{it.title || `Video ${it.id}`}</span>
