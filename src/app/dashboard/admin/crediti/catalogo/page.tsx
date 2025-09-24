@@ -14,6 +14,12 @@ export default function AdminCatalogoCreditiPage() {
   const [rate, setRate] = useState<number>(10); // crediti per 1€
   const [euroForm, setEuroForm] = useState<string>("");
   const [euroMap, setEuroMap] = useState<Record<number, string>>({});
+  // Stato per accredito manuale
+  const [manualUserId, setManualUserId] = useState<string>("");
+  const [manualEmail, setManualEmail] = useState<string>("");
+  const [manualAmount, setManualAmount] = useState<string>("");
+  const [manualNote, setManualNote] = useState<string>("");
+  const [manualLoading, setManualLoading] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -42,6 +48,27 @@ export default function AdminCatalogoCreditiPage() {
     }
   }
   useEffect(() => { load(); }, []);
+
+  async function grantManualCredits() {
+    const amt = Number(manualAmount);
+    if (!Number.isFinite(amt) || amt === 0) { alert('Inserisci un importo valido (es. 10)'); return; }
+    if (!manualUserId.trim() && !manualEmail.trim()) { alert('Inserisci User ID oppure Email'); return; }
+    setManualLoading(true);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/admin/credits/grant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ targetUserId: manualUserId || undefined, email: manualEmail || undefined, amount: amt, note: manualNote || undefined }),
+      });
+      const j = await res.json().catch(()=>({}));
+      if (!res.ok) { alert(j?.error || 'Errore accredito'); return; }
+      alert(`Accredito riuscito. Nuovo saldo: ${j?.wallet?.balance ?? '?'} crediti`);
+      setManualAmount(""); setManualNote("");
+    } finally {
+      setManualLoading(false);
+    }
+  }
 
   async function createProduct() {
     if (!form.code.trim() || !form.label.trim() || form.creditsCost <= 0 || form.durationDays <= 0) {
@@ -84,6 +111,33 @@ export default function AdminCatalogoCreditiPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Admin · Catalogo Crediti" subtitle="Gestisci prodotti, prezzi in crediti e durata" />
+
+      {/* Accredito manuale */}
+      <div className="rounded-xl border border-gray-600 bg-gray-800 p-5 space-y-3">
+        <div className="font-semibold text-white">Accredito manuale crediti</div>
+        <div className="text-sm text-gray-400">Inserisci <strong>User ID</strong> oppure <strong>Email</strong> dell'utente e l'importo di crediti da accreditare. Verrà creato un movimento di tipo <code>ADJUST</code>.</div>
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-gray-300">User ID</label>
+            <input value={manualUserId} onChange={(e)=>setManualUserId(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="Es. 123" />
+          </div>
+          <div className="flex flex-col gap-1 md:col-span-2">
+            <label className="text-sm text-gray-300">Email</label>
+            <input value={manualEmail} onChange={(e)=>setManualEmail(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="utente@example.com" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-gray-300">Importo (crediti)</label>
+            <input type="number" value={manualAmount} onChange={(e)=>setManualAmount(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="Es. 10" />
+          </div>
+          <div className="md:col-span-4 flex flex-col gap-1">
+            <label className="text-sm text-gray-300">Nota (opzionale)</label>
+            <input value={manualNote} onChange={(e)=>setManualNote(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" placeholder="Motivo dell'accredito (es. bonus, correzione, omaggio)" />
+          </div>
+          <div className="md:col-span-4">
+            <Button onClick={grantManualCredits} disabled={manualLoading}>{manualLoading ? 'Accredito…' : 'Accredita'}</Button>
+          </div>
+        </div>
+      </div>
       <div className="rounded-md bg-amber-50 border border-amber-200 text-amber-900 text-sm p-3">
         <div className="font-semibold mb-1">Come modificare i pacchetti</div>
         <div>Per cambiare il prezzo/giorno di un pacchetto ESISTENTE usa le card qui sotto (sezione "Imposta prezzo/giorno"). Il box sopra "Crea prodotto" serve solo per <strong>aggiungere</strong> un nuovo pacchetto.</div>
