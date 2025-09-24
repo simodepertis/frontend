@@ -10,6 +10,7 @@ import { faLocationDot, faBirthdayCake, faEuroSign, faShieldHeart, faStar, faCom
 import { faWhatsapp, faTelegram, faViber } from "@fortawesome/free-brands-svg-icons";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { SERVICE_GROUPS } from "@/data/services";
 
 export default function EscortDetailPage() {
   type EscortView = {
@@ -170,6 +171,13 @@ export default function EscortDetailPage() {
     });
   }
 
+  // Prepara mappa key -> etichetta servizi
+  const serviceLabel = useMemo<Record<string,string>>(()=>{
+    const m: Record<string,string> = {};
+    try { SERVICE_GROUPS.forEach(g => g.items.forEach(i => { m[i.key] = i.label; })); } catch {}
+    return m;
+  }, []);
+
   // Normalize services to array<string>
   const servicesList = useMemo<string[]>(() => {
     const raw = (data as any)?.services;
@@ -180,8 +188,15 @@ export default function EscortDetailPage() {
         return raw.map((it:any) => typeof it === 'string' ? it : (it?.label || it?.name || JSON.stringify(it)) ).filter(Boolean);
       }
       if (typeof raw === 'object') {
-        // Support wizard shape: { orientation, for: {...}, categories: { general:[], extra:[], fetish:[], virtual:[] }, notes }
+        // Support wizard shape e forma dashboard { key: { enabled, price } }
         const out: string[] = [];
+        // 1) Forma dashboard: { key: { enabled: true, price?: number } }
+        try {
+          const enabledKeys = Object.keys(raw).filter((k) => !!(raw as any)?.[k] && typeof (raw as any)[k] === 'object' && !!(raw as any)[k]?.enabled);
+          if (enabledKeys.length) {
+            out.push(...enabledKeys.map((k) => serviceLabel[k] || k));
+          }
+        } catch {}
         if (raw.categories && typeof raw.categories === 'object') {
           const cat = raw.categories as any;
           ['general','extra','fetish','virtual'].forEach((k) => {
@@ -499,7 +514,7 @@ export default function EscortDetailPage() {
           <div id="su-di-me" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2 text-white">Su di me</div>
             {escort.descrizione ? (
-              <div className="text-sm text-gray-300 whitespace-pre-line leading-6">{escort.descrizione}</div>
+              <div className="text-sm text-gray-300 whitespace-pre-wrap break-words overflow-x-hidden leading-6">{escort.descrizione}</div>
             ) : (
               <div className="text-sm text-neutral-500">Nessuna descrizione aggiuntiva.</div>
             )}
