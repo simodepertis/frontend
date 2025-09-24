@@ -286,7 +286,7 @@ export default function EscortDetailPage() {
         if (r.ok) { const j = await r.json(); setReviews(j.items || []); }
       } catch {}
       try {
-        const c = await fetch(`/API/public/commenti/${slug}`);
+        const c = await fetch(`/api/public/commenti/${slug}`);
         if (c.ok) { const j = await c.json(); setComments(j.items || []); }
       } catch {}
     })();
@@ -312,11 +312,12 @@ export default function EscortDetailPage() {
     if (!data?.userId) { alert('Profilo non caricato'); return; }
     setSubmittingCom(true);
     try {
-      const res = await fetch('/API/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId: data.userId, body: commentBody }) });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ targetUserId: data.userId, body: commentBody }) });
       const j = await res.json();
       if (res.status === 401) { window.location.href = `/autenticazione?redirect=/escort/${slug}`; return; }
       if (!res.ok) { alert(j?.error || 'Errore invio commento'); return; }
-      try { const c = await fetch(`/API/public/commenti/${slug}`); if (c.ok) { const jc = await c.json(); setComments(jc.items || []); } } catch {}
+      try { const c = await fetch(`/api/public/commenti/${slug}`); if (c.ok) { const jc = await c.json(); setComments(jc.items || []); } } catch {}
       setCommentBody("");
     } finally { setSubmittingCom(false); }
   }
