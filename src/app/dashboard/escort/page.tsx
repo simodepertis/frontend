@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown, faShieldHalved, faStar, faGem } from "@fortawesome/free-solid-svg-icons";
+import { faCrown, faShieldHalved, faStar, faGem, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
 
 export default function EscortDashboardPage() {
   const [availableBooking, setAvailableBooking] = useState(false);
@@ -108,6 +108,7 @@ export default function EscortDashboardPage() {
   }
 
   function tierIcon(code: string) {
+    if (code.startsWith('GIRL')) return faWandMagicSparkles;
     if (code.startsWith('VIP')) return faCrown;
     if (code.startsWith('TITANIO')) return faShieldHalved;
     if (code.startsWith('ORO')) return faStar;
@@ -116,6 +117,12 @@ export default function EscortDashboardPage() {
   }
   function tierClasses(code: string) {
     // Stile come in /dashboard/crediti: card chiare per ciascun tier
+    if (code.startsWith('GIRL')) return {
+      card: 'bg-gradient-to-br from-pink-50 to-rose-100 border-rose-200 hover:shadow-rose-200/60',
+      pill: 'bg-rose-500 text-white',
+      cta: 'bg-rose-600 hover:bg-rose-700 text-white',
+      ring: 'ring-rose-400',
+    };
     if (code.startsWith('VIP')) return {
       card: 'bg-gradient-to-br from-yellow-50 to-amber-100 border-amber-200 hover:shadow-amber-200/60',
       pill: 'bg-yellow-400 text-black',
@@ -180,7 +187,11 @@ export default function EscortDashboardPage() {
           <div className="text-sm text-gray-400">Nessun pacchetto disponibile al momento.</div>
         ) : (
           <div className="grid gap-4 md:grid-cols-3">
-            {catalog.slice(0,3).map(p => {
+            {catalog
+              .slice()
+              .sort((a,b)=> (a.code.startsWith('GIRL')? -1:0) - (b.code.startsWith('GIRL')? -1:0))
+              .slice(0,3)
+              .map(p => {
               const s = tierClasses(p.code);
               return (
                 <div key={p.code} className={`relative rounded-2xl border p-4 transition-shadow hover:shadow-xl ${s.card}`}>
