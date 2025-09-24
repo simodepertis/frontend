@@ -62,7 +62,7 @@ export default function EscortCard({ escort }: { escort: Escort }) {
           </div>
         )}
         <img
-          src={escort.foto}
+          src={escort.foto?.startsWith('/uploads/') ? ('/api' + escort.foto) : escort.foto}
           alt={escort.nome}
           className="object-cover w-full h-full absolute inset-0"
           onError={(e) => { const t = e.currentTarget; if (t.src.indexOf('/placeholder.svg') === -1) t.src = '/placeholder.svg'; }}
