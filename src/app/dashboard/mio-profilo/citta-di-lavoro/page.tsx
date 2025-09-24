@@ -81,6 +81,14 @@ export default function CittaDiLavoroPage() {
   const [addrQuery, setAddrQuery] = useState("");
   const [addrResults, setAddrResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  // Chevron dropdown open states per city field
+  const [openCity, setOpenCity] = useState<{ [k:string]: boolean }>({});
+  const COMMON_CITIES: string[] = [
+    "Milano","Roma","Torino","Napoli","Bologna","Firenze","Genova","Venezia","Verona","Padova",
+    "Brescia","Monza","Bergamo","Como","Varese","Piacenza","Parma","Modena","Reggio Emilia","Rimini",
+    "Ancona","Pesaro","Perugia","Terni","L'Aquila","Pescara","Bari","Lecce","Taranto","Brindisi",
+    "Cagliari","Sassari","Palermo","Catania","Messina","Reggio Calabria","Trieste","Udine","Bolzano","Trento"
+  ];
 
   // City autocomplete states per field
   const [cityQ, setCityQ] = useState<{ [k:string]: string }>({});
@@ -225,10 +233,12 @@ export default function CittaDiLavoroPage() {
               <input
                 value={form.baseCity}
                 onChange={(e)=>{ setForm((f:any)=>({ ...f, baseCity: e.target.value })); setCityQ(prev=>({ ...prev, baseCity: e.target.value })); }}
-                className="inp w-full"
+                className="inp w-full pr-9"
                 placeholder="Es. Milano"
                 autoComplete="off"
+                onFocus={()=> setOpenCity(p=>({ ...p, baseCity: true }))}
               />
+              <button type="button" onClick={()=> setOpenCity(p=>({ ...p, baseCity: !p.baseCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
               {((cityRes.baseCity||[]).length>0) && (
                 <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
                   {(cityRes.baseCity||[]).map((it:any, idx:number)=> (
@@ -236,11 +246,19 @@ export default function CittaDiLavoroPage() {
                   ))}
                 </div>
               )}
+              {openCity.baseCity && (cityRes.baseCity||[]).length === 0 && (
+                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {COMMON_CITIES.map((c, idx)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, baseCity: c })); setOpenCity(p=>({ ...p, baseCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
+                  ))}
+                </div>
+              )}
             </div>
           </Field>
           <Field label="Seconda Città">
             <div className="relative">
-              <input value={form.secondCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, secondCity: e.target.value })); setCityQ(prev=>({ ...prev, secondCity: e.target.value })); }} className="inp w-full" placeholder="Es. Monza" autoComplete="off" />
+              <input value={form.secondCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, secondCity: e.target.value })); setCityQ(prev=>({ ...prev, secondCity: e.target.value })); }} className="inp w-full pr-9" placeholder="Es. Monza" autoComplete="off" onFocus={()=> setOpenCity(p=>({ ...p, secondCity: true }))} />
+              <button type="button" onClick={()=> setOpenCity(p=>({ ...p, secondCity: !p.secondCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
               {((cityRes.secondCity||[]).length>0) && (
                 <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
                   {(cityRes.secondCity||[]).map((it:any, idx:number)=> (
@@ -248,11 +266,19 @@ export default function CittaDiLavoroPage() {
                   ))}
                 </div>
               )}
+              {openCity.secondCity && (cityRes.secondCity||[]).length === 0 && (
+                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {COMMON_CITIES.map((c, idx)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, secondCity: c })); setOpenCity(p=>({ ...p, secondCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
+                  ))}
+                </div>
+              )}
             </div>
           </Field>
           <Field label="Terza Città">
             <div className="relative">
-              <input value={form.thirdCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, thirdCity: e.target.value })); setCityQ(prev=>({ ...prev, thirdCity: e.target.value })); }} className="inp w-full" autoComplete="off" />
+              <input value={form.thirdCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, thirdCity: e.target.value })); setCityQ(prev=>({ ...prev, thirdCity: e.target.value })); }} className="inp w-full pr-9" autoComplete="off" onFocus={()=> setOpenCity(p=>({ ...p, thirdCity: true }))} />
+              <button type="button" onClick={()=> setOpenCity(p=>({ ...p, thirdCity: !p.thirdCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
               {((cityRes.thirdCity||[]).length>0) && (
                 <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
                   {(cityRes.thirdCity||[]).map((it:any, idx:number)=> (
@@ -260,15 +286,30 @@ export default function CittaDiLavoroPage() {
                   ))}
                 </div>
               )}
+              {openCity.thirdCity && (cityRes.thirdCity||[]).length === 0 && (
+                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {COMMON_CITIES.map((c, idx)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, thirdCity: c })); setOpenCity(p=>({ ...p, thirdCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
+                  ))}
+                </div>
+              )}
             </div>
           </Field>
           <Field label="Quarta Città">
             <div className="relative">
-              <input value={form.fourthCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, fourthCity: e.target.value })); setCityQ(prev=>({ ...prev, fourthCity: e.target.value })); }} className="inp w-full" autoComplete="off" />
+              <input value={form.fourthCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, fourthCity: e.target.value })); setCityQ(prev=>({ ...prev, fourthCity: e.target.value })); }} className="inp w-full pr-9" autoComplete="off" onFocus={()=> setOpenCity(p=>({ ...p, fourthCity: true }))} />
+              <button type="button" onClick={()=> setOpenCity(p=>({ ...p, fourthCity: !p.fourthCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
               {((cityRes.fourthCity||[]).length>0) && (
                 <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
                   {(cityRes.fourthCity||[]).map((it:any, idx:number)=> (
                     <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, fourthCity: it.city })); setCityRes(p=>({ ...p, fourthCity: [] })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{it.city}</button>
+                  ))}
+                </div>
+              )}
+              {openCity.fourthCity && (cityRes.fourthCity||[]).length === 0 && (
+                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                  {COMMON_CITIES.map((c, idx)=> (
+                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, fourthCity: c })); setOpenCity(p=>({ ...p, fourthCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
                   ))}
                 </div>
               )}
