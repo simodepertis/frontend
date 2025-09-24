@@ -371,13 +371,17 @@ export default function VerificaFotoPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               {docs.map((doc) => (
                 <div key={doc.id} className="border rounded-lg p-3 bg-neutral-50">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                        </svg>
-                      </div>
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={doc.url}
+                          alt={doc.type}
+                          className="w-20 h-14 object-cover rounded-md border border-gray-300"
+                          onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                        />
+                      </a>
                       <div>
                         <div className="font-medium text-sm">{doc.type}</div>
                         <div className="text-xs text-neutral-600">Documento di identità</div>
@@ -391,7 +395,7 @@ export default function VerificaFotoPage() {
                       }`}>
                         {doc.status === 'approvato' ? 'Approvato' : doc.status === 'rifiutato' ? 'Rifiutato' : 'In Revisione'}
                       </span>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
+                      <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800" title="Apri documento">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
