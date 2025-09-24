@@ -48,7 +48,19 @@ export default function LinguePage() {
         if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
         if (r.ok) {
           const j = await r.json();
-          setList(Array.isArray(j?.languages) ? j.languages : []);
+          const raw = Array.isArray(j?.languages) ? j.languages : [];
+          const norm = raw
+            .filter((it:any)=> it != null)
+            .map((it:any) => {
+              if (typeof it === 'string') return { language: it, level: 'Buono' } as LangItem;
+              if (typeof it === 'object') {
+                if (it.language) return { language: String(it.language), level: String(it.level || 'Buono') } as LangItem;
+                if (it.lang) return { language: String(it.lang), level: String(it.level || 'Buono') } as LangItem;
+              }
+              return null as any;
+            })
+            .filter(Boolean);
+          setList(norm);
         }
       } finally { setLoading(false); }
     })();
@@ -58,7 +70,7 @@ export default function LinguePage() {
     const lng = selLang.trim();
     if (!lng) { alert('Inserisci una lingua'); return; }
     setList(prev => {
-      const others = prev.filter(x => x.language.toLowerCase() !== lng.toLowerCase());
+      const others = prev.filter(x => (x?.language || '').toLowerCase() !== lng.toLowerCase());
       return [...others, { language: lng, level: selLevel }];
     });
     setSelLang("");
@@ -133,12 +145,12 @@ export default function LinguePage() {
           {list.length === 0 ? (
             <div className="text-sm text-gray-400">Non ci sono lingue definite</div>
           ) : (
-            list.map((it)=> (
-              <div key={it.language} className="flex items-center justify-between border border-gray-600 rounded-md px-3 py-2 text-sm">
+            list.map((it, idx)=> (
+              <div key={it.language || idx} className="flex items-center justify-between border border-gray-600 rounded-md px-3 py-2 text-sm">
                 <div>{it.language}</div>
                 <div className="flex items-center gap-2">
                   <div className="text-xs text-gray-300">{it.level}</div>
-                  <Button variant="secondary" onClick={()=>setList(prev=>prev.filter(x=>x.language!==it.language))}>Rimuovi</Button>
+                  <Button variant="secondary" onClick={()=>setList(prev=>prev.filter(x=>x?.language!==it.language))}>Rimuovi</Button>
                 </div>
               </div>
             ))
