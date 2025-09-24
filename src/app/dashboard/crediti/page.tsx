@@ -344,7 +344,6 @@ export default function CreditiPage() {
                     </div>
                     <div>
                       <div className="font-extrabold text-lg text-neutral-900">{p.label}</div>
-                      <div className="text-xs text-neutral-700">Durata {p.durationDays} giorni</div>
                     </div>
                     <span className={`ml-auto text-[11px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                   </div>

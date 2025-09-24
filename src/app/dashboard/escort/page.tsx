@@ -190,7 +190,6 @@ export default function EscortDashboardPage() {
                     </div>
                     <div>
                       <div className="font-semibold text-neutral-900">{p.label}</div>
-                      <div className="text-[11px] text-neutral-700">Durata {p.durationDays} giorni</div>
                     </div>
                     <span className={`ml-auto text-[10px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                   </div>
