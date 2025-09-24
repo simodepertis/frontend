@@ -36,6 +36,7 @@ export default function BiografiaPage() {
       try {
         const token = localStorage.getItem("auth-token") || "";
         const r = await fetch("/api/profile/biografia", { headers: token? { Authorization: `Bearer ${token}`}: undefined });
+        if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
         if (r.ok) {
           const j = await r.json();
           if (j?.bioIt) setForm(f=>({ ...f, bioIt: j.bioIt }));
@@ -54,6 +55,7 @@ export default function BiografiaPage() {
         headers: { 'Content-Type': 'application/json', ...(token? { Authorization: `Bearer ${token}`}: {}) },
         body: JSON.stringify({ bioIt: form.bioIt, info: { ...form, bioIt: undefined } })
       });
+      if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
       if (!r.ok) { const j = await r.json().catch(()=>({})); alert(j?.error || 'Errore salvataggio biografia'); return; }
       // Avanza allo step successivo: Lingue (percorso corretto)
       router.push('/dashboard/mio-profilo/lingue');

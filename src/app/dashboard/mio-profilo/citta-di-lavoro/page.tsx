@@ -112,6 +112,7 @@ export default function CittaDiLavoroPage() {
       try {
         const token = localStorage.getItem("auth-token") || "";
         const r = await fetch("/api/profile/citta", { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+        if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
         if (r.ok) {
           const j = await r.json();
           if (j?.cities) setForm((f: any) => ({ ...f, ...j.cities }));
@@ -209,6 +210,7 @@ export default function CittaDiLavoroPage() {
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify(form),
       });
+      if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         alert(j?.error || "Errore salvataggio città di lavoro");

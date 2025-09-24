@@ -45,6 +45,7 @@ export default function LinguePage() {
       try {
         const token = localStorage.getItem('auth-token') || '';
         const r = await fetch('/api/profile/lingue', { headers: token? { 'Authorization': `Bearer ${token}` }: undefined });
+        if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
         if (r.ok) {
           const j = await r.json();
           setList(Array.isArray(j?.languages) ? j.languages : []);
@@ -72,6 +73,7 @@ export default function LinguePage() {
         headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` }: {}) },
         body: JSON.stringify({ languages: list })
       });
+      if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
       if (!r.ok) { const j = await r.json().catch(()=>({})); alert(j?.error || 'Errore salvataggio lingue'); return; }
       // Avanza a Città di Lavoro (percorso corretto)
       router.push('/dashboard/mio-profilo/citta-di-lavoro');

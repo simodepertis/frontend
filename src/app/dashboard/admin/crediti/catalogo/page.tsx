@@ -207,10 +207,10 @@ export default function AdminCatalogoCreditiPage() {
                   </div>
                 </div>
                 {/* Aggiornamento variabile semplificato: prezzo/giorno (min=1, max=60 automatici) */}
-                <div className="grid md:grid-cols-2 gap-2">
-                  <div className="flex items-center gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-2 items-end">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <input type="number" placeholder="Prezzo/giorno (crediti)" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full" onChange={(e)=>setEuroMap(m=>({ ...m, [`pd_${p.id}`]: e.target.value }))} value={(euroMap as any)[`pd_${p.id}`] ?? ''} />
-                    <Button variant="secondary" disabled={updatingId === p.id} onClick={()=>{
+                    <Button variant="secondary" className="md:w-auto w-full" disabled={updatingId === p.id} onClick={()=>{
                       const v = Number((euroMap as any)[`pd_${p.id}`] || 0);
                       if (!Number.isFinite(v) || v <= 0) { alert('Prezzo/giorno non valido'); return; }
                       // Imposta anche min/max default per semplicità
