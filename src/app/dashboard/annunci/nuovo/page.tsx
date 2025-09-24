@@ -18,7 +18,8 @@ export default function NuovoAnnuncioPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/me/listings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, body, city, type }) });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/me/listings', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ title, body, city, type }) });
       const j = await res.json();
       if (!res.ok) { setErrMsg(j?.error || 'Errore'); setOkMsg(""); return; }
       setOkMsg('Annuncio creato e inviato in moderazione');
@@ -66,7 +67,7 @@ export default function NuovoAnnuncioPage() {
           </div>
         </div>
         <div className="pt-2">
-          <Button type="submit" disabled={loading}>{loading ? 'Invio…' : 'Pubblica annuncio'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? 'Invio…' : 'Invia a revisione'}</Button>
         </div>
       </form>
     </div>
