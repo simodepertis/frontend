@@ -188,7 +188,7 @@ export default function PrenotazioniIstantaneePage() {
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 grid md:grid-cols-2 gap-4">
         <div>
           <div className="text-sm font-semibold mb-2">Preavviso minimo</div>
-          <select value={minNotice} onChange={(e) => setMinNotice(e.target.value)} className="border rounded-md px-3 py-2 w-full">
+          <select value={minNotice} onChange={(e) => setMinNotice(e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
             {NOTICES.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
@@ -211,7 +211,7 @@ export default function PrenotazioniIstantaneePage() {
           {DURATIONS.map(d => (
             <div key={d} className="flex items-center gap-2">
               <label className="text-sm w-20">{d}</label>
-              <input type="number" min={0} value={prices[d] ?? 0} onChange={(e) => setPrice(d, parseInt(e.target.value, 10))} className="border rounded-md px-3 py-2 w-full" />
+              <input type="number" min={0} value={prices[d] ?? 0} onChange={(e) => setPrice(d, parseInt(e.target.value, 10))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           ))}
         </div>
@@ -234,10 +234,10 @@ export default function PrenotazioniIstantaneePage() {
                 <div className="space-y-2">
                   {schedule[day].ranges.map((r, idx) => (
                     <div key={idx} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-center">
-                      <label className="text-xs text-neutral-600 sm:col-span-1">Inizio</label>
-                      <input type="time" value={r.start} onChange={(e) => updateRange(day, idx, 'start', e.target.value)} className="border rounded-md px-2 py-1" />
-                      <label className="text-xs text-neutral-600 sm:col-span-1">Fine</label>
-                      <input type="time" value={r.end} onChange={(e) => updateRange(day, idx, 'end', e.target.value)} className="border rounded-md px-2 py-1" />
+                      <label className="text-xs text-gray-300 sm:col-span-1">Inizio</label>
+                      <input type="time" value={r.start} onChange={(e) => updateRange(day, idx, 'start', e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      <label className="text-xs text-gray-300 sm:col-span-1">Fine</label>
+                      <input type="time" value={r.end} onChange={(e) => updateRange(day, idx, 'end', e.target.value)} className="bg-gray-700 border border-gray-600 text-white rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                       <Button variant="secondary" onClick={() => removeRange(day, idx)}>Rimuovi</Button>
                     </div>
                   ))}
