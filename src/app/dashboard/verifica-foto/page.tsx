@@ -136,6 +136,8 @@ export default function VerificaFotoPage() {
   };
 
   const canSubmit = useMemo(() => photos.some(p => p.status === "bozza"), [photos]);
+  const faceCount = useMemo(() => photos.filter(p => !!p.isFace).length, [photos]);
+  const hasFace = faceCount >= 1;
   const hasAnyDoc = docs.length > 0;
   const hasApprovedDoc = docs.some(d => d.status === 'approvato');
   const hasConsent = !!consentAcceptedAt;
@@ -172,7 +174,10 @@ export default function VerificaFotoPage() {
 
       {/* Lista foto */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
-        <div className="font-semibold mb-3">Le tue foto ({photos.length})</div>
+        <div className="font-semibold mb-3 flex items-center justify-between">
+          <span>Le tue foto ({photos.length})</span>
+          <span className={`text-xs px-2 py-1 rounded-full ${hasFace ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>Volto: {faceCount}/1</span>
+        </div>
         {photos.length === 0 ? (
           <div className="text-sm text-gray-400">Nessuna foto caricata. Aggiungi immagini per inviarle in verifica.</div>
         ) : (
@@ -190,14 +195,14 @@ export default function VerificaFotoPage() {
                     <div className="text-sm font-medium truncate max-w-[180px]" title={p.name}>{p.name}</div>
                     <div className="text-xs text-neutral-500">{Math.round(p.size / 1024)} KB</div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-xs px-2 py-1 rounded-full ${p.status === 'approvata' ? 'bg-green-100 text-green-700' : p.status === 'rifiutata' ? 'bg-red-100 text-red-700' : p.status === 'in_review' ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-700'}`}>
                       {p.status === 'bozza' ? 'Bozza' : p.status === 'in_review' ? 'In revisione' : p.status === 'approvata' ? 'Approvata' : 'Rifiutata'}
                     </span>
                     {p.status === 'bozza' && (
                       <>
-                        <Button variant="secondary" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
-                        <Button className={p.isFace ? 'bg-blue-700 hover:bg-blue-800' : ''} onClick={async()=>{
+                        <Button variant="secondary" className="px-2 py-1 h-7 text-xs whitespace-nowrap" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
+                        <Button className={`${p.isFace ? 'bg-blue-700 hover:bg-blue-800' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} onClick={async()=>{
                           const idNum = Number(p.id);
                           if (Number.isNaN(idNum)) return;
                           try {
@@ -481,6 +486,9 @@ export default function VerificaFotoPage() {
 
       {/* Invio per verifica */}
       <div className="flex items-center justify-end gap-3">
+        <div className="mr-auto text-xs text-gray-400">
+          Requisiti: almeno 3 foto · almeno 1 con volto — {photos.length >= 3 ? '3+ foto ✓' : `${3 - photos.length} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'}
+        </div>
         <Button
           variant="secondary"
           onClick={async () => {
