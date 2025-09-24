@@ -14,6 +14,7 @@ export default function VerificaVideoPage() {
   const [hd, setHd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const MAX_VIDEOS = 10;
 
   useEffect(() => {
     (async () => {
@@ -38,6 +39,7 @@ export default function VerificaVideoPage() {
 
   const addVideo = async () => {
     if (!url.trim()) return;
+    if (videos.length >= MAX_VIDEOS) { alert(`Limite massimo di ${MAX_VIDEOS} video raggiunto`); return; }
     setSubmitting(true);
     try {
       const params = new URLSearchParams();
@@ -101,6 +103,8 @@ export default function VerificaVideoPage() {
     const tempItems: VideoItem[] = [];
     for (const file of Array.from(files)) {
       if (!file.type.startsWith('video/')) continue;
+      if (file.size > 200 * 1024 * 1024) { alert(`${file.name}: file troppo grande (max 200MB)`); continue; }
+      if (videos.length + tempItems.length >= MAX_VIDEOS) { alert(`Limite massimo di ${MAX_VIDEOS} video raggiunto`); break; }
       // Anteprima locale
       const tempUrl = URL.createObjectURL(file);
       const tempId = `temp-${file.name}-${file.size}-${Date.now()}`;
@@ -168,9 +172,9 @@ export default function VerificaVideoPage() {
         <div className="font-semibold text-white">Carica Video dal dispositivo</div>
         <div className="flex items-center gap-3">
           <input ref={fileInputRef} type="file" accept="video/*" multiple className="hidden" onChange={(e)=>onSelectVideoFiles(e.target.files)} />
-          <Button onClick={()=>fileInputRef.current?.click()} disabled={submitting}>Seleziona file video</Button>
+          <Button onClick={()=>fileInputRef.current?.click()} disabled={submitting || videos.length >= MAX_VIDEOS} title={videos.length >= MAX_VIDEOS ? `Hai raggiunto ${MAX_VIDEOS} video` : ''}>Seleziona file video</Button>
         </div>
-        <div className="text-xs text-neutral-500">Formati video supportati. Limite 200MB per file.</div>
+        <div className="text-xs text-neutral-500">Formati video supportati. Limite 200MB per file. ({videos.length}/{MAX_VIDEOS})</div>
       </div>
 
       {/* Uploader per URL */}
@@ -186,7 +190,7 @@ export default function VerificaVideoPage() {
           </div>
         </div>
         <div>
-          <Button onClick={addVideo} disabled={submitting || !url.trim()}>{submitting ? 'Aggiungo…' : 'Aggiungi'}</Button>
+          <Button onClick={addVideo} disabled={submitting || !url.trim() || videos.length >= MAX_VIDEOS} title={videos.length >= MAX_VIDEOS ? `Hai raggiunto ${MAX_VIDEOS} video` : ''}>{submitting ? 'Aggiungo…' : 'Aggiungi'}</Button>
         </div>
       </div>
 
