@@ -13,12 +13,13 @@ export default function VerificaVideoPage() {
   const [duration, setDuration] = useState("");
   const [hd, setHd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const token = localStorage.getItem('auth-token') || '';
-        const res = await fetch('/API/escort/videos', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
+        const res = await fetch('/api/escort/videos', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
         if (res.ok) {
           const { videos } = await res.json();
           const mapped: VideoItem[] = (videos || []).map((v: any) => ({
@@ -39,14 +40,14 @@ export default function VerificaVideoPage() {
     if (!url.trim()) return;
     setSubmitting(true);
     try {
-      const fd = new FormData();
-      fd.append('url', url);
-      if (title) fd.append('title', title);
-      if (thumb) fd.append('thumb', thumb);
-      if (duration) fd.append('duration', duration);
-      fd.append('hd', String(hd));
+      const params = new URLSearchParams();
+      params.set('url', url);
+      if (title) params.set('title', title);
+      if (thumb) params.set('thumb', thumb);
+      if (duration) params.set('duration', duration);
+      params.set('hd', String(hd));
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch('/API/escort/videos/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined, body: fd });
+      const res = await fetch('/api/escort/videos/upload', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: params.toString() });
       if (res.ok) {
         const { video } = await res.json();
         setVideos((prev) => [{
@@ -58,6 +59,9 @@ export default function VerificaVideoPage() {
           status: 'bozza',
         }, ...prev]);
         setTitle(""); setUrl(""); setThumb(""); setDuration(""); setHd(false);
+      } else {
+        const j = await res.json().catch(()=>({}));
+        alert(j?.error || 'Errore upload URL');
       }
     } finally { setSubmitting(false); }
   };
@@ -66,7 +70,11 @@ export default function VerificaVideoPage() {
     setVideos((prev) => prev.filter(v => v.id !== id));
     try { 
       const token = localStorage.getItem('auth-token') || '';
-      await fetch('/API/escort/videos', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` }: {}) }, body: JSON.stringify({ id: Number(id) }) }); 
+      await fetch('/api/escort/videos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ id: Number(id) })
+      });
     } catch {}
   };
 
@@ -79,12 +87,64 @@ export default function VerificaVideoPage() {
         if (Number.isNaN(idNum)) return;
         try { 
           const token = localStorage.getItem('auth-token') || '';
-          await fetch('/API/escort/videos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}`}: {}) }, body: JSON.stringify({ id: idNum, action: 'in_review' }) }); 
+          await fetch('/api/escort/videos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}`}: {}) }, body: JSON.stringify({ id: idNum, action: 'in_review' }) }); 
         } catch {}
       }));
       setVideos((prev) => prev.map(v => v.status === 'bozza' ? { ...v, status: 'in_review' } : v));
       alert('Video inviati per verifica.');
     } finally { setSubmitting(false); }
+  };
+
+  // Upload da dispositivo (galleria/desktop)
+  const onSelectVideoFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const tempItems: VideoItem[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith('video/')) continue;
+      // Anteprima locale
+      const tempUrl = URL.createObjectURL(file);
+      const tempId = `temp-${file.name}-${file.size}-${Date.now()}`;
+      const temp: VideoItem = {
+        id: tempId,
+        title: file.name,
+        url: tempUrl,
+        thumb: null,
+        duration: '',
+        status: 'bozza',
+      };
+      tempItems.push(temp);
+      // Upload reale
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('title', file.name);
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch('/api/escort/videos/upload-file', {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } as any : undefined,
+          body: fd,
+        });
+        if (res.ok) {
+          const { video } = await res.json();
+          setVideos((prev) => prev.map(v => v.id === tempId ? {
+            id: String(video.id),
+            title: video.title || file.name,
+            url: video.url,
+            thumb: video.thumb || null,
+            duration: video.duration || '',
+            status: 'bozza',
+          } : v));
+        } else {
+          // rimuovi temp in caso di errore
+          setVideos((prev) => prev.filter(v => v.id !== tempId));
+        }
+      } catch {
+        setVideos((prev) => prev.filter(v => v.id !== tempId));
+      }
+    }
+    if (tempItems.length) setVideos((prev) => [...tempItems, ...prev]);
+    // reset input
+    try { if (fileInputRef.current) fileInputRef.current.value = ''; } catch {}
   };
 
   const canSubmit = useMemo(() => videos.some(v => v.status === 'bozza'), [videos]);
@@ -101,6 +161,16 @@ export default function VerificaVideoPage() {
           <li>Accettiamo URL diretti (mp4) o link HLS (m3u8). Per upload file diretto serve storage esterno (S3/R2).</li>
           <li>Inserisci un titolo descrittivo e, se possibile, una thumbnail.</li>
         </ul>
+      </div>
+
+      {/* Uploader da dispositivo */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-3">
+        <div className="font-semibold text-white">Carica Video dal dispositivo</div>
+        <div className="flex items-center gap-3">
+          <input ref={fileInputRef} type="file" accept="video/*" multiple className="hidden" onChange={(e)=>onSelectVideoFiles(e.target.files)} />
+          <Button onClick={()=>fileInputRef.current?.click()} disabled={submitting}>Seleziona file video</Button>
+        </div>
+        <div className="text-xs text-neutral-500">Formati video supportati. Limite 200MB per file.</div>
       </div>
 
       {/* Uploader per URL */}
