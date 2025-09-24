@@ -104,6 +104,15 @@ export default function AdminDocumentiPage() {
                   className="object-cover absolute inset-0 w-full h-full"
                   onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
                 />
+                <a
+                  href={doc.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute top-2 right-2 text-xs px-2 py-1 rounded-md bg-black/60 hover:bg-black/80 text-white border border-white/20"
+                  title="Apri in nuova scheda"
+                >
+                  Apri
+                </a>
               </div>
               <div className="p-3">
                 <div className="text-sm text-white font-semibold">{getTypeLabel(doc.type)}</div>
