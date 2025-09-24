@@ -127,26 +127,26 @@ export default function DashboardSidebar() {
 
   // Detect admin by role only - NO email whitelist for security
   const isAdmin = role === 'admin';
-  
   console.log('🔒 Controllo admin:', { role, email, isAdmin });
 
   // Admin has ONLY admin functions - no regular user functions
   const adminOnlyItems = isAdmin
     ? [
-        { href: "/dashboard/admin", label: "🏠 Dashboard Admin", icon: faGaugeHigh },
-        { href: "/dashboard/admin/annunci", label: "📝 Moderazione Annunci", icon: faBullhorn },
-        { href: "/dashboard/admin/crediti/ordini", label: "💳 Approvazione Ordini Crediti", icon: faBolt },
-        { href: "/dashboard/admin/media/foto", label: "📸 Moderazione Foto", icon: faIdCard },
-        { href: "/dashboard/admin/media/video", label: "🎥 Moderazione Video", icon: faVideo },
-        { href: "/dashboard/admin/documenti", label: "📄 Moderazione Documenti", icon: faIdCard },
-        { href: "/dashboard/admin/profili", label: "👤 Approvazione Profili", icon: faUser },
-        { href: "/dashboard/admin/utenti", label: "👥 Gestione Utenti", icon: faGear },
-        { href: "/dashboard/admin/crediti/catalogo", label: "🛍️ Catalogo Crediti", icon: faCartShopping },
-        { href: "/dashboard/admin/crediti/impostazioni", label: "⚙️ Impostazioni Crediti", icon: faGear },
-        { href: "/dashboard/admin/statistiche", label: "📊 Statistiche Sito", icon: faChartBar },
-        { href: "/", label: "🌐 Vai al Sito", icon: faGlobe },
-        { href: "/autenticazione", label: "🚪 Esci", icon: faRightFromBracket },
-      ]
+      { href: "/dashboard/admin", label: "🏠 Dashboard Admin", icon: faGaugeHigh },
+      { href: "/dashboard/admin/annunci", label: "📝 Moderazione Annunci", icon: faBullhorn },
+      { href: "/dashboard/admin/crediti/ordini", label: "💳 approvazione Ordini Crediti", icon: faBolt },
+      { href: "/dashboard/admin/media/foto", label: "📸 Moderazione Foto", icon: faIdCard },
+      { href: "/dashboard/admin/media/video", label: "🎥 Moderazione Video", icon: faVideo },
+      { href: "/dashboard/admin/documenti", label: "📄 Moderazione Documenti", icon: faIdCard },
+      { href: "/dashboard/admin/recensioni", label: "⭐ Approva Recensioni", icon: faStar },
+      { href: "/dashboard/admin/profili", label: "👤 approvazione Profili", icon: faUser },
+      { href: "/dashboard/admin/utenti", label: "👥 Gestione Utenti", icon: faGear },
+      { href: "/dashboard/admin/crediti/catalogo", label: "🛍️ Catalogo Crediti", icon: faCartShopping },
+      { href: "/dashboard/admin/crediti/impostazioni", label: "⚙️ Impostazioni Crediti", icon: faGear },
+      { href: "/dashboard/admin/statistiche", label: "📊 Statistiche Sito", icon: faChartBar },
+      { href: "/", label: "🌐 Vai al Sito", icon: faGlobe },
+      { href: "/autenticazione", label: "🚪 Esci", icon: faRightFromBracket },
+    ]
     : [];
 
   // Regular users get normal items, admin gets ONLY admin items
