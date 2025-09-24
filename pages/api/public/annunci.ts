@@ -60,15 +60,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (type === 'VIRTUAL') {
       const listings = await prisma.listing.findMany({
         where: { status: 'PUBLISHED', type: 'VIRTUAL' as any },
-        include: { user: { select: { id: true, nome: true, slug: true } } },
+        include: { user: { select: { id: true, nome: true, slug: true, escortProfile: { select: { contacts: true } } } } },
         orderBy: { createdAt: 'desc' },
       })
       mapped = (listings as any[]).map((l: any) => {
         const slug = l.user?.slug || `${kebab(l.user?.nome || '')}-${l.user?.id}`
         const cities = [l.city].filter(Boolean)
+        const displayName = (()=>{ try { return (l.user?.escortProfile as any)?.contacts?.bioInfo?.nomeProfilo || l.title || l.user?.nome || `User ${l.userId}` } catch { return l.title || l.user?.nome || `User ${l.userId}` } })()
         return {
           id: l.userId,
-          name: l.title || l.user?.nome || `User ${l.userId}`,
+          name: displayName,
           slug,
           cities,
           tier: 'STANDARD',

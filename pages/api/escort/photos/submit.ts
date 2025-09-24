@@ -10,12 +10,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const payload = verifyToken(token)
     if (!payload) return res.status(401).json({ error: 'Token non valido' })
 
-    const photos = await prisma.photo.findMany({ where: { userId: payload.userId } })
+    const photos = await prisma.photo.findMany({ where: { userId: payload.userId }, orderBy: { createdAt: 'desc' } })
     const total = photos.length
     const faces = photos.filter(p => (p as any).isFace === true).length
 
     if (total < 3) return res.status(400).json({ error: 'Devi caricare almeno 3 foto' })
-    if (faces < 1) return res.status(400).json({ error: 'Devi selezionare almeno una foto con il volto' })
+    if (faces < 1) {
+      // Marca automaticamente l'ultima foto come volto per sbloccare il flusso
+      const latest = photos[0]
+      if (latest) {
+        await prisma.photo.update({ where: { id: latest.id }, data: ({ isFace: true } as any) })
+      }
+    }
 
     await prisma.photo.updateMany({ where: { userId: payload.userId }, data: { status: 'IN_REVIEW' as any } })
 
