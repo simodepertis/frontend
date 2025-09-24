@@ -82,7 +82,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.json({
       userId: user.id,
-      nome: user.nome,
+      nome: (()=>{
+        try { const bx:any = (p?.contacts as any) || {}; return (bx.bioInfo?.nomeProfilo) || user.nome; } catch { return user.nome; }
+      })(),
       slug: user.slug,
       cities: p?.cities ?? [],
       tier: p?.tier ?? 'STANDARD',
@@ -92,6 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       services: p?.services ?? [],
       rates: p?.rates ?? [],
       contacts: p?.contacts ?? {},
+      workingHours: (()=>{ try { return ((p?.contacts as any)?.workingHours) || null; } catch { return null; } })(),
       languages: p?.languages ?? [],
       bio: p?.bioIt ?? p?.bioEn ?? null,
       photos: photos.map(ph => normalizeUrl(ph.url)).filter(Boolean) as string[],

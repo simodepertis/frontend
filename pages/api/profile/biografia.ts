@@ -23,13 +23,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       where: { userId: payload.userId },
       update: {
         bioIt: bioIt ?? undefined,
-        contacts: {
-          ...(info ? { bioInfo: info } : {}),
-          ...(await (async ()=>{
-            const current = await prisma.escortProfile.findUnique({ where: { userId: payload.userId } })
-            return (current?.contacts as any) || {}
-          })()),
-        } as any,
+        contacts: (await (async ()=>{
+          const current = await prisma.escortProfile.findUnique({ where: { userId: payload.userId } })
+          const base = (current?.contacts as any) || {}
+          return info ? { ...base, bioInfo: info } : base
+        })()) as any,
       },
       create: {
         userId: payload.userId,
