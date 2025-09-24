@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown, faShieldHalved, faStar, faGem } from "@fortawesome/free-solid-svg-icons";
+import { faCrown, faShieldHalved, faStar, faGem, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
 
 export default function PubblicitaPage() {
   const [catalog, setCatalog] = useState<Array<{ code: string; label: string; creditsCost: number; durationDays: number }>>([]);
@@ -40,6 +40,7 @@ export default function PubblicitaPage() {
   }
 
   function tierIcon(code: string) {
+    if (code.startsWith('GIRL')) return faWandMagicSparkles;
     if (code.startsWith('VIP')) return faCrown;
     if (code.startsWith('TITANIO')) return faShieldHalved;
     if (code.startsWith('ORO')) return faStar;
@@ -48,6 +49,12 @@ export default function PubblicitaPage() {
   }
 
   function tierClasses(code: string) {
+    if (code.startsWith('GIRL')) return {
+      card: 'bg-gradient-to-br from-pink-50 to-rose-100 border-rose-200 hover:shadow-rose-200/60',
+      pill: 'bg-rose-500 text-white',
+      cta: 'bg-rose-600 hover:bg-rose-700 text-white',
+      ring: 'ring-rose-400',
+    };
     if (code.startsWith('VIP')) return {
       card: 'bg-gradient-to-br from-yellow-50 to-amber-100 border-amber-200 hover:shadow-amber-200/60',
       pill: 'bg-yellow-400 text-black',
