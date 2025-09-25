@@ -15,7 +15,7 @@ export default async function handler(
   try {
     const { email, password, expectedRole } = req.body
     console.log('📧 Email ricevuta:', email)
-    console.log('🎭 Ruolo atteso:', expectedRole)
+    console.log('🎭 Ruolo atteso (raw):', expectedRole)
 
     // Validazione input
     if (!email || !password) {
@@ -46,18 +46,32 @@ export default async function handler(
       return res.status(401).json({ error: 'Email o password non corretti' })
     }
 
-    // VERIFICA RUOLO - L'utente può accedere solo con il ruolo corretto
-    // MAPPING SPECIALE: admin può accedere da tab "agenzia"
-    const allowedAccess = expectedRole && (
-      user.ruolo === expectedRole || 
-      (user.ruolo === 'admin' && expectedRole === 'agenzia')
+    // VERIFICA RUOLO - normalizza per evitare mismatch (es. "agenzia" vs "agency", "utente" vs "user")
+    const normalizeRole = (r: string) => {
+      const s = String(r || '').toLowerCase();
+      const map: Record<string, 'user'|'escort'|'agency'|'admin'> = {
+        utente: 'user', user: 'user',
+        escort: 'escort',
+        agenzia: 'agency', agency: 'agency',
+        admin: 'admin',
+      };
+      return (map as any)[s] || s;
+    };
+    const expected = normalizeRole(expectedRole);
+    const userRole = normalizeRole(user.ruolo);
+
+    // MAPPING SPECIALE: admin può accedere anche dalla tab Agenzia
+    const allowedAccess = expected && (
+      userRole === expected ||
+      (userRole === 'admin' && expected === 'agency')
     );
-    
-    if (expectedRole && !allowedAccess) {
-      console.log(`❌ Ruolo non corrispondente. Utente: ${user.ruolo}, Atteso: ${expectedRole}`)
-      const correctTab = user.ruolo === 'admin' ? 'Agenzia' : user.ruolo;
+
+    if (expected && !allowedAccess) {
+      console.log(`❌ Ruolo non corrispondente. Utente: ${userRole}, Atteso: ${expected}`)
+      const labelMap: Record<string, string> = { user: 'Utente', escort: 'Escort', agency: 'Agenzia', admin: 'Agenzia' };
+      const correctTab = labelMap[userRole] || userRole;
       return res.status(403).json({ 
-        error: `Questo account è registrato come "${user.ruolo}". Seleziona la scheda "${correctTab}" per accedere.` 
+        error: `Questo account è registrato come "${correctTab.toLowerCase()}". Seleziona la scheda "${correctTab}" per accedere.` 
       })
     }
 
@@ -90,9 +104,10 @@ export default async function handler(
       res.setHeader('Access-Control-Allow-Credentials', 'true')
       res.setHeader('Access-Control-Allow-Origin', isProd ? 'https://frontend-5-7ljh.onrender.com' : 'http://localhost:3000')
       
+      const safeUser = { id: user.id, nome: user.nome, email: user.email, ruolo: userRole };
       return res.status(200).json({
         message: 'Login effettuato con successo',
-        user: user,
+        user: safeUser,
         token: token
       })
   } catch (error: unknown) {
