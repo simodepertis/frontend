@@ -1,6 +1,7 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
+import EscortPicker from "@/components/EscortPicker";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -146,6 +147,13 @@ export default function VerificaFotoPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Verifica Foto al 100%" subtitle="Carica e verifica le tue foto per aumentare la fiducia" />
+      {/* Se sei un'Agenzia puoi scegliere l'escort da gestire qui sotto */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="grid md:grid-cols-[1fr,auto] gap-3 items-end">
+          <EscortPicker onChange={(uid)=>{ if (uid) window.location.href = `/dashboard/agenzia/escort/compila/galleria-foto?escortUserId=${uid}`; }} />
+          <a className="text-sm text-blue-400 hover:underline" href="/dashboard/agenzia/escort">Gestione Escort Agenzia »</a>
+        </div>
+      </div>
 
       {/* Linee guida */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
