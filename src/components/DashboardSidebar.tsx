@@ -97,15 +97,22 @@ export default function DashboardSidebar() {
         { href: "/dashboard/impostazioni", label: "Il Mio Profilo", icon: faUser },
         { href: "/dashboard/agenzia/compila", label: "Profilo Agenzia", icon: faIdCard },
         { href: "/dashboard/agenzia/escort", label: "Gestione Escort", icon: faUser },
-        { href: "/dashboard/prenotazioni", label: "Prenotazioni", icon: faBolt },
+        { href: "/dashboard/verifica-foto", label: "Verifica Foto al 100%", icon: faCircleCheck },
+        { href: "/dashboard/verifica-video", label: "Verifica Video", icon: faVideo },
+        { href: "/dashboard/prenotazioni", label: "Prenotazioni Istantanee", icon: faBolt },
+        { href: "/dashboard/annunci/nuovo", label: "Nuovo Annuncio", icon: faBullhorn },
         { href: "/dashboard/lui-cerca", label: "Lui Cerca", icon: faMagnifyingGlass },
         { href: "/dashboard/tour-citta", label: "Tour Città", icon: faPlane },
         { href: "/dashboard/pubblicita", label: "Acquista Pubblicità", icon: faBullhorn },
+        { href: "/dashboard/ragazza-del-giorno", label: "Ragazza Del Giorno", icon: faWandMagicSparkles },
+        { href: "/dashboard/bump-profilo", label: "Bump Profilo", icon: faArrowUp },
         { href: "/dashboard/recensioni", label: "Recensioni", icon: faStar },
-        // impostazioni duplicato rimosso (usa 'Il Mio Profilo')
         { href: "/dashboard/supporto", label: "Supporto", icon: faLifeRing },
         { href: "/dashboard/statistiche", label: "Statistiche", icon: faChartBar },
         { href: "/dashboard/crediti", label: "Crediti", icon: faBolt },
+        { href: "/dashboard/avvisi", label: "Avvisi", icon: faBell },
+        { href: "/dashboard/avvisi-citta", label: "Avvisi Città", icon: faCity },
+        { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart },
         { href: "/dashboard/carrello", label: "Carrello", icon: faCartShopping },
         { href: "/dashboard/forum", label: "Forum", icon: faComments },
         { href: "/", label: "Vai all'Area Pubblica", icon: faGlobe },
@@ -113,16 +120,12 @@ export default function DashboardSidebar() {
       ]
     : [
         { href: "/dashboard", label: "Dashboard", icon: faGaugeHigh },
-        { href: "/dashboard/impostazioni", label: "Il Mio Profilo", icon: faUser },
         { href: "/dashboard/ricerca", label: "La Ricerca", icon: faMagnifyingGlass },
-        { href: "/dashboard/recensioni", label: "Recensioni", icon: faStar },
-        // impostazioni duplicato rimosso (usa 'Il Mio Profilo')
-        { href: "/dashboard/crediti", label: "Crediti", icon: faBolt },
-        { href: "/dashboard/supporto", label: "Supporto", icon: faLifeRing },
         { href: "/dashboard/avvisi", label: "Avvisi", icon: faBell },
         { href: "/dashboard/avvisi-citta", label: "Avvisi Città", icon: faCity },
         { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart },
         { href: "/dashboard/forum", label: "Forum", icon: faComments },
+        { href: "/dashboard/supporto", label: "Supporto", icon: faLifeRing },
         { href: "/autenticazione", label: "Esci", icon: faRightFromBracket },
       ];
 
