@@ -492,6 +492,7 @@ export default function EscortDetailPage() {
 
           {/* Rimosso blocco Tabs per evitare duplicazioni e sfasamenti con il nuovo layout */}
         </div>
+        )}
 
         {/* Sidebar */}
         <aside className="bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
