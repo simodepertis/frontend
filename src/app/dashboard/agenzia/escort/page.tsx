@@ -193,10 +193,11 @@ export default function AgencyManageEscortsPage() {
             {rows.map((r) => (
               <div key={r.id} className="border rounded-md p-3 flex items-center justify-between flex-wrap gap-3">
                 <div>
-                  <div className="font-medium text-sm">{r.nome} (User #{r.userId})</div>
-                  <div className="text-xs text-neutral-600">{r.email}</div>
+                  <div className="font-medium text-sm text-white">{r.nome} (User #{r.userId})</div>
+                  <div className="text-xs text-neutral-400">{r.email}</div>
                 </div>
-                <div>
+                <div className="flex items-center gap-2">
+                  <a href={`/dashboard/agenzia/escort/compila?escortUserId=${r.userId}`} className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded">Compila profilo</a>
                   <Button variant="secondary" onClick={() => linkEscort('unlink', r.userId)} disabled={linking}>Scollega</Button>
                 </div>
               </div>
