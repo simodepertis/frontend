@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { phone, apps, note, emailBooking, website, noAnonymous } = req.body || {}
     const contacts = {
       ...(prof.contacts as any || {}),
-      phone: String(phone ?? (prof as any).contacts?.phone || ''),
+      phone: String(phone ?? ((prof as any).contacts?.phone || '')),
       apps: Array.isArray(apps) ? apps : ((prof as any).contacts?.apps || []),
       note: note != null ? String(note) : ((prof as any).contacts?.note || ''),
       emailBooking: emailBooking != null ? String(emailBooking) : ((prof as any).contacts?.emailBooking || ''),
