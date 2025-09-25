@@ -14,6 +14,11 @@ type EscortRow = {
 
 export default function AgencyManageEscortsPage() {
   const [rows, setRows] = useState<EscortRow[]>([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [creating, setCreating] = useState(false);
   const [escortUserId, setEscortUserId] = useState("");
   const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState(false);
@@ -88,6 +93,32 @@ export default function AgencyManageEscortsPage() {
       <SectionHeader title="Gestione Escort" subtitle="Collega o scollega i profili Escort alla tua Agenzia" />
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-white font-semibold">Le tue Escort</div>
+          <Button onClick={() => setShowCreate(v => !v)}>{showCreate ? 'Annulla' : 'Aggiungi nuova Escort'}</Button>
+        </div>
+        {showCreate && (
+          <div className="mt-2 grid gap-2 md:grid-cols-3">
+            <input value={newName} onChange={(e)=> setNewName(e.target.value)} placeholder="Nome" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
+            <input value={newEmail} onChange={(e)=> setNewEmail(e.target.value)} placeholder="Email" className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
+            <div className="flex gap-2">
+              <input type="password" value={newPassword} onChange={(e)=> setNewPassword(e.target.value)} placeholder="Password" className="flex-1 bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
+              <Button disabled={creating || !newName || !newEmail || newPassword.length < 6} onClick={async ()=>{
+                setCreating(true);
+                try {
+                  const res = await fetch('/api/agency/escorts/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: newName, email: newEmail, password: newPassword }) });
+                  const j = await res.json();
+                  if (!res.ok) { alert(j?.error || 'Errore creazione'); }
+                  else {
+                    setShowCreate(false); setNewName(''); setNewEmail(''); setNewPassword('');
+                    await load();
+                    window.location.href = `/dashboard/agenzia/escort/compila/biografia?escortUserId=${j.userId}`;
+                  }
+                } finally { setCreating(false); }
+              }}>{creating ? 'Creazione…' : 'Crea & Compila'}</Button>
+            </div>
+          </div>
+        )}
         <div className="text-sm text-gray-300">Per collegare una escort, inserisci l'ID Utente dell'Escort e conferma. In futuro potremo aggiungere una ricerca avanzata.</div>
         <div className="flex items-center gap-2">
           <input value={escortUserId} onChange={(e) => setEscortUserId(e.target.value)} placeholder="ID Utente Escort" className="border rounded-md px-3 py-2 w-48" />
