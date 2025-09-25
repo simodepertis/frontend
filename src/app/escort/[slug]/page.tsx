@@ -130,6 +130,8 @@ export default function EscortDetailPage() {
   const [reportReason, setReportReason] = useState<string>("");
   // Lightbox per immagine principale
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  // Rapporto d'aspetto dinamico per l'immagine principale (percentuale padding-top)
+  const [mainAspectPct, setMainAspectPct] = useState<number>(75); // default 4/3
   // Tick per ritentare l'inizializzazione mappa quando il container è pronto
   const [mapInitTick, setMapInitTick] = useState(0);
   const [mapCity, setMapCity] = useState<string>("");
@@ -402,12 +404,23 @@ export default function EscortDetailPage() {
       <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mt-2`}>
         {/* Galleria sempre visibile (usa placeholder se mancano foto reali) */}
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
-          <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
+          <div className="relative w-full rounded-lg overflow-hidden" style={{ paddingTop: `${mainAspectPct}%` }}>
             <img
               src={(escort.foto[active] || escort.foto[0] || '/placeholder.svg')}
               alt={`${escort.nome} principale`}
-              className="object-cover absolute inset-0 w-full h-full cursor-zoom-in"
+              className="object-contain absolute inset-0 w-full h-full cursor-zoom-in bg-gray-900"
               onClick={()=>setLightboxOpen(true)}
+              onLoad={(e)=>{
+                try{
+                  const img = e.currentTarget as HTMLImageElement;
+                  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                    const pct = (img.naturalHeight / img.naturalWidth) * 100;
+                    // Clamp valori sensati
+                    const clamped = Math.min(200, Math.max(30, pct));
+                    setMainAspectPct(clamped);
+                  }
+                }catch{}
+              }}
               onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
             />
             {escort.girlOfTheDay && (
