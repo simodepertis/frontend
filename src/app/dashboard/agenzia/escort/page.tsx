@@ -112,7 +112,7 @@ export default function AgencyManageEscortsPage() {
                   else {
                     setShowCreate(false); setNewName(''); setNewEmail(''); setNewPassword('');
                     await load();
-                    window.location.href = `/dashboard/agenzia/escort/compila/biografia?escortUserId=${j.userId}`;
+                    window.location.href = `/dashboard/agenzia/escort/compila?escortUserId=${j.userId}`;
                   }
                 } finally { setCreating(false); }
               }}>{creating ? 'Creazione…' : 'Crea & Compila'}</Button>
