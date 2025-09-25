@@ -81,6 +81,25 @@ export default function CittaDiLavoroPage() {
   const [addrQuery, setAddrQuery] = useState("");
   const [addrResults, setAddrResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  // Debounce timer per salvataggio automatico posizione
+  const savePosTimer = useRef<any>(null);
+
+  async function savePositionDebounced(pos: { lat: number; lng: number }) {
+    // aggiorna form immediatamente
+    setForm((f:any)=> ({ ...f, position: { lat: pos.lat, lng: pos.lng } }));
+    // debounce network call
+    if (savePosTimer.current) clearTimeout(savePosTimer.current);
+    savePosTimer.current = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("auth-token") || "";
+        await fetch("/api/profile/citta", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ position: { lat: pos.lat, lng: pos.lng } }),
+        });
+      } catch {}
+    }, 500);
+  }
   // Chevron dropdown open states per city field
   const [openCity, setOpenCity] = useState<{ [k:string]: boolean }>({});
   const COMMON_CITIES: string[] = [
@@ -137,12 +156,12 @@ export default function CittaDiLavoroPage() {
       markerRef.current = marker;
       marker.on("dragend", () => {
         const p = marker.getLatLng();
-        setForm((f: any) => ({ ...f, position: { lat: p.lat, lng: p.lng } }));
+        savePositionDebounced({ lat: p.lat, lng: p.lng });
       });
       map.on("click", (e: any) => {
         const p = e.latlng;
         marker.setLatLng(p);
-        setForm((f: any) => ({ ...f, position: { lat: p.lat, lng: p.lng } }));
+        savePositionDebounced({ lat: p.lat, lng: p.lng });
       });
       setLeafletReady(true);
     })();
@@ -365,7 +384,8 @@ export default function CittaDiLavoroPage() {
                   onClick={()=>{
                     const lat = Number(it.lat); const lon = Number(it.lon);
                     if (Number.isFinite(lat) && Number.isFinite(lon)) {
-                      setForm((f:any)=>({ ...f, position: { lat, lng: lon }, baseCity: f.baseCity || (it.display_name?.split(',')[1]?.trim() || '') }));
+                      savePositionDebounced({ lat, lng: lon });
+                      setForm((f:any)=>({ ...f, baseCity: f.baseCity || (it.display_name?.split(',')[1]?.trim() || '') }));
                       // center marker subito se mappa pronta
                       try { if (markerRef.current) markerRef.current.setLatLng([lat, lon]); if (mapRef.current) mapRef.current.setView([lat, lon], 13); } catch {}
                     }

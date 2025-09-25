@@ -128,6 +128,8 @@ export default function EscortDetailPage() {
   const [showReportPhoto, setShowReportPhoto] = useState(false);
   const [reportPhotoUrl, setReportPhotoUrl] = useState<string>("");
   const [reportReason, setReportReason] = useState<string>("");
+  // Tick per ritentare l'inizializzazione mappa quando il container è pronto
+  const [mapInitTick, setMapInitTick] = useState(0);
 
   // Leaflet map for public profile (load via CDN to avoid deps)
   const [leafletReady, setLeafletReady] = useState(false);
@@ -262,7 +264,7 @@ export default function EscortDetailPage() {
     let canceled = false;
     (async () => {
       try {
-        if (!mapDivRef.current) return;
+        if (!mapDivRef.current) return; // container non ancora montato
         const L = await loadLeafletFromCDN().catch(() => null);
         if (!L) return;
         // Se già creata, non ricreare
@@ -288,10 +290,19 @@ export default function EscortDetailPage() {
         mapRef.current = L.map(mapDivRef.current).setView([lat as number, lon as number], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
         markerRef.current = L.marker([lat as number, lon as number]).addTo(mapRef.current).bindPopup(escort.citta || 'Posizione');
+        try { setTimeout(()=> { try { mapRef.current?.invalidateSize?.(); } catch {} }, 300); } catch {}
       } catch {}
     })();
     return () => { canceled = true; };
-  }, [escort.citta, data]);
+  }, [escort.citta, data, mapInitTick]);
+
+  // Se il container non è pronto al primo giro, ritenta tra 300ms
+  useEffect(() => {
+    if (!mapRef.current && !mapDivRef.current) {
+      const t = setTimeout(() => setMapInitTick((x)=>x+1), 300);
+      return () => clearTimeout(t);
+    }
+  }, [escort.citta, data, mapInitTick]);
 
   const tierClasses = useMemo(() => {
     switch (escort.tier) {
@@ -498,11 +509,11 @@ export default function EscortDetailPage() {
           </div>
 
           {/* Sezione Video nella sidebar (se disponibili) */}
-          {Array.isArray(escort.videos) && escort.videos.length > 0 && (
+          {Array.isArray(escort.videos) && escort.videos.filter(u=> typeof u === 'string' && u.trim()).length > 0 && (
             <div className="mt-4 border-t border-gray-700 pt-4">
               <div className="text-sm font-semibold text-white mb-2">Video</div>
               <div className="grid gap-3">
-                {escort.videos.map((u, i) => {
+                {escort.videos.filter(u=> typeof u === 'string' && u.trim()).map((u, i) => {
                   const src = u?.startsWith('/uploads/') ? ('/api' + u) : u;
                   return (
                     <video key={i} controls preload="metadata" className="w-full rounded-md border border-gray-700 bg-black aspect-video object-contain">
@@ -511,6 +522,14 @@ export default function EscortDetailPage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Minimappa: mostra solo se abbiamo coordinate o città */}
+          {(((data as any)?.cities?.position && typeof (data as any).cities.position.lat === 'number' && typeof (data as any).cities.position.lng === 'number') || escort.citta) && (
+            <div className="mt-4 border-t border-gray-700 pt-4">
+              <div className="text-sm font-semibold text-white mb-2">Localizzazione{escort.citta ? `: ${escort.citta}` : ''}</div>
+              <div ref={mapDivRef} className="w-full h-[220px] rounded-md overflow-hidden border border-gray-700" />
             </div>
           )}
         </aside>
