@@ -3,6 +3,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Avvisi (notifiche) configurati dall'utente
+model UserAlert {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   // es: NEW_PHOTO, NEW_COMMENT, PROFILE_UPDATE, HAPPY_HOUR
+  active    Boolean  @default(true)
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, type])
+}
+
+// Avvisi città preferite per aggiornamenti
+model CityAlert {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  cities    Json     // array di stringhe (nomi città)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId])
+}
+
 enum ReviewStatus {
   IN_REVIEW
   APPROVED
@@ -252,6 +279,10 @@ model User {
 
   // Documents (KYC)
   documents Document[]
+
+  // Alerts
+  userAlerts UserAlert[]
+  cityAlerts CityAlert[]
 }
 
 model EscortProfile {
