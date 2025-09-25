@@ -397,9 +397,8 @@ export default function EscortDetailPage() {
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Escort", href: "/escort" }, { label: escort.nome }]} />
       <SectionHeader title={`${escort.nome}, ${escort.eta}`} subtitle={`Profilo a ${escort.citta}`} />
 
-      <div className={`grid grid-cols-1 ${hasRealPhotos ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-8 mt-2`}>
-        {/* Galleria: visibile solo se ci sono foto reali */}
-        {hasRealPhotos && (
+      <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mt-2`}>
+        {/* Galleria sempre visibile (usa placeholder se mancano foto reali) */}
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
             <img
@@ -492,7 +491,6 @@ export default function EscortDetailPage() {
 
           {/* Rimosso blocco Tabs per evitare duplicazioni e sfasamenti con il nuovo layout */}
         </div>
-        )}
 
         {/* Sidebar */}
         <aside className="bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
