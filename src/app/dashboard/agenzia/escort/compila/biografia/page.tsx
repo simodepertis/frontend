@@ -1,11 +1,11 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-export default function AgencyEscortBioPage() {
+function Inner() {
   const params = useSearchParams();
   const escortUserId = Number(params.get("escortUserId"));
 
@@ -69,5 +69,13 @@ export default function AgencyEscortBioPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AgencyEscortBioPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-gray-400">Caricamento…</div>}>
+      <Inner />
+    </Suspense>
   );
 }
