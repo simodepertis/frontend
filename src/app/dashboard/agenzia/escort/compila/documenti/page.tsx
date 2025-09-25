@@ -1,7 +1,7 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +21,7 @@ function Inner() {
 
   const [type, setType] = useState<string>(TYPES[0].key);
   const [url, setUrl] = useState<string>("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function load() {
     setLoading(true);
@@ -61,6 +62,29 @@ function Inner() {
       <SectionHeader title="Documenti (Escort)" subtitle={escortUserId ? `User #${escortUserId}` : "Missing escortUserId"} />
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-4">
+        {/* Upload da file */}
+        <div className="space-y-2">
+          <div className="flex items-end gap-3">
+            <select value={type} onChange={(e)=> setType(e.target.value)} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2">
+              {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+            </select>
+            <Button onClick={()=> fileRef.current?.click()} disabled={!escortUserId}>Seleziona file</Button>
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={async(e)=>{
+            const f = e.target.files?.[0]; if (!f) return;
+            const fd = new FormData();
+            fd.append('file', f);
+            fd.append('type', type);
+            fd.append('escortUserId', String(escortUserId));
+            const res = await fetch('/api/agency/escort/documents/upload', { method: 'POST', body: fd, credentials: 'include' });
+            if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore upload documento'); }
+            (e.target as HTMLInputElement).value = '';
+            await load();
+          }} />
+          <div className="text-xs text-gray-400">Formati: JPG/PNG. Max 5MB.</div>
+        </div>
+
+        {/* Upload da URL */}
         <div className="grid md:grid-cols-3 gap-3">
           <select value={type} onChange={(e)=> setType(e.target.value)} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2">
             {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
