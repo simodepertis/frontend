@@ -404,7 +404,7 @@ export default function EscortDetailPage() {
             <img
               src={(escort.foto[active] || escort.foto[0] || '/placeholder.svg')}
               alt={`${escort.nome} principale`}
-              className="object-cover absolute inset-0 w-full h-full"
+              className="object-contain bg-black absolute inset-0 w-full h-full"
               onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
             />
             {escort.girlOfTheDay && (
