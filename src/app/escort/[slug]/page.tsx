@@ -128,6 +128,8 @@ export default function EscortDetailPage() {
   const [showReportPhoto, setShowReportPhoto] = useState(false);
   const [reportPhotoUrl, setReportPhotoUrl] = useState<string>("");
   const [reportReason, setReportReason] = useState<string>("");
+  // Lightbox per immagine principale
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   // Tick per ritentare l'inizializzazione mappa quando il container è pronto
   const [mapInitTick, setMapInitTick] = useState(0);
   const [mapCity, setMapCity] = useState<string>("");
@@ -404,7 +406,8 @@ export default function EscortDetailPage() {
             <img
               src={(escort.foto[active] || escort.foto[0] || '/placeholder.svg')}
               alt={`${escort.nome} principale`}
-              className="object-contain bg-black absolute inset-0 w-full h-full"
+              className="object-cover absolute inset-0 w-full h-full cursor-zoom-in"
+              onClick={()=>setLightboxOpen(true)}
               onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
             />
             {escort.girlOfTheDay && (
@@ -781,6 +784,22 @@ export default function EscortDetailPage() {
               }}>Invia</Button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Lightbox fullscreen immagine principale */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center" onClick={()=>setLightboxOpen(false)}>
+          <img
+            src={(escort.foto[active] || escort.foto[0] || '/placeholder.svg')}
+            alt={`${escort.nome} fullscreen`}
+            className="max-w-[96vw] max-h-[96vh] object-contain"
+          />
+          <button
+            className="absolute top-4 right-4 bg-gray-800/90 hover:bg-gray-800 text-white px-3 py-1 rounded-md border border-gray-700"
+            onClick={(e)=>{ e.stopPropagation(); setLightboxOpen(false); }}
+          >
+            Chiudi
+          </button>
         </div>
       )}
     </main>
