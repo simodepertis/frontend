@@ -45,7 +45,10 @@ export default function DashboardSidebar() {
         
         if (res.ok) {
           const data = await res.json();
-          setRole(data?.user?.ruolo || "");
+          const rawRole = (data?.user?.ruolo || "").toLowerCase();
+          const map: Record<string,string> = { agenzia: 'agency' };
+          const norm = map[rawRole] || rawRole;
+          setRole(norm);
           setEmail(data?.user?.email || "");
           console.log('✅ Sidebar - Ruolo utente:', data?.user?.ruolo);
         } else {
