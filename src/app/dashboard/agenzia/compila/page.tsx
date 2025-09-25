@@ -31,7 +31,7 @@ const LANGS = ["Italiano", "English", "Español", "Français", "Deutsch"];
 const SERVICE_BANK = ["Accompagnamento", "Massaggi", "Eventi Privati", "VIP Service", "Viaggi"];
 
 export default function AgencyOnboardingPage() {
-  const [step, setStep] = useState(1); // 1..5
+  const [step, setStep] = useState(1); // 1..3
   const [data, setData] = useState<AgencyData>(DEFAULT);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,21 +74,19 @@ export default function AgencyOnboardingPage() {
     })();
   }, []);
 
-  const stepTitle = useMemo(() => ["", "Agenzia", "Lingue & Città", "Servizi", "Contatti", "Web & Social"][step], [step]);
+  const stepTitle = useMemo(() => ["", "Info Agenzia", "Orari Di Lavoro", "Contatti"][step], [step]);
 
   const completion = useMemo(() => {
     const checks = [
       data.name.trim().length >= 2,
-      (data.languages?.length || 0) > 0 && (data.cities?.length || 0) > 0,
-      (data.services?.length || 0) > 0,
+      (data.cities?.length || 0) > 0,
       !!data.contacts.phone && !!data.contacts.email,
-      !!data.website || !!data.socials?.instagram || !!data.socials?.twitter || !!data.socials?.telegram,
     ];
     const done = checks.filter(Boolean).length;
     return Math.round((done / checks.length) * 100);
   }, [data]);
 
-  const next = () => setStep((s) => Math.min(5, s + 1));
+  const next = () => setStep((s) => Math.min(3, s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
 
   async function save() {
@@ -119,7 +117,7 @@ export default function AgencyOnboardingPage() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader title="Compila Profilo Agenzia" subtitle={`Step ${step}/5 — ${stepTitle}`} />
+      <SectionHeader title="Compila Profilo Agenzia" subtitle={`Step ${step}/3 — ${stepTitle}`} />
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between text-sm mb-2">
@@ -135,47 +133,41 @@ export default function AgencyOnboardingPage() {
         {loading && <div className="text-sm text-gray-400">Caricamento dati…</div>}
 
         {step === 1 && (
-          <section className="space-y-3">
+          <section className="space-y-4">
             <div>
               <label className="block text-xs mb-1">Nome Agenzia*</label>
               <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="border rounded-md px-3 py-2 w-full" />
             </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs mb-1">Paese</label>
+                <select className="border rounded-md px-3 py-2 w-full" value={(data as any).country || 'Italia'} onChange={(e)=> setData({ ...data, cities: data.cities, languages: data.languages, services: data.services, contacts: data.contacts, website: data.website, socials: data.socials, ...( { country: e.target.value } as any) })}>
+                  <option>Italia</option>
+                  <option>Svizzera</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs mb-1">Città</label>
+                <CityEditor cities={data.cities} onChange={(cities) => setData({ ...data, cities })} />
+              </div>
+            </div>
             <div>
-              <label className="block text-xs mb-1">Descrizione</label>
+              <label className="block text-xs mb-1">Solo Lingua Italiana</label>
               <textarea value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} className="border rounded-md px-3 py-2 w-full h-32" />
             </div>
           </section>
         )}
 
         {step === 2 && (
-          <section className="space-y-4">
+          <section className="space-y-3">
             <div>
-              <div className="font-semibold mb-1">Lingue offerte</div>
-              <div className="flex flex-wrap gap-2">
-                {LANGS.map(l => (
-                  <button key={l} onClick={() => setData({ ...data, languages: data.languages.includes(l) ? data.languages.filter(x => x !== l) : [...data.languages, l] })} className={`text-sm px-3 py-1 rounded-full border ${data.languages.includes(l) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-700 text-gray-200 border-gray-600'}`}>{l}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="font-semibold mb-1">Città servite</div>
-              <CityEditor cities={data.cities} onChange={(cities) => setData({ ...data, cities })} />
+              <label className="block text-xs mb-1">Orari di lavoro (note)</label>
+              <textarea placeholder="Es. Lun–Ven 10:00–19:00" value={(data as any)?.contacts?.schedule || ''} onChange={(e)=> setData({ ...data, contacts: { ...data.contacts, schedule: e.target.value } as any })} className="border rounded-md px-3 py-2 w-full h-28" />
             </div>
           </section>
         )}
 
         {step === 3 && (
-          <section className="space-y-3">
-            <div className="font-semibold">Servizi</div>
-            <div className="flex flex-wrap gap-2">
-              {SERVICE_BANK.map(s => (
-                <button key={s} onClick={() => setData({ ...data, services: data.services.includes(s) ? data.services.filter(x => x !== s) : [...data.services, s] })} className={`text-sm px-3 py-1 rounded-full border ${data.services.includes(s) ? 'bg-blue-600 text-white border-blue-600' : 'bg-gray-700 text-gray-200 border-gray-600'}`}>{s}</button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {step === 4 && (
           <section className="grid gap-3 md:grid-cols-2">
             <div>
               <label className="block text-xs mb-1">Prefisso</label>
@@ -192,37 +184,16 @@ export default function AgencyOnboardingPage() {
           </section>
         )}
 
-        {step === 5 && (
-          <section className="grid gap-3 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <label className="block text-xs mb-1">Sito Web</label>
-              <input value={data.website} onChange={(e) => setData({ ...data, website: e.target.value })} className="border rounded-md px-3 py-2 w-full" />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">Instagram</label>
-              <input value={data.socials.instagram || ""} onChange={(e) => setData({ ...data, socials: { ...data.socials, instagram: e.target.value } })} className="border rounded-md px-3 py-2 w-full" />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">Twitter/X</label>
-              <input value={data.socials.twitter || ""} onChange={(e) => setData({ ...data, socials: { ...data.socials, twitter: e.target.value } })} className="border rounded-md px-3 py-2 w-full" />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">Telegram</label>
-              <input value={data.socials.telegram || ""} onChange={(e) => setData({ ...data, socials: { ...data.socials, telegram: e.target.value } })} className="border rounded-md px-3 py-2 w-full" />
-            </div>
-          </section>
-        )}
-
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           <div className="flex gap-2">
             <Button variant="secondary" onClick={saveAndExit} disabled={saving}>{saving ? 'Salvataggio…' : 'Salva bozza'}</Button>
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" disabled={step === 1} onClick={prev}>Indietro</Button>
-            {step < 5 ? (
+            {step < 3 ? (
               <Button onClick={async () => { await save(); next(); }}>{saving ? '...' : 'Avanti'}</Button>
             ) : (
-              <Button onClick={publish} disabled={completion < 80}>Pubblica</Button>
+              <Button onClick={publish} disabled={completion < 67}>Pubblica</Button>
             )}
           </div>
         </div>
