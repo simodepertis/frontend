@@ -1,7 +1,7 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +15,7 @@ function Inner() {
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
   const [size, setSize] = useState<number>(0);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function load() {
     setLoading(true);
@@ -60,6 +61,28 @@ function Inner() {
       <SectionHeader title="Galleria Foto (Escort)" subtitle={escortUserId ? `User #${escortUserId}` : "Missing escortUserId"} />
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-4">
+        {/* Upload da file */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="font-semibold text-white">Carica dal dispositivo</div>
+            <Button onClick={()=> fileRef.current?.click()} disabled={!escortUserId}>Seleziona immagini</Button>
+          </div>
+          <input ref={fileRef} onChange={async (e)=>{
+            const files = e.target.files; if (!files || !files.length) return;
+            for (const f of Array.from(files)) {
+              const fd = new FormData();
+              fd.append('file', f);
+              fd.append('escortUserId', String(escortUserId));
+              const res = await fetch('/api/agency/escort/photos/upload', { method: 'POST', body: fd, credentials: 'include' });
+              if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore upload'); }
+            }
+            (e.target as HTMLInputElement).value = '';
+            await load();
+          }} type="file" accept="image/*" multiple className="hidden" />
+          <div className="text-xs text-gray-400">Formati: JPG/PNG. Max 8MB per file.</div>
+        </div>
+
+        {/* Aggiungi da URL */}
         <div className="grid md:grid-cols-3 gap-2">
           <input value={url} onChange={(e)=> setUrl(e.target.value)} placeholder="URL immagine" className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
           <input value={name} onChange={(e)=> setName(e.target.value)} placeholder="Nome file" className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />

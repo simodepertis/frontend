@@ -1,7 +1,7 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +17,7 @@ function Inner() {
   const [duration, setDuration] = useState("");
   const [thumb, setThumb] = useState("");
   const [hd, setHd] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function load() {
     setLoading(true);
@@ -62,6 +63,27 @@ function Inner() {
       <SectionHeader title="Video (Escort)" subtitle={escortUserId ? `User #${escortUserId}` : "Missing escortUserId"} />
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-4">
+        {/* Upload da file */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="font-semibold text-white">Carica dal dispositivo</div>
+            <Button onClick={()=> fileRef.current?.click()} disabled={!escortUserId}>Seleziona file video</Button>
+          </div>
+          <input ref={fileRef} type="file" accept="video/*" multiple className="hidden" onChange={async(e)=>{
+            const files = e.target.files; if (!files || !files.length) return;
+            for (const f of Array.from(files)) {
+              const fd = new FormData();
+              fd.append('file', f);
+              fd.append('escortUserId', String(escortUserId));
+              const res = await fetch('/api/agency/escort/videos/upload-file', { method: 'POST', body: fd, credentials: 'include' });
+              if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore upload'); }
+            }
+            (e.target as HTMLInputElement).value = '';
+            await load();
+          }} />
+          <div className="text-xs text-gray-400">Formati video supportati. Limite 200MB per file.</div>
+        </div>
+
         <div className="grid md:grid-cols-4 gap-2">
           <input value={url} onChange={(e)=> setUrl(e.target.value)} placeholder="URL video" className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
           <input value={title} onChange={(e)=> setTitle(e.target.value)} placeholder="Titolo" className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
