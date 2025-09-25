@@ -2,6 +2,7 @@
 
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
+import EscortPicker from "@/components/EscortPicker";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -12,6 +13,7 @@ export default function PubblicitaPage() {
   const [balance, setBalance] = useState(0);
   const [spending, setSpending] = useState<string>("");
   const [daysByCode, setDaysByCode] = useState<Record<string, number>>({});
+  const [escortUserId, setEscortUserId] = useState<number>(0);
 
   useEffect(() => {
     (async () => {
@@ -19,25 +21,30 @@ export default function PubblicitaPage() {
         const token = localStorage.getItem('auth-token') || '';
         const [c, w] = await Promise.all([
           fetch('/api/credits/catalog'),
-          fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }),
+          escortUserId ? fetch(`/api/agency/credits/wallet?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }) : fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }),
         ]);
         if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
         if (w.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
         if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); }
       } catch {}
     })();
-  }, []);
+  }, [escortUserId]);
 
   async function spend(code: string) {
     setSpending(code);
     try {
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch('/api/credits/spend', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ code }) });
+      const url = escortUserId ? '/api/agency/credits/spend' : '/api/credits/spend';
+      const body = escortUserId ? { escortUserId, code } : { code };
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
       const data = await res.json();
       if (res.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
       if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
       // refresh balance
-      try { const w = await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } } catch {}
+      try { 
+        const w = escortUserId ? await fetch(`/api/agency/credits/wallet?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }) : await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); 
+        if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } 
+      } catch {}
       alert(`Attivato ${data?.activated?.tier} fino al ${new Date(data?.activated?.expiresAt).toLocaleDateString()}`);
     } finally {
       setSpending("");
@@ -47,22 +54,27 @@ export default function PubblicitaPage() {
     setSpending(code);
     try {
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch('/api/credits/spend-by-product', {
+      const url = escortUserId ? '/api/agency/credits/spend-by-product' : '/api/credits/spend-by-product';
+      const body = escortUserId ? { escortUserId, code, days } : { code, days };
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ code, days })
+        body: JSON.stringify(body)
       });
       const data = await res.json();
       if (res.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
       if (!res.ok) { alert(data?.error || 'Errore attivazione'); return; }
       // refresh balance
-      try { const w = await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } } catch {}
+      try { 
+        const w = escortUserId ? await fetch(`/api/agency/credits/wallet?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }) : await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); 
+        if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } 
+      } catch {}
       alert(`Pacchetto ${code} attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})`);
     } finally {
       setSpending("");
     }
   }
-  }
+  
 
   function tierIcon(code: string) {
     if (code.startsWith('GIRL')) return faWandMagicSparkles;
@@ -115,6 +127,11 @@ export default function PubblicitaPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Acquista Pubblicità" subtitle="Aumenta la visibilità con pacchetti e promozioni" />
+
+      {/* Selezione Escort (Agenzia) */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <EscortPicker value={escortUserId} onChange={setEscortUserId} />
+      </div>
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex items-center justify-between">
         <div className="text-sm text-gray-300">Saldo crediti: <strong className="text-white">{balance}</strong></div>
