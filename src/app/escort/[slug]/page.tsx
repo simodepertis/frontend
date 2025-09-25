@@ -257,6 +257,31 @@ export default function EscortDetailPage() {
     return days > 0 ? `${days}g ${hours}h` : `${hours}h`;
   }, [escort.tierExpiresAt]);
 
+  // Minimappa: geocoding della città e render in sidebar
+  useEffect(() => {
+    let canceled = false;
+    (async () => {
+      try {
+        if (!escort.citta || !mapDivRef.current) return;
+        const L = await loadLeafletFromCDN().catch(() => null);
+        if (!L) return;
+        // Se già creata, non ricreare
+        if (mapRef.current) return;
+        // Geocode città con Nominatim
+        const q = encodeURIComponent(escort.citta);
+        const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`, { headers: { 'Accept-Language': 'it' } });
+        const arr = resp.ok ? await resp.json() : [];
+        const lat = arr?.[0]?.lat ? parseFloat(arr[0].lat) : 41.8719; // Italia fallback
+        const lon = arr?.[0]?.lon ? parseFloat(arr[0].lon) : 12.5674;
+        if (canceled) return;
+        mapRef.current = L.map(mapDivRef.current).setView([lat, lon], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
+        markerRef.current = L.marker([lat, lon]).addTo(mapRef.current).bindPopup(escort.citta);
+      } catch {}
+    })();
+    return () => { canceled = true; };
+  }, [escort.citta]);
+
   const tierClasses = useMemo(() => {
     switch (escort.tier) {
       case 'VIP':
