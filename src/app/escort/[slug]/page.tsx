@@ -472,14 +472,14 @@ export default function EscortDetailPage() {
           )}
 
           <div className="mt-5 flex flex-wrap items-center gap-2 text-sm">
-            <span className="inline-flex items-center gap-2 bg-neutral-100 border rounded-full px-3 py-1">
-              <FontAwesomeIcon icon={faLocationDot} className="text-neutral-600" /> {escort.citta}
+            <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">
+              <FontAwesomeIcon icon={faLocationDot} className="text-gray-200" /> {escort.citta}
             </span>
-            <span className="inline-flex items-center gap-2 bg-neutral-100 border rounded-full px-3 py-1">
-              <FontAwesomeIcon icon={faBirthdayCake} className="text-neutral-600" /> {escort.eta} anni
+            <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">
+              <FontAwesomeIcon icon={faBirthdayCake} className="text-gray-200" /> {escort.eta} anni
             </span>
-            <span className="inline-flex items-center gap-2 bg-neutral-100 border rounded-full px-3 py-1">
-              <FontAwesomeIcon icon={faEuroSign} className="text-neutral-600" /> € {escort.prezzo}
+            <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">
+              <FontAwesomeIcon icon={faEuroSign} className="text-gray-200" /> € {escort.prezzo}
             </span>
             {escort.tier && escort.tier !== 'STANDARD' && (
               <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${tierClasses}`}>
