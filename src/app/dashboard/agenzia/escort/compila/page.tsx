@@ -14,7 +14,10 @@ function Inner() {
     { key: "contatti", label: "Contatti", href: `/dashboard/agenzia/escort/compila/contatti?escortUserId=${escortUserId}` },
     { key: "lingue", label: "Lingue", href: `/dashboard/agenzia/escort/compila/lingue?escortUserId=${escortUserId}` },
     { key: "citta-di-lavoro", label: "Città di Lavoro", href: `/dashboard/agenzia/escort/compila/citta-di-lavoro?escortUserId=${escortUserId}` },
-    // In arrivo: servizi, tariffe, orari, galleria-foto, video
+    { key: "servizi", label: "Servizi", href: `/dashboard/agenzia/escort/compila/servizi?escortUserId=${escortUserId}` },
+    { key: "tariffe", label: "Tariffe", href: `/dashboard/agenzia/escort/compila/tariffe?escortUserId=${escortUserId}` },
+    { key: "orari", label: "Orari", href: `/dashboard/agenzia/escort/compila/orari?escortUserId=${escortUserId}` },
+    // In arrivo: galleria-foto, video
   ];
 
   return (
