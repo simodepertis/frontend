@@ -129,31 +129,31 @@ export default function AgencyOnboardingPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-white p-4 space-y-6">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-6 text-gray-300">
         {loading && <div className="text-sm text-gray-400">Caricamento dati…</div>}
 
         {step === 1 && (
           <section className="space-y-4">
             <div>
-              <label className="block text-xs mb-1">Nome Agenzia*</label>
-              <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="border rounded-md px-3 py-2 w-full" />
+              <label className="block text-xs mb-1 text-gray-300">Nome Agenzia*</label>
+              <input value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
             </div>
             <div className="grid md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs mb-1">Paese</label>
-                <select className="border rounded-md px-3 py-2 w-full" value={(data as any).country || 'Italia'} onChange={(e)=> setData({ ...data, cities: data.cities, languages: data.languages, services: data.services, contacts: data.contacts, website: data.website, socials: data.socials, ...( { country: e.target.value } as any) })}>
+                <label className="block text-xs mb-1 text-gray-300">Paese</label>
+                <select className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full" value={(data as any).country || 'Italia'} onChange={(e)=> setData({ ...data, cities: data.cities, languages: data.languages, services: data.services, contacts: data.contacts, website: data.website, socials: data.socials, ...( { country: e.target.value } as any) })}>
                   <option>Italia</option>
                   <option>Svizzera</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs mb-1">Città</label>
+                <label className="block text-xs mb-1 text-gray-300">Città</label>
                 <CityEditor cities={data.cities} onChange={(cities) => setData({ ...data, cities })} />
               </div>
             </div>
             <div>
-              <label className="block text-xs mb-1">Solo Lingua Italiana</label>
-              <textarea value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} className="border rounded-md px-3 py-2 w-full h-32" />
+              <label className="block text-xs mb-1 text-gray-300">Solo Lingua Italiana</label>
+              <textarea value={data.description} onChange={(e) => setData({ ...data, description: e.target.value })} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full h-32 placeholder-gray-400" />
             </div>
           </section>
         )}
@@ -161,8 +161,8 @@ export default function AgencyOnboardingPage() {
         {step === 2 && (
           <section className="space-y-3">
             <div>
-              <label className="block text-xs mb-1">Orari di lavoro (note)</label>
-              <textarea placeholder="Es. Lun–Ven 10:00–19:00" value={(data as any)?.contacts?.schedule || ''} onChange={(e)=> setData({ ...data, contacts: { ...data.contacts, schedule: e.target.value } as any })} className="border rounded-md px-3 py-2 w-full h-28" />
+              <label className="block text-xs mb-1 text-gray-300">Orari di lavoro (note)</label>
+              <textarea placeholder="Es. Lun–Ven 10:00–19:00" value={(data as any)?.contacts?.schedule || ''} onChange={(e)=> setData({ ...data, contacts: { ...data.contacts, schedule: e.target.value } as any })} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full h-28 placeholder-gray-400" />
             </div>
           </section>
         )}
@@ -170,16 +170,16 @@ export default function AgencyOnboardingPage() {
         {step === 3 && (
           <section className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="block text-xs mb-1">Prefisso</label>
-              <input value={data.contacts.phoneCode} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phoneCode: e.target.value } })} className="border rounded-md px-3 py-2 w-full" />
+              <label className="block text-xs mb-1 text-gray-300">Prefisso</label>
+              <input value={data.contacts.phoneCode} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phoneCode: e.target.value } })} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
             </div>
             <div>
-              <label className="block text-xs mb-1">Telefono*</label>
-              <input value={data.contacts.phone} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phone: e.target.value } })} className="border rounded-md px-3 py-2 w-full" />
+              <label className="block text-xs mb-1 text-gray-300">Telefono*</label>
+              <input value={data.contacts.phone} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, phone: e.target.value } })} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs mb-1">Email contatti*</label>
-              <input type="email" value={data.contacts.email} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, email: e.target.value } })} className="border rounded-md px-3 py-2 w-full" />
+              <label className="block text-xs mb-1 text-gray-300">Email contatti*</label>
+              <input type="email" value={data.contacts.email} onChange={(e) => setData({ ...data, contacts: { ...data.contacts, email: e.target.value } })} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
             </div>
           </section>
         )}
