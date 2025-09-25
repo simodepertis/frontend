@@ -66,11 +66,12 @@ export default async function handler(
     // Hash
     const hashedPassword = await hashPassword(password)
 
-    // Ruolo consentito - fix per compatibilità
-    const allowed = ['user','escort','agency','agenzia']
+    // Ruoli consentiti e normalizzazione (salva SEMPRE 'agency' per agenzia)
+    const allowed = ['user','escort','agency','admin','agenzia']
     const ruoloClean = (typeof ruolo === 'string' ? ruolo.toLowerCase() : 'user')
-    // Normalizza 'agency' a 'agenzia' per compatibilità
-    const normalizedRole = ruoloClean === 'agency' ? 'agenzia' : ruoloClean
+    let normalizedRole = ruoloClean
+    if (ruoloClean === 'agenzia') normalizedRole = 'agency'
+    if (ruoloClean === 'agency') normalizedRole = 'agency'
     const finalRole = allowed.includes(normalizedRole) ? normalizedRole : 'user'
 
     // Crea utente
