@@ -34,8 +34,9 @@ export default function AgencyManageEscortsPage() {
     try {
       const res = await fetch('/api/agency/escorts');
       if (res.ok) {
-        const { escorts } = await res.json();
-        const mapped: EscortRow[] = (escorts || []).map((e: any) => ({
+        const data = await res.json();
+        const list = data?.escorts || data?.items || [];
+        const mapped: EscortRow[] = (list || []).map((e: any) => ({
           id: e.id,
           userId: e.userId,
           nome: e.user?.nome || `User ${e.userId}`,
