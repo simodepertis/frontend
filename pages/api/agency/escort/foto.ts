@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { url, name, size } = req.body || {}
     if (!url || !name || typeof size !== 'number') return res.status(400).json({ error: 'Dati mancanti' })
-    const created = await prisma.photo.create({ data: { userId: escortUserId, url, name, size } })
+    const created = await prisma.photo.create({ data: { userId: escortUserId, url, name, size, status: 'IN_REVIEW' as any } })
     return res.json({ photo: created })
   }
 
@@ -44,12 +44,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PATCH') {
-    const { id, isFace } = req.body || {}
+    const { id, isFace, action } = req.body || {}
     const photoId = Number(id || 0)
-    if (!photoId || typeof isFace !== 'boolean') return res.status(400).json({ error: 'Parametri non validi' })
+    if (!photoId) return res.status(400).json({ error: 'Parametri non validi' })
     const p = await prisma.photo.findUnique({ where: { id: photoId } })
     if (!p || p.userId !== escortUserId) return res.status(404).json({ error: 'Non trovato' })
-    const updated = await prisma.photo.update({ where: { id: photoId }, data: { isFace: !!isFace } })
+    const data: any = {}
+    if (typeof isFace === 'boolean') data.isFace = !!isFace
+    if (action === 'submit') data.status = 'IN_REVIEW'
+    const updated = await prisma.photo.update({ where: { id: photoId }, data })
     return res.json({ ok: true, photo: updated })
   }
 
