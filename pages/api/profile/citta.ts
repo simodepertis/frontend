@@ -18,6 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Preleva record esistente per fare merge e non perdere campi assenti nel body
     const existing = await prisma.escortProfile.findUnique({ where: { userId: payload.userId } })
     const prev: any = (existing?.cities as any) || {}
+    // Coercion helper
+    const toNum = (v: any) => (typeof v === 'number' ? v : (typeof v === 'string' ? parseFloat(v) : NaN));
     const merged: any = {
       ...prev,
       ...body,
@@ -28,9 +30,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fourthCity: body.fourthCity ?? prev.fourthCity ?? '',
       zones: Array.isArray(body.zones) ? body.zones : (Array.isArray(prev.zones) ? prev.zones : []),
       availability: typeof body.availability === 'object' && body.availability !== null ? body.availability : (prev.availability || {}),
-      position: (body.position && typeof body.position.lat === 'number' && typeof body.position.lng === 'number')
-        ? { lat: body.position.lat, lng: body.position.lng }
-        : (prev.position || undefined),
+      position: (() => {
+        const p = body.position || {};
+        const lat = toNum(p.lat);
+        const lng = toNum(p.lng);
+        if (!Number.isNaN(lat) && !Number.isNaN(lng)) return { lat, lng };
+        return prev.position || undefined;
+      })(),
     }
     const prof = await prisma.escortProfile.upsert({
       where: { userId: payload.userId },
