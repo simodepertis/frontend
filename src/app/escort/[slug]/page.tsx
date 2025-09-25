@@ -131,6 +131,9 @@ export default function EscortDetailPage() {
   // Tick per ritentare l'inizializzazione mappa quando il container è pronto
   const [mapInitTick, setMapInitTick] = useState(0);
   const [mapCity, setMapCity] = useState<string>("");
+  const baseCity = useMemo(()=>{
+    try { return (data as any)?.cities?.baseCity || ""; } catch { return ""; }
+  }, [data]);
 
   // Leaflet map for public profile (load via CDN to avoid deps)
   const [leafletReady, setLeafletReady] = useState(false);
@@ -392,8 +395,7 @@ export default function EscortDetailPage() {
       <SectionHeader title={`${escort.nome}, ${escort.eta}`} subtitle={`Profilo a ${escort.citta}`} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-2">
-        {/* Galleria: mostra solo se ci sono foto reali (evita box vuoto) */}
-        {escort.foto.filter(u=> typeof u === 'string' && u.trim() && u !== '/placeholder.svg').length > 0 && (
+        {/* Galleria sempre visibile con placeholder se necessario */}
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
             <img
@@ -486,7 +488,6 @@ export default function EscortDetailPage() {
 
           {/* Rimosso blocco Tabs per evitare duplicazioni e sfasamenti con il nuovo layout */}
         </div>
-        )}
 
         {/* Sidebar */}
         <aside className="bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
@@ -540,9 +541,9 @@ export default function EscortDetailPage() {
           )}
 
           {/* Minimappa: mostra solo se abbiamo coordinate o città */}
-          {(((data as any)?.cities?.position && typeof (data as any).cities.position.lat === 'number' && typeof (data as any).cities.position.lng === 'number') || escort.citta) && (
+          {(((data as any)?.cities?.position && typeof (data as any).cities.position.lat === 'number' && typeof (data as any).cities.position.lng === 'number') || escort.citta || baseCity) && (
             <div className="mt-4 border-t border-gray-700 pt-4">
-              <div className="text-sm font-semibold text-white mb-2">{`Localizzazione${(mapCity || escort.citta) ? `: ${mapCity || escort.citta}` : ''}`}</div>
+              <div className="text-sm font-semibold text-white mb-2">{`Localizzazione${(mapCity || baseCity || escort.citta) ? `: ${mapCity || baseCity || escort.citta}` : ''}`}</div>
               <div ref={mapDivRef} className="w-full h-[220px] rounded-md overflow-hidden border border-gray-700" />
             </div>
           )}
