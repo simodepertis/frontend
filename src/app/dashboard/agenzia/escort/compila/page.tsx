@@ -17,7 +17,8 @@ function Inner() {
     { key: "servizi", label: "Servizi", href: `/dashboard/agenzia/escort/compila/servizi?escortUserId=${escortUserId}` },
     { key: "tariffe", label: "Tariffe", href: `/dashboard/agenzia/escort/compila/tariffe?escortUserId=${escortUserId}` },
     { key: "orari", label: "Orari", href: `/dashboard/agenzia/escort/compila/orari?escortUserId=${escortUserId}` },
-    // In arrivo: galleria-foto, video
+    { key: "galleria-foto", label: "Galleria Foto", href: `/dashboard/agenzia/escort/compila/galleria-foto?escortUserId=${escortUserId}` },
+    { key: "video", label: "Video", href: `/dashboard/agenzia/escort/compila/video?escortUserId=${escortUserId}` },
   ];
 
   return (
