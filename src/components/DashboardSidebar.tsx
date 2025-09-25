@@ -37,16 +37,10 @@ export default function DashboardSidebar() {
   useEffect(() => {
     (async () => {
       try {
-        const token = localStorage.getItem('auth-token');
-        if (!token) {
-          console.log('❌ Nessun token per sidebar');
-          return;
-        }
-        
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
         const res = await fetch("/api/user/me", {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
         });
         
         if (res.ok) {
