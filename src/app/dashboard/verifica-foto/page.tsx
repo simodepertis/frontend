@@ -204,9 +204,11 @@ export default function VerificaFotoPage() {
                       <>
                         <Button variant="secondary" className="px-2 py-1 h-7 text-xs whitespace-nowrap" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
                         <Button 
-                          className={`${p.isFace ? 'bg-blue-700 hover:bg-blue-800' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} 
+                          variant="secondary"
+                          className={`${p.isFace ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} 
                           disabled={Number.isNaN(Number(p.id)) || togglingFaceId === p.id}
                           title={Number.isNaN(Number(p.id)) ? 'Attendi: foto in caricamento' : (togglingFaceId === p.id ? 'Aggiornamento in corso…' : '')}
+                          aria-pressed={p.isFace ? true : false}
                           onClick={async()=>{
                           const idNum = Number(p.id);
                           if (Number.isNaN(idNum)) return;
