@@ -131,7 +131,7 @@ export default function EscortDetailPage() {
   // Lightbox per immagine principale
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // Rapporto d'aspetto dinamico per l'immagine principale (percentuale padding-top)
-  const [mainAspectPct, setMainAspectPct] = useState<number>(75); // default 4/3
+  const [mainAspectPct, setMainAspectPct] = useState<number>(66.66); // default ~16:10
   // Tick per ritentare l'inizializzazione mappa quando il container è pronto
   const [mapInitTick, setMapInitTick] = useState(0);
   const [mapCity, setMapCity] = useState<string>("");
@@ -416,8 +416,8 @@ export default function EscortDetailPage() {
                   const img = e.currentTarget as HTMLImageElement;
                   if (img.naturalWidth > 0 && img.naturalHeight > 0) {
                     const pct = (img.naturalHeight / img.naturalWidth) * 100;
-                    // Clamp valori sensati
-                    const clamped = Math.min(200, Math.max(30, pct));
+                    // Clamp per evitare riquadri troppo alti o troppo bassi
+                    const clamped = Math.min(75, Math.max(56, pct));
                     setMainAspectPct(clamped);
                   }
                 }catch{}
