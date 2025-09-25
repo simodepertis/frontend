@@ -215,6 +215,7 @@ model User {
   email    String  @unique
   password String
   ruolo    String
+  suspended Boolean @default(false)
   createdAt DateTime @default(now())
 
   // Relation: one user can have one escort profile

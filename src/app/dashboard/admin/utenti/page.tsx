@@ -12,6 +12,15 @@ export default function AdminUtentiPage() {
     ruolo: string; 
     createdAt: string; 
     lastLogin?: string;
+    suspended?: boolean;
+    hasEscortProfile?: boolean;
+    counts?: {
+      photosApproved: number;
+      photosReview: number;
+      videosApproved: number;
+      videosReview: number;
+      docsApproved: number;
+    }
   };
   
   const [users, setUsers] = useState<User[]>([]);
@@ -32,14 +41,16 @@ export default function AdminUtentiPage() {
       
       if (response.ok) {
         const data = await response.json();
-        // Transform data to match expected format
         const transformedUsers = data.users.map((user: any) => ({
           id: user.id,
           nome: user.nome,
           email: user.email,
           ruolo: user.ruolo,
-          createdAt: user.createdAt.split('T')[0], // Format date
-          lastLogin: 'N/A' // We don't have lastLogin in schema yet
+          createdAt: String(user.createdAt).split('T')[0],
+          lastLogin: 'N/A',
+          suspended: !!user.suspended,
+          hasEscortProfile: !!user.hasEscortProfile,
+          counts: user.counts || { photosApproved: 0, photosReview: 0, videosApproved: 0, videosReview: 0, docsApproved: 0 }
         }));
         setUsers(transformedUsers);
         console.log('✅ Utenti admin caricati:', transformedUsers);
@@ -47,6 +58,29 @@ export default function AdminUtentiPage() {
         console.error('❌ Errore risposta API utenti:', response.status);
         setUsers([]);
       }
+
+  async function suspendUser(userId: number, suspend: boolean) {
+    try {
+      const token = localStorage.getItem('auth-token');
+      const headers = { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ userId, action: suspend ? 'suspend' : 'unsuspend' })
+      });
+      if (response.ok) {
+        await loadUsers();
+      } else {
+        const d = await response.json().catch(()=>({error:'Errore'}));
+        alert(d.error || 'Errore aggiornamento stato utente');
+      }
+    } catch (e) {
+      console.error('❌ Errore sospensione utente:', e);
+    }
+  }
     } catch (error) {
       console.error('❌ Errore caricamento utenti:', error);
       setUsers([]);
@@ -153,6 +187,12 @@ export default function AdminUtentiPage() {
                   <th className="px-4 py-3 text-left text-white">Ruolo</th>
                   <th className="px-4 py-3 text-left text-white">Registrato</th>
                   <th className="px-4 py-3 text-left text-white">Ultimo Login</th>
+                  <th className="px-4 py-3 text-left text-white">Foto OK</th>
+                  <th className="px-4 py-3 text-left text-white">Foto Review</th>
+                  <th className="px-4 py-3 text-left text-white">Video OK</th>
+                  <th className="px-4 py-3 text-left text-white">Doc OK</th>
+                  <th className="px-4 py-3 text-left text-white">Escort</th>
+                  <th className="px-4 py-3 text-left text-white">Stato</th>
                   <th className="px-4 py-3 text-left text-white">Azioni</th>
                 </tr>
               </thead>
@@ -175,12 +215,24 @@ export default function AdminUtentiPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-400 text-sm">{user.createdAt}</td>
                     <td className="px-4 py-3 text-gray-400 text-sm">{user.lastLogin || 'Mai'}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">{user.counts?.photosApproved ?? 0}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">{user.counts?.photosReview ?? 0}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">{user.counts?.videosApproved ?? 0}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">{user.counts?.docsApproved ?? 0}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">{user.hasEscortProfile ? 'Sì' : 'No'}</td>
+                    <td className="px-4 py-3 text-sm">{user.suspended ? <span className="px-2 py-1 rounded bg-red-700 text-white text-xs">Sospeso</span> : <span className="px-2 py-1 rounded bg-emerald-700 text-white text-xs">Attivo</span>}</td>
                     <td className="px-4 py-3">
                       <Button
                         onClick={() => deleteUser(user.id)}
                         className="bg-red-600 hover:bg-red-700 text-xs px-2 py-1"
                       >
                         Elimina
+                      </Button>
+                      <Button
+                        onClick={() => suspendUser(user.id, !user.suspended)}
+                        className={`ml-2 text-xs px-2 py-1 ${user.suspended ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+                      >
+                        {user.suspended ? 'Riattiva' : 'Sospendi'}
                       </Button>
                     </td>
                   </tr>
