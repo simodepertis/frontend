@@ -2,6 +2,7 @@
 
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useMemo, useState } from "react";
+import EscortPicker from "@/components/EscortPicker";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faStar, faGem, faShieldHalved, faCircleCheck, faCircleExclamation, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
@@ -106,6 +107,7 @@ export default function CreditiPage() {
   // Placement stato corrente dal profilo (contacts.placement)
   const [placement, setPlacement] = useState<null | { code: string; status: 'ACTIVE'|'PAUSED'; startedAt?: string; lastStartAt?: string; lastPauseAt?: string; remainingDays?: number }>(null);
   const [actingPlacement, setActingPlacement] = useState<null | 'pause' | 'resume'>(null);
+  const [escortUserId, setEscortUserId] = useState<number>(0);
 
   useEffect(() => {
     loadAll();
@@ -118,7 +120,7 @@ export default function CreditiPage() {
       };
       
       const [w, c, t, o, s, me] = await Promise.all([
-        fetch('/api/credits/wallet', { headers: authHeaders }),
+        escortUserId ? fetch(`/api/agency/credits/wallet?escortUserId=${escortUserId}`, { headers: authHeaders }) : fetch('/api/credits/wallet', { headers: authHeaders }),
         fetch('/api/credits/catalog'),
         fetch('/api/credits/transactions', { headers: authHeaders }),
         fetch('/api/credits/orders', { headers: authHeaders }),
@@ -201,13 +203,15 @@ export default function CreditiPage() {
 
   async function spend(code: string) {
     try {
-      const res = await fetch('/api/credits/spend', {
+      const url = escortUserId ? '/api/agency/credits/spend' : '/api/credits/spend';
+      const body = escortUserId ? { escortUserId, code } : { code };
+      const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`,
         },
-        body: JSON.stringify({ code })
+        body: JSON.stringify(body)
       });
       const data = await res.json();
       if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
@@ -280,6 +284,11 @@ export default function CreditiPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Crediti" subtitle="Saldo, posizionamenti e storico movimenti" />
+
+      {/* Selezione Escort (Agenzia) */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <EscortPicker value={escortUserId} onChange={(v)=>{ setEscortUserId(v); setLoading(true); }} />
+      </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2">
