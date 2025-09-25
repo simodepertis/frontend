@@ -134,6 +134,9 @@ export default function EscortDetailPage() {
   const baseCity = useMemo(()=>{
     try { return (data as any)?.cities?.baseCity || ""; } catch { return ""; }
   }, [data]);
+  const hasRealPhotos = useMemo(()=>
+    Array.isArray(escort.foto) && escort.foto.some(u => typeof u === 'string' && u.trim() && u !== '/placeholder.svg')
+  , [escort.foto]);
 
   // Leaflet map for public profile (load via CDN to avoid deps)
   const [leafletReady, setLeafletReady] = useState(false);
@@ -309,7 +312,7 @@ export default function EscortDetailPage() {
       } catch {}
     })();
     return () => { canceled = true; };
-  }, [escort.citta, data, mapInitTick]);
+  }, [escort.citta, data, baseCity, mapInitTick]);
 
   // Se il container non è pronto al primo giro, ritenta tra 300ms
   useEffect(() => {
@@ -394,8 +397,9 @@ export default function EscortDetailPage() {
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Escort", href: "/escort" }, { label: escort.nome }]} />
       <SectionHeader title={`${escort.nome}, ${escort.eta}`} subtitle={`Profilo a ${escort.citta}`} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-2">
-        {/* Galleria sempre visibile con placeholder se necessario */}
+      <div className={`grid grid-cols-1 ${hasRealPhotos ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-8 mt-2`}>
+        {/* Galleria: visibile solo se ci sono foto reali */}
+        {hasRealPhotos && (
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
           <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden">
             <img
