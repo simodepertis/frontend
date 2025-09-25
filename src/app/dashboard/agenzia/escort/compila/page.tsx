@@ -19,6 +19,7 @@ function Inner() {
     { key: "orari", label: "Orari", href: `/dashboard/agenzia/escort/compila/orari?escortUserId=${escortUserId}` },
     { key: "galleria-foto", label: "Galleria Foto", href: `/dashboard/agenzia/escort/compila/galleria-foto?escortUserId=${escortUserId}` },
     { key: "video", label: "Video", href: `/dashboard/agenzia/escort/compila/video?escortUserId=${escortUserId}` },
+    { key: "documenti", label: "Documenti", href: `/dashboard/agenzia/escort/compila/documenti?escortUserId=${escortUserId}` },
   ];
 
   return (
