@@ -404,7 +404,7 @@ export default function EscortDetailPage() {
       <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mt-2`}>
         {/* Galleria sempre visibile (usa placeholder se mancano foto reali) */}
         <div className="md:col-span-2 bg-gray-800 rounded-xl border shadow-sm p-4">
-          <div className="max-w-[980px] mx-auto">
+          <div className="max-w-[820px] mx-auto">
           <div className="relative w-full rounded-lg overflow-hidden" style={{ paddingTop: `${mainAspectPct}%` }}>
             <img
               src={(escort.foto[active] || escort.foto[0] || '/placeholder.svg')}
