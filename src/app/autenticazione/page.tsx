@@ -21,10 +21,12 @@ function AuthContent() {
     
     try {
       // Login contro la nostra API Next con controllo ruolo
+      const roleMap: Record<string, string> = { utente: 'user', escort: 'escort', agenzia: 'agency' };
+      const expectedRole = roleMap[tab] || tab;
       const res = await fetch(`/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, expectedRole: tab }),
+        body: JSON.stringify({ email, password, expectedRole }),
         credentials: 'include',
       });
       
