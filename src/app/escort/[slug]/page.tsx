@@ -308,20 +308,20 @@ export default function EscortDetailPage() {
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
         markerRef.current = L.marker([lat as number, lon as number]).addTo(mapRef.current).bindPopup(escort.citta || 'Posizione');
         
-        // Applica stili cursore alla mappa
-        const mapContainer = mapRef.current.getContainer();
-        if (mapContainer) {
-          mapContainer.style.cursor = 'grab';
-          mapContainer.addEventListener('mousedown', () => {
-            mapContainer.style.cursor = 'grabbing';
-          });
-          mapContainer.addEventListener('mouseup', () => {
-            mapContainer.style.cursor = 'grab';
-          });
-          mapContainer.addEventListener('mouseleave', () => {
-            mapContainer.style.cursor = 'grab';
-          });
-        }
+        // Forza il cursore sulla mappa
+        setTimeout(() => {
+          const mapContainer = mapRef.current?.getContainer();
+          if (mapContainer) {
+            mapContainer.style.setProperty('cursor', 'grab', 'important');
+            const style = document.createElement('style');
+            style.textContent = `
+              .leaflet-container { cursor: grab !important; }
+              .leaflet-dragging .leaflet-container { cursor: grabbing !important; }
+              .leaflet-clickable { cursor: pointer !important; }
+            `;
+            document.head.appendChild(style);
+          }
+        }, 100);
         try { setTimeout(()=> { try { mapRef.current?.invalidateSize?.(); } catch {} }, 300); } catch {}
         // Reverse geocoding per titolo, se abbiamo coordinate
         try {
