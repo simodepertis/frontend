@@ -24,8 +24,8 @@ export default function Footer() {
         <div className="flex flex-col items-center md:items-end text-center md:text-right">
           <div className="flex gap-4 mb-3">
             <a href="/termini" className="text-gray-400 hover:text-white transition-colors">Termini</a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="text-gray-400 hover:text-white transition-colors">Cookie</a>
+            <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy</a>
+            <a href="/cookie" className="text-gray-400 hover:text-white transition-colors">Cookie</a>
           </div>
           <p className="text-xs text-gray-500">Tutte le escorts avevano 18 anni al momento dell'inserimento dell'annuncio.</p>
         </div>
