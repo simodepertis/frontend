@@ -298,7 +298,13 @@ export default function EscortDetailPage() {
         // 3) Fallback Italia
         if (lat === null || lon === null) { lat = 41.8719; lon = 12.5674; }
         if (canceled) return;
-        mapRef.current = L.map(mapDivRef.current).setView([lat as number, lon as number], 12);
+        mapRef.current = L.map(mapDivRef.current, { 
+          zoomControl: true,
+          dragging: true,
+          touchZoom: true,
+          doubleClickZoom: true,
+          scrollWheelZoom: true
+        }).setView([lat as number, lon as number], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
         markerRef.current = L.marker([lat as number, lon as number]).addTo(mapRef.current).bindPopup(escort.citta || 'Posizione');
         try { setTimeout(()=> { try { mapRef.current?.invalidateSize?.(); } catch {} }, 300); } catch {}
@@ -565,7 +571,7 @@ export default function EscortDetailPage() {
           {(((data as any)?.cities?.position && typeof (data as any).cities.position.lat === 'number' && typeof (data as any).cities.position.lng === 'number') || escort.citta || baseCity) && (
             <div className="mt-4 border-t border-gray-700 pt-4">
               <div className="text-sm font-semibold text-white mb-2">{`Localizzazione${(mapCity || baseCity || escort.citta) ? `: ${mapCity || baseCity || escort.citta}` : ''}`}</div>
-              <div ref={mapDivRef} className="w-full h-[220px] rounded-md overflow-hidden border border-gray-700" />
+              <div ref={mapDivRef} className="w-full h-[220px] rounded-md overflow-hidden border border-gray-700" style={{ cursor: 'grab' }} />
             </div>
           )}
         </aside>
@@ -749,8 +755,18 @@ export default function EscortDetailPage() {
               try { await navigator.clipboard.writeText(window.location.href); alert('Link copiato'); } catch { alert('Copia link non supportata'); }
             }}
           >Copia link</Button>
-          <Button variant="secondary" onClick={()=>{ setReportMsg(""); setShowReportProblem(true); }}>Segnala un problema</Button>
-          <Button variant="secondary" onClick={()=>{ setReportPhotoUrl(escort.foto[active]||""); setReportReason(""); setShowReportPhoto(true); }}>Segnala foto</Button>
+          <Button 
+            className="bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700" 
+            onClick={()=>{ setReportMsg(""); setShowReportProblem(true); }}
+          >
+            Segnala un problema
+          </Button>
+          <Button 
+            className="bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700" 
+            onClick={()=>{ setReportPhotoUrl(escort.foto[active]||""); setReportReason(""); setShowReportPhoto(true); }}
+          >
+            Segnala foto
+          </Button>
         </div>
       </div>
 
