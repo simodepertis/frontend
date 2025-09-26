@@ -79,20 +79,20 @@ export default function EscortCard({ escort }: { escort: Escort }) {
             <FontAwesomeIcon icon={faWhatsapp} className="text-2xl text-green-500" />
             {/* Iconcine video, recensioni e commenti */}
             {(escort.videoCount ?? 0) > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-black/70 text-white shadow">
-                <FontAwesomeIcon icon={faVideo} className="text-[7px]" />
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
+                <FontAwesomeIcon icon={faVideo} className="text-sm" />
                 <span>{escort.videoCount}</span>
               </div>
             )}
             {(escort.reviewCount ?? 0) > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-black/70 text-white shadow">
-                <FontAwesomeIcon icon={faComment} className="text-[7px]" />
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
+                <FontAwesomeIcon icon={faComment} className="text-sm" />
                 <span>{escort.reviewCount}</span>
               </div>
             )}
             {(escort.commentCount ?? 0) > 0 && (
-              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-black/70 text-white shadow">
-                <FontAwesomeIcon icon={faComments} className="text-[7px]" />
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
+                <FontAwesomeIcon icon={faComments} className="text-sm" />
                 <span>{escort.commentCount}</span>
               </div>
             )}
