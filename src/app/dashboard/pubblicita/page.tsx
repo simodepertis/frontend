@@ -1,5 +1,4 @@
 "use client";
-// build: trigger render to pick latest fixed version
 
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
@@ -50,6 +49,7 @@ export default function PubblicitaPage() {
     } finally {
       setSpending("");
     }
+  }
 
   async function spendByProduct(code: string, days: number) {
     setSpending(code);
@@ -75,7 +75,6 @@ export default function PubblicitaPage() {
       setSpending("");
     }
   }
-  
 
   function tierIcon(code: string) {
     if (code.startsWith('GIRL')) return faWandMagicSparkles;
@@ -88,31 +87,31 @@ export default function PubblicitaPage() {
 
   function tierClasses(code: string) {
     if (code.startsWith('GIRL')) return {
-      card: 'bg-gradient-to-br from-pink-50 to-rose-100 border-rose-200 hover:shadow-rose-200/60',
+      card: 'bg-gray-800 border-gray-600',
       pill: 'bg-rose-500 text-white',
       cta: 'bg-rose-600 hover:bg-rose-700 text-white',
       ring: 'ring-rose-400',
     };
     if (code.startsWith('VIP')) return {
-      card: 'bg-gradient-to-br from-yellow-50 to-amber-100 border-amber-200 hover:shadow-amber-200/60',
+      card: 'bg-gray-800 border-gray-600',
       pill: 'bg-yellow-400 text-black',
       cta: 'bg-yellow-500 hover:bg-yellow-600 text-black',
       ring: 'ring-yellow-400',
     };
     if (code.startsWith('TITANIO')) return {
-      card: 'bg-gradient-to-br from-sky-50 to-blue-100 border-blue-200 hover:shadow-blue-200/60',
+      card: 'bg-gray-800 border-gray-600',
       pill: 'bg-sky-700 text-white',
       cta: 'bg-sky-700 hover:bg-sky-800 text-white',
       ring: 'ring-sky-500',
     };
     if (code.startsWith('ORO')) return {
-      card: 'bg-gradient-to-br from-amber-50 to-yellow-100 border-amber-200 hover:shadow-amber-200/60',
+      card: 'bg-gray-800 border-gray-600',
       pill: 'bg-amber-300 text-black',
       cta: 'bg-amber-400 hover:bg-amber-500 text-black',
       ring: 'ring-amber-400',
     };
     if (code.startsWith('ARGENTO')) return {
-      card: 'bg-gradient-to-br from-zinc-50 to-gray-100 border-gray-200 hover:shadow-gray-200/60',
+      card: 'bg-gray-800 border-gray-600',
       pill: 'bg-zinc-300 text-neutral-900',
       cta: 'bg-zinc-700 hover:bg-zinc-800 text-white',
       ring: 'ring-zinc-400',
@@ -129,7 +128,6 @@ export default function PubblicitaPage() {
     <div className="space-y-6">
       <SectionHeader title="Acquista Pubblicità" subtitle="Aumenta la visibilità con pacchetti e promozioni" />
 
-      {/* Selezione Escort (Agenzia) */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <EscortPicker value={escortUserId} onChange={setEscortUserId} />
       </div>
@@ -140,7 +138,7 @@ export default function PubblicitaPage() {
       </div>
 
       {catalog.length === 0 ? (
-        <div className="text-sm text-neutral-500">Nessun pacchetto disponibile al momento.</div>
+        <div className="text-sm text-gray-400">Nessun pacchetto disponibile al momento.</div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {catalog.map((p) => {
@@ -149,50 +147,52 @@ export default function PubblicitaPage() {
             return (
               <div key={p.code} className={`relative rounded-2xl border p-5 transition-shadow hover:shadow-xl ${s.card}`}>
                 {popular && (
-                  <div className="absolute -top-2 right-3 text-[10px] uppercase tracking-wide px-2 py-1 bg-rose-600 text-white rounded-full shadow">
-                    Più scelto
-                  </div>
+                  <div className="absolute -top-2 right-3 text-[10px] uppercase tracking-wide px-2 py-1 bg-rose-600 text-white rounded-full shadow">Più scelto</div>
                 )}
                 <div className="flex items-center gap-3 mb-3">
-                  <div className={`w-10 h-10 grid place-items-center rounded-full bg-gray-800/80 ${s.ring} ring-2 text-neutral-800`}>
+                  <div className={`w-10 h-10 grid place-items-center rounded-full bg-gray-700 ${s.ring} ring-2 text-white`}>
                     <FontAwesomeIcon icon={tierIcon(p.code)} />
                   </div>
                   <div>
-                    <div className="font-extrabold text-lg text-neutral-900">{p.label}</div>
+                    <div className="font-extrabold text-lg text-white">{p.label}</div>
                   </div>
                   <span className={`ml-auto text-[11px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
                 </div>
                 {p.pricePerDayCredits ? (
                   <div className="mt-2 grid grid-cols-[1fr,auto,auto] items-end gap-3">
                     <div className="flex flex-col gap-1">
-                      <label className="text-sm text-neutral-600">Giorni</label>
+                      <label className="text-sm text-gray-300">Giorni</label>
                       <input
                         type="number"
                         min={p.minDays || 1}
                         max={p.maxDays || 60}
                         value={daysByCode[p.code] ?? (p.minDays || 1)}
-                        onChange={(e)=>setDaysByCode(d=>({ ...d, [p.code]: Math.min(Math.max(Number(e.target.value|| (p.minDays||1)), p.minDays||1), p.maxDays||60) }))}
+                        onChange={(e)=>setDaysByCode(d=>({ ...d, [p.code]: Math.min(Math.max(Number(e.target.value || (p.minDays || 1)), p.minDays || 1), p.maxDays || 60) }))}
                         className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <div className="text-xs text-neutral-500">Range: {p.minDays || 1}–{p.maxDays || 60} giorni</div>
+                      <div className="text-xs text-gray-400">Range: {p.minDays || 1}–{p.maxDays || 60} giorni</div>
                     </div>
                     <div className="text-sm">
-                      <div className="text-neutral-700">Costo</div>
-                      <div className="font-semibold text-neutral-900">{(p.pricePerDayCredits||0) * (daysByCode[p.code] ?? (p.minDays||1))} crediti</div>
+                      <div className="text-gray-300">Costo</div>
+                      <div className="font-semibold text-white">{(p.pricePerDayCredits || 0) * (daysByCode[p.code] ?? (p.minDays || 1))} crediti</div>
                     </div>
-                    <Button onClick={() => spendByProduct(p.code, daysByCode[p.code] ?? (p.minDays || 1))} disabled={spending===p.code} className={`px-4 ${s.cta}`}>{spending===p.code ? 'Attivazione…' : 'Attiva'}</Button>
+                    <Button onClick={() => spendByProduct(p.code, daysByCode[p.code] ?? (p.minDays || 1))} disabled={spending === p.code} className={`px-4 ${s.cta}`}>
+                      {spending === p.code ? 'Attivazione…' : 'Attiva'}
+                    </Button>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
                     <div className="text-sm">
-                      <div className="text-neutral-600">Costo</div>
-                      <div className="font-semibold text-neutral-900">{p.creditsCost} crediti</div>
+                      <div className="text-gray-300">Costo</div>
+                      <div className="font-semibold text-white">{p.creditsCost} crediti</div>
                     </div>
-                    <Button onClick={() => spend(p.code)} disabled={spending===p.code} className={`px-4 ${s.cta}`}>{spending===p.code ? 'Attivazione…' : 'Attiva'}</Button>
+                    <Button onClick={() => spend(p.code)} disabled={spending === p.code} className={`px-4 ${s.cta}`}>
+                      {spending === p.code ? 'Attivazione…' : 'Attiva'}
+                    </Button>
                   </div>
                 )}
               </div>
-            )
+            );
           })}
         </div>
       )}
