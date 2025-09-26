@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { type, url } = req.body || {}
       const types = ['ID_CARD_FRONT','ID_CARD_BACK','SELFIE_WITH_ID']
       if (!types.includes(String(type)) || !url) return res.status(400).json({ error: 'Dati mancanti' })
-      const created = await prisma.document.create({ data: { userId: escortUserId, type: type as any, url: String(url), status: 'DRAFT' as any } })
+      const created = await prisma.document.create({ data: { userId: escortUserId, type: type as any, url: String(url), status: 'IN_REVIEW' as any } })
       return res.json({ document: created })
     }
 

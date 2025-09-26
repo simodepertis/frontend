@@ -45,10 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: { status: 'IN_REVIEW' }
     })
 
-    await prisma.document.updateMany({
-      where: { userId: uid, status: 'DRAFT' },
-      data: { status: 'IN_REVIEW' }
-    })
+    // I documenti sono già IN_REVIEW alla creazione, non serve aggiornarli
 
     return res.status(200).json({ ok: true, message: 'Foto, video e documenti inviati in revisione' })
   } catch (e) {

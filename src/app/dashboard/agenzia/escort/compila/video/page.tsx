@@ -17,6 +17,7 @@ function Inner() {
   const [duration, setDuration] = useState("");
   const [thumb, setThumb] = useState("");
   const [hd, setHd] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function load() {
@@ -61,6 +62,27 @@ function Inner() {
     const res = await fetch('/api/agency/escort/video', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId, id, ...data }) });
     if (res.ok) await load(); else alert('Errore aggiornamento');
   }
+
+  async function sendForReview() {
+    if (!escortUserId) { alert('escortUserId mancante'); return; }
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/agency/escort/submit', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ escortUserId })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(j?.error || 'Errore invio a verifica'); return; }
+      alert('Video inviati in revisione insieme a foto e documenti.');
+      await load(); // Ricarica per vedere eventuali cambi di stato
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const hasVideos = videos.length > 0;
 
   return (
     <div className="space-y-6">
@@ -126,6 +148,27 @@ function Inner() {
 
         <div className="flex items-center justify-between">
           <a href={`/dashboard/agenzia/escort/compila?escortUserId=${escortUserId}`} className="text-sm text-blue-400 hover:underline">« Torna all'hub</a>
+        </div>
+      </div>
+
+      {/* Invio a verifica */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Invio a verifica</div>
+        <p className="text-sm text-gray-300 mb-4">
+          Invia tutti i contenuti (foto, video e documenti) dell'escort per la revisione dell'admin.
+        </p>
+        
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-400">
+            Video caricati: {videos.length}
+          </div>
+          <Button 
+            onClick={sendForReview} 
+            disabled={submitting || !escortUserId}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {submitting ? 'Invio…' : 'Invia tutto a verifica'}
+          </Button>
         </div>
       </div>
     </div>
