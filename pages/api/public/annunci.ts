@@ -79,9 +79,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       }).filter((x: any) => (!city || x.cities.some((c: string) => String(c).toLowerCase().includes(city))) && (!q || String(x.name).toLowerCase().includes(q) || x.cities.some((c: string) => String(c).toLowerCase().includes(q))))
     } else {
-      // Profili escort (annunci fisici)
+      // Profili escort (annunci fisici) - include sia escort indipendenti che agenzia
       const profiles = await prisma.escortProfile.findMany({
-        include: { user: { select: { id: true, nome: true, slug: true, documents: { select: { status: true } } } } },
+        include: { 
+          user: { select: { id: true, nome: true, slug: true, documents: { select: { status: true } } } },
+          agency: { select: { id: true, nome: true } }
+        },
         orderBy: { updatedAt: 'desc' },
       })
 
@@ -94,6 +97,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const hasApprovedDoc = Array.isArray(p.user?.documents) && p.user.documents.some((d:any)=> d.status === 'APPROVED')
         const price = pickPriceFromRates(p.rates as any)
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
+        const isAgencyEscort = !!p.agencyId
+        
+        // Log per debug escort agenzia
+        if (isAgencyEscort) {
+          console.log(`🏢 Escort agenzia trovata: ${displayName} (ID: ${p.userId}, AgencyID: ${p.agencyId}, HasApprovedDoc: ${hasApprovedDoc})`)
+        }
+        
         return {
           id: p.userId,
           name: displayName,
@@ -105,6 +115,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           updatedAt: p.updatedAt,
           hasApprovedDoc,
           price: price || 0,
+          isAgencyEscort,
+          agencyName: p.agency?.nome || null,
         } as any
       })
 
@@ -139,26 +151,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q))))
       ))
 
-      // Allego cover APPROVED + conteggi video e recensioni
+      // Allego cover APPROVED + conteggi video, recensioni e commenti
       const withMeta = await Promise.all(filteredBase.map(async (it: any) => {
-        const [cover, videoCount, reviewCount] = await Promise.all([
+        const [cover, videoCount, reviewCount, commentCount] = await Promise.all([
           prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' } }),
           prisma.video.count({ where: { userId: it.id, status: 'APPROVED' as any } }),
-          prisma.review.count({ where: { targetUserId: it.id, status: 'APPROVED' as any } })
+          prisma.review.count({ where: { targetUserId: it.id, status: 'APPROVED' as any } }),
+          prisma.comment.count({ where: { targetUserId: it.id, status: 'APPROVED' as any } })
         ])
-        return { ...it, coverUrl: normalizeUrl(cover?.url), videoCount, reviewCount }
+        return { ...it, coverUrl: normalizeUrl(cover?.url), videoCount, reviewCount, commentCount }
       }))
 
       // PUBBLICAZIONE aggiornata:
       // - Mostra SEMPRE chi ha almeno un documento APPROVED
       // - Se manca cover APPROVED, usa placeholder ma con priorità bassa
-      mapped = withMeta
-        .filter(x => x.hasApprovedDoc)
-        .map(x => ({
-          ...x,
-          coverUrl: normalizeUrl(x.coverUrl) || '/placeholder.svg',
-          priority: x.coverUrl ? x.priority : Math.min(x.priority, 10),
-        }))
+      const approvedEscorts = withMeta.filter(x => x.hasApprovedDoc)
+      const agencyEscortsCount = approvedEscorts.filter(x => x.isAgencyEscort).length
+      const independentEscortsCount = approvedEscorts.filter(x => !x.isAgencyEscort).length
+      
+      console.log(`📊 Escort approvate: ${approvedEscorts.length} totali (${independentEscortsCount} indipendenti, ${agencyEscortsCount} agenzia)`)
+      
+      mapped = approvedEscorts.map(x => ({
+        ...x,
+        coverUrl: normalizeUrl(x.coverUrl) || '/placeholder.svg',
+        priority: x.coverUrl ? x.priority : Math.min(x.priority, 10),
+      }))
     }
 
     // Sort by priority desc then updatedAt desc
