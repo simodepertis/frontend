@@ -77,25 +77,19 @@ export default function EscortCard({ escort }: { escort: Escort }) {
         <div className="mt-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
             <FontAwesomeIcon icon={faWhatsapp} className="text-2xl text-green-500" />
-            {/* Iconcine video, recensioni e commenti */}
-            {(escort.videoCount ?? 0) > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
-                <FontAwesomeIcon icon={faVideo} className="text-sm" />
-                <span>{escort.videoCount}</span>
-              </div>
-            )}
-            {(escort.reviewCount ?? 0) > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
-                <FontAwesomeIcon icon={faComment} className="text-sm" />
-                <span>{escort.reviewCount}</span>
-              </div>
-            )}
-            {(escort.commentCount ?? 0) > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
-                <FontAwesomeIcon icon={faComments} className="text-sm" />
-                <span>{escort.commentCount}</span>
-              </div>
-            )}
+            {/* Iconcine video, recensioni e commenti: sempre visibili (anche 0) */}
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
+              <FontAwesomeIcon icon={faVideo} className="text-sm" />
+              <span>{escort.videoCount ?? 0}</span>
+            </div>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
+              <FontAwesomeIcon icon={faComment} className="text-sm" />
+              <span>{escort.reviewCount ?? 0}</span>
+            </div>
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-black/70 text-white shadow">
+              <FontAwesomeIcon icon={faComments} className="text-sm" />
+              <span>{escort.commentCount ?? 0}</span>
+            </div>
           </div>
           <span className="text-lg font-semibold text-white">€ {escort.prezzo}</span>
         </div>
