@@ -103,8 +103,16 @@ function Inner() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {documents.map((d) => (
               <div key={d.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-900">
-                <div className="aspect-[3/2] bg-gray-800 flex items-center justify-center text-gray-400 text-xs p-2 text-center">
-                  <div className="truncate w-full">{d.url}</div>
+                <div className="aspect-[3/2] bg-gray-800 flex items-center justify-center">
+                  <img src={d.url.startsWith('/uploads/') ? `/api${d.url}` : d.url} alt={d.type} className="max-h-full max-w-full object-contain" onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const fallback = target.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'block';
+                  }} />
+                  <div className="text-gray-400 text-xs p-2 text-center hidden">
+                    Documento: {d.type}
+                  </div>
                 </div>
                 <div className="p-2 text-xs text-gray-300 space-y-1">
                   <div className="flex items-center justify-between gap-2">

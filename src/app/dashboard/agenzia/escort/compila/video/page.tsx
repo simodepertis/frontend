@@ -128,8 +128,25 @@ function Inner() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {videos.map((v) => (
               <div key={v.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-900">
-                <div className="aspect-video bg-gray-800 flex items-center justify-center text-gray-400 text-xs">
-                  {v.thumb ? (<img src={v.thumb} alt={v.title} className="max-h-full max-w-full object-contain" />) : ('Anteprima')}
+                <div className="aspect-video bg-gray-800 flex items-center justify-center relative">
+                  {v.url ? (
+                    <video 
+                      src={v.url.startsWith('/uploads/') ? `/api${v.url}` : v.url} 
+                      poster={v.thumb && v.thumb.startsWith('/uploads/') ? `/api${v.thumb}` : v.thumb || undefined}
+                      className="max-h-full max-w-full object-contain"
+                      controls
+                      preload="metadata"
+                      onError={(e) => {
+                        const target = e.target as HTMLVideoElement;
+                        target.style.display = 'none';
+                        const fallback = target.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className="text-gray-400 text-xs p-2 text-center hidden items-center justify-center absolute inset-0 bg-gray-800">
+                    Video: {v.title}
+                  </div>
                 </div>
                 <div className="p-2 text-xs text-gray-300 space-y-2">
                   <div className="flex items-center justify-between gap-2">
