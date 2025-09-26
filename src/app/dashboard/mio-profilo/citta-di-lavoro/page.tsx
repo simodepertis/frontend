@@ -192,6 +192,23 @@ export default function CittaDiLavoroPage() {
     setForm((f: any) => ({ ...f, zones: (f.zones || []).filter((_: any, ix: number) => ix !== i) }));
   }
 
+  function addCity() {
+    setForm((f: any) => ({ ...f, cities: [...(f.cities || []), ""] }));
+  }
+
+  function removeCity(i: number) {
+    setForm((f: any) => ({ ...f, cities: (f.cities || []).filter((_: any, ix: number) => ix !== i) }));
+  }
+
+  function setCityInput(i: number, value: string) {
+    setForm((f: any) => {
+      const cities = [...(f.cities || [])];
+      cities[i] = value;
+      return { ...f, cities };
+    });
+    setCityQ(prev => ({ ...prev, [`city_${i}`]: value }));
+  }
+
   // Debounced fetch for city suggestions
   useEffect(() => {
     const keys = Object.keys(cityQ);
@@ -336,6 +353,54 @@ export default function CittaDiLavoroPage() {
               )}
             </div>
           </Field>
+        </div>
+        
+        {/* Città aggiuntive dinamiche */}
+        <div>
+          <div className="text-sm text-gray-300 mb-3">Città aggiuntive</div>
+          <div className="space-y-3">
+            {(form.cities || []).map((city: string, i: number) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input 
+                    value={city} 
+                    onChange={(e) => setCityInput(i, e.target.value)} 
+                    className="inp w-full pr-9" 
+                    placeholder={`Città aggiuntiva #${i + 1}`}
+                    autoComplete="off"
+                    onFocus={() => setOpenCity(p => ({ ...p, [`city_${i}`]: true }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOpenCity(p => ({ ...p, [`city_${i}`]: !p[`city_${i}`] }))}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300"
+                  >
+                    ⌄
+                  </button>
+                  {openCity[`city_${i}`] && (
+                    <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {COMMON_CITIES.filter(c => c.toLowerCase().includes(city.toLowerCase())).map((commonCity, idx) => (
+                        <button 
+                          key={idx} 
+                          type="button" 
+                          onClick={() => { 
+                            setCityInput(i, commonCity); 
+                            setOpenCity(p => ({ ...p, [`city_${i}`]: false })); 
+                          }} 
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {commonCity}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Button variant="secondary" onClick={() => removeCity(i)}>Rimuovi</Button>
+              </div>
+            ))}
+            <Button variant="secondary" onClick={addCity}>+ Aggiungi città</Button>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Aggiungi altre città oltre alle 4 principali</div>
         </div>
 
         {/* Zone per città base */}

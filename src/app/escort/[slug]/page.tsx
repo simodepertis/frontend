@@ -622,7 +622,28 @@ export default function EscortDetailPage() {
                 <div className="whitespace-pre-wrap break-words leading-6">{escort.descrizione}</div>
                 <div className="text-gray-400">
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                    <div className="font-medium text-white">Città</div><div>{escort.citta}</div>
+                    <div className="font-medium text-white">Città</div>
+                    <div>
+                      {(() => {
+                        const allCities = [];
+                        const citiesData = (data as any)?.cities || {};
+                        
+                        // Aggiungi città principali
+                        if (citiesData.baseCity) allCities.push(citiesData.baseCity);
+                        if (citiesData.secondCity) allCities.push(citiesData.secondCity);
+                        if (citiesData.thirdCity) allCities.push(citiesData.thirdCity);
+                        if (citiesData.fourthCity) allCities.push(citiesData.fourthCity);
+                        
+                        // Aggiungi città aggiuntive
+                        if (Array.isArray(citiesData.cities)) {
+                          allCities.push(...citiesData.cities.filter(c => c && c.trim()));
+                        }
+                        
+                        // Rimuovi duplicati e mostra
+                        const uniqueCities = [...new Set(allCities)];
+                        return uniqueCities.length > 0 ? uniqueCities.join(', ') : escort.citta;
+                      })()}
+                    </div>
                     {typeof (data as any)?.contacts?.website === 'string' && (
                       <>
                         <div className="font-medium text-white">Sito</div><div className="truncate">{(data as any)?.contacts?.website}</div>
