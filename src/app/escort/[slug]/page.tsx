@@ -518,10 +518,17 @@ export default function EscortDetailPage() {
     } finally { setSubmittingCom(false); }
   }
 
+  const bioInfo: any = useMemo(()=>{ try { return (data as any)?.contacts?.bioInfo || null; } catch { return null; } }, [data]);
+
+  function pick(obj:any, keys:string[]): string | undefined {
+    for (const k of keys) { const v = obj?.[k]; if (v !== undefined && v !== null && String(v).trim() !== '') return String(v); }
+    return undefined;
+  }
+
   return (
     <main className="container mx-auto px-4 py-8">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Escort", href: "/escort" }, { label: escort.nome }]} />
-      <SectionHeader title={`${escort.nome}, ${escort.eta}`} subtitle={`Profilo a ${escort.citta}`} />
+      <SectionHeader title={`${escort.nome}, ${escort.eta}`} subtitle={`${bioInfo?.slogan ? `${bioInfo.slogan} · ` : ''}Profilo a ${escort.citta}`} />
 
       <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mt-2`}>
         {/* Galleria sempre visibile (usa placeholder se mancano foto reali) */}
@@ -693,6 +700,7 @@ export default function EscortDetailPage() {
               <div className="text-gray-300">{escort.tier} {escort.tierExpiresAt ? `fino al ${new Date(escort.tierExpiresAt).toLocaleDateString()}${countdown ? ` (${countdown})` : ''}` : ''}</div>
             </div>
           )}
+          {/* Orari di Lavoro e Vacanze (già presenti più sotto, qui rimangono in evidenza nella sidebar) */}
           {/* Orari di lavoro e vacanze (contacts.workingHours) */}
           {(() => {
             try {
