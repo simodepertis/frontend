@@ -35,7 +35,16 @@ export default async function handler(
       take: 60,
     })
 
-    const escortsFormatted = escorts.map((u) => {
+    // Aggiungo conteggi video e recensioni
+    const escortsWithCounts = await Promise.all(escorts.map(async (u) => {
+      const [videoCount, reviewCount] = await Promise.all([
+        prisma.video.count({ where: { userId: u.id, status: 'APPROVED' as any } }),
+        prisma.review.count({ where: { targetUserId: u.id, status: 'APPROVED' as any } })
+      ])
+      return { ...u, videoCount, reviewCount }
+    }))
+
+    const escortsFormatted = escortsWithCounts.map((u) => {
       const city = (() => {
         const c = u.escortProfile?.cities as any
         return (c && (c.base || c.city || c.baseCity)) || 'Milano'
@@ -69,6 +78,8 @@ export default async function handler(
         verificata: true,
         pacchettoAttivo: true,
         girlOfTheDay: girl,
+        videoCount: u.videoCount,
+        reviewCount: u.reviewCount,
       }
     })
 

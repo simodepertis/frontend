@@ -2,7 +2,7 @@
 
 // Using native img to avoid any optimizer/runtime issues with dynamic uploads
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown, faStar, faIdBadge, faUser, faShieldHalved, faGem } from "@fortawesome/free-solid-svg-icons";
+import { faCrown, faStar, faIdBadge, faUser, faShieldHalved, faGem, faVideo, faComment } from "@fortawesome/free-solid-svg-icons";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 
 export type Escort = {
@@ -15,6 +15,8 @@ export type Escort = {
   foto: string;
   rank?: "VIP" | "ORO" | "ARGENTO" | "TITANIUM" | string;
   isVerified?: boolean;
+  videoCount?: number;
+  reviewCount?: number;
 };
 
 function getRankDetails(rank?: string) {
@@ -61,6 +63,22 @@ export default function EscortCard({ escort }: { escort: Escort }) {
             ✓ Verificato
           </div>
         )}
+        
+        {/* Iconcine video e recensioni */}
+        <div className="absolute bottom-2 left-2 z-10 flex gap-2">
+          {(escort.videoCount ?? 0) > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-black/70 text-white shadow">
+              <FontAwesomeIcon icon={faVideo} className="text-[8px]" />
+              <span>{escort.videoCount}</span>
+            </div>
+          )}
+          {(escort.reviewCount ?? 0) > 0 && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-black/70 text-white shadow">
+              <FontAwesomeIcon icon={faComment} className="text-[8px]" />
+              <span>{escort.reviewCount}</span>
+            </div>
+          )}
+        </div>
         <img
           src={escort.foto?.startsWith('/uploads/') ? ('/api' + escort.foto) : escort.foto}
           alt={escort.nome}

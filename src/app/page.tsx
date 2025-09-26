@@ -165,7 +165,7 @@ export default function Home() {
         ) : (
           escortsFiltrate.map((escort:any) => (
             <Link key={escort.id} href={`/escort/${escort.slug || `${kebab(escort.name)}-${escort.id}`}`}>
-              <EscortCard escort={{ id: escort.id, nome: escort.name, eta: 25, citta: Array.isArray(escort.cities)&&escort.cities[0]?String(escort.cities[0]):'—', capelli: '', prezzo: escort.price || 0, foto: escort.coverUrl || "/placeholder.svg", rank: escort.tier, isVerified: !!escort.hasApprovedDoc }} />
+              <EscortCard escort={{ id: escort.id, nome: escort.name, eta: 25, citta: Array.isArray(escort.cities)&&escort.cities[0]?String(escort.cities[0]):'—', capelli: '', prezzo: escort.price || 0, foto: escort.coverUrl || "/placeholder.svg", rank: escort.tier, isVerified: !!escort.hasApprovedDoc, videoCount: escort.videoCount || 0, reviewCount: escort.reviewCount || 0 }} />
             </Link>
           ))
         )}

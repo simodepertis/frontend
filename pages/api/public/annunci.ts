@@ -139,10 +139,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q))))
       ))
 
-      // Allego cover APPROVED
+      // Allego cover APPROVED + conteggi video e recensioni
       const withMeta = await Promise.all(filteredBase.map(async (it: any) => {
-        const cover = await prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' } })
-        return { ...it, coverUrl: normalizeUrl(cover?.url) }
+        const [cover, videoCount, reviewCount] = await Promise.all([
+          prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' } }),
+          prisma.video.count({ where: { userId: it.id, status: 'APPROVED' as any } }),
+          prisma.review.count({ where: { targetUserId: it.id, status: 'APPROVED' as any } })
+        ])
+        return { ...it, coverUrl: normalizeUrl(cover?.url), videoCount, reviewCount }
       }))
 
       // PUBBLICAZIONE aggiornata:
