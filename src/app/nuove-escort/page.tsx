@@ -35,6 +35,9 @@ export default function NuoveEscortPage() {
     rank: it.tier,
     isVerified: Boolean(it.isVerified),
     slug: it.slug,
+    videoCount: it.videoCount || 0,
+    reviewCount: it.reviewCount || 0,
+    commentCount: it.commentCount || 0,
   })), [items]);
 
   return (
