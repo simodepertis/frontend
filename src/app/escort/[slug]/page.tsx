@@ -213,10 +213,11 @@ export default function EscortDetailPage() {
             out.push(...enabledKeys.map((k) => serviceLabel[k] || k));
           }
         } catch {}
-        if (raw.categories && typeof raw.categories === 'object') {
-          const cat = raw.categories as any;
+        // Supporta sia formato agenzia { general: [], extra: [] } che formato wizard { categories: { general: [] } }
+        const categories = raw.categories || raw;
+        if (categories && typeof categories === 'object') {
           ['general','extra','fetish','virtual'].forEach((k) => {
-            if (Array.isArray(cat?.[k])) out.push(...cat[k].map((s:any)=> String(s)));
+            if (Array.isArray(categories?.[k])) out.push(...categories[k].map((s:any)=> String(s)));
           });
         }
         if (raw.for && typeof raw.for === 'object') {
