@@ -53,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         url: publicUrl,
         name: file.originalFilename || storedBasename,
         size: Number(file.size || 0),
-        status: 'IN_REVIEW' as any,
+        status: 'DRAFT' as any,
       }
     })
 

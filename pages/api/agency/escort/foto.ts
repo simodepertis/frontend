@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { url, name, size } = req.body || {}
     if (!url || !name || typeof size !== 'number') return res.status(400).json({ error: 'Dati mancanti' })
-    const created = await prisma.photo.create({ data: { userId: escortUserId, url, name, size, status: 'IN_REVIEW' as any } })
+    const created = await prisma.photo.create({ data: { userId: escortUserId, url, name, size, status: 'DRAFT' as any } })
     return res.json({ photo: created })
   }
 

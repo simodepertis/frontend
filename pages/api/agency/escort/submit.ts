@@ -28,12 +28,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const prof = await prisma.escortProfile.findUnique({ where: { userId: uid } })
     if (!prof || prof.agencyId !== payload.userId) return res.status(403).json({ error: 'Questa escort non è collegata alla tua agenzia' })
 
+    // Aggiorna il consenso e manda le foto in revisione
     const updated = await prisma.escortProfile.update({
       where: { userId: uid },
-      data: { status: 'in_review' as any, consentAcceptedAt: new Date() }
+      data: { consentAcceptedAt: new Date() }
     })
 
-    return res.status(200).json({ ok: true, status: updated.status || 'in_review' })
+    // Manda tutte le foto dell'escort in revisione
+    await prisma.photo.updateMany({
+      where: { userId: uid, status: 'DRAFT' },
+      data: { status: 'IN_REVIEW' }
+    })
+
+    return res.status(200).json({ ok: true, message: 'Foto inviate in revisione' })
   } catch (e) {
     console.error('❌ /api/agency/escort/submit errore', e)
     return res.status(500).json({ error: 'Errore interno' })
