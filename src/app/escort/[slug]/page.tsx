@@ -307,6 +307,21 @@ export default function EscortDetailPage() {
         }).setView([lat as number, lon as number], 12);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapRef.current);
         markerRef.current = L.marker([lat as number, lon as number]).addTo(mapRef.current).bindPopup(escort.citta || 'Posizione');
+        
+        // Applica stili cursore alla mappa
+        const mapContainer = mapRef.current.getContainer();
+        if (mapContainer) {
+          mapContainer.style.cursor = 'grab';
+          mapContainer.addEventListener('mousedown', () => {
+            mapContainer.style.cursor = 'grabbing';
+          });
+          mapContainer.addEventListener('mouseup', () => {
+            mapContainer.style.cursor = 'grab';
+          });
+          mapContainer.addEventListener('mouseleave', () => {
+            mapContainer.style.cursor = 'grab';
+          });
+        }
         try { setTimeout(()=> { try { mapRef.current?.invalidateSize?.(); } catch {} }, 300); } catch {}
         // Reverse geocoding per titolo, se abbiamo coordinate
         try {
@@ -571,7 +586,14 @@ export default function EscortDetailPage() {
           {(((data as any)?.cities?.position && typeof (data as any).cities.position.lat === 'number' && typeof (data as any).cities.position.lng === 'number') || escort.citta || baseCity) && (
             <div className="mt-4 border-t border-gray-700 pt-4">
               <div className="text-sm font-semibold text-white mb-2">{`Localizzazione${(mapCity || baseCity || escort.citta) ? `: ${mapCity || baseCity || escort.citta}` : ''}`}</div>
-              <div ref={mapDivRef} className="w-full h-[220px] rounded-md overflow-hidden border border-gray-700" style={{ cursor: 'grab' }} />
+              <div 
+                ref={mapDivRef} 
+                className="w-full h-[220px] rounded-md overflow-hidden border border-gray-700" 
+                style={{ 
+                  cursor: 'grab',
+                  position: 'relative'
+                }}
+              />
             </div>
           )}
         </aside>
