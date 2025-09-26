@@ -11,6 +11,8 @@ import { faWhatsapp, faTelegram, faViber } from "@fortawesome/free-brands-svg-ic
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { SERVICE_GROUPS } from "@/data/services";
+import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
 
 export default function EscortDetailPage() {
   type EscortView = {
@@ -128,6 +130,10 @@ export default function EscortDetailPage() {
   const [showReportPhoto, setShowReportPhoto] = useState(false);
   const [reportPhotoUrl, setReportPhotoUrl] = useState<string>("");
   const [reportReason, setReportReason] = useState<string>("");
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   // Lightbox per immagine principale
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // Rapporto d'aspetto dinamico per l'immagine principale (percentuale padding-top)
@@ -340,6 +346,29 @@ export default function EscortDetailPage() {
     return () => { canceled = true; };
   }, [escort.citta, data, baseCity, mapInitTick]);
 
+  // Controlla se l'escort è nei preferiti
+  useEffect(() => {
+    (async () => {
+      if (!data?.userId) return;
+      
+      try {
+        const token = localStorage.getItem('auth-token');
+        if (!token) return;
+
+        const res = await fetch(`/api/user/is-favorite?targetUserId=${data.userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          setIsFavorite(result.isFavorite);
+        }
+      } catch (error) {
+        console.error('Errore controllo preferito:', error);
+      }
+    })();
+  }, [data?.userId]);
+
   // Se il container non è pronto al primo giro, ritenta tra 300ms
   useEffect(() => {
     if (!mapRef.current && !mapDivRef.current) {
@@ -347,6 +376,77 @@ export default function EscortDetailPage() {
       return () => clearTimeout(t);
     }
   }, [escort.citta, data, mapInitTick]);
+
+  const toggleFavorite = async () => {
+    if (!data?.userId || favoriteLoading) return;
+    
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      alert('Devi essere autenticato per aggiungere ai preferiti');
+      return;
+    }
+
+    setFavoriteLoading(true);
+    try {
+      const method = isFavorite ? 'DELETE' : 'POST';
+      const res = await fetch('/api/user/favorites', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ targetUserId: data.userId })
+      });
+
+      if (res.ok) {
+        setIsFavorite(!isFavorite);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Errore gestione preferiti');
+      }
+    } catch (error) {
+      console.error('Errore toggle preferito:', error);
+      alert('Errore gestione preferiti');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  const saveProfile = async () => {
+    if (!data?.userId || saveLoading) return;
+    
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      alert('Devi essere autenticato per salvare il profilo');
+      return;
+    }
+
+    setSaveLoading(true);
+    try {
+      const method = isSaved ? 'DELETE' : 'POST';
+      const res = await fetch('/api/user/saved-profiles', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ targetUserId: data.userId })
+      });
+
+      if (res.ok) {
+        setIsSaved(!isSaved);
+        alert(isSaved ? 'Profilo rimosso dai salvati' : 'Profilo salvato!');
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Errore salvataggio profilo');
+      }
+    } catch (error) {
+      console.error('Errore salvataggio profilo:', error);
+      alert('Errore salvataggio profilo');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
 
   const tierClasses = useMemo(() => {
     switch (escort.tier) {
@@ -545,9 +645,31 @@ export default function EscortDetailPage() {
               {data.contacts.phone && (
                 <a href={`tel:${data.contacts.phone}`} className="block w-full bg-red-600 hover:bg-red-700 text-white rounded-md py-2.5 font-semibold text-center">Chiama</a>
               )}
+              <button
+                onClick={toggleFavorite}
+                disabled={favoriteLoading}
+                className={`block w-full rounded-md py-2.5 font-semibold text-center transition-colors ${
+                  isFavorite 
+                    ? 'bg-pink-600 hover:bg-pink-700 text-white' 
+                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                } ${favoriteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <FontAwesomeIcon icon={isFavorite ? faHeartSolid : faHeartRegular} className="mr-2" />
+                {favoriteLoading ? 'Caricamento...' : (isFavorite ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti')}
+              </button>
             </div>
           )}
-          <button className="mt-2 w-full bg-gray-700 hover:bg-gray-600 text-white rounded-md py-2">Salva profilo</button>
+          <button 
+            onClick={saveProfile}
+            disabled={saveLoading}
+            className={`mt-2 w-full rounded-md py-2 text-white transition-colors ${
+              isSaved 
+                ? 'bg-green-600 hover:bg-green-700' 
+                : 'bg-gray-700 hover:bg-gray-600'
+            } ${saveLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {saveLoading ? 'Caricamento...' : (isSaved ? '✓ Profilo salvato' : 'Salva profilo')}
+          </button>
           {me && data && me.id === data.userId && (
             <a href="/dashboard/crediti" className="mt-2 block w-full bg-emerald-600 hover:bg-emerald-700 text-white text-center rounded-md py-2 font-semibold">Promuovi</a>
           )}

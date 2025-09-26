@@ -283,6 +283,10 @@ model User {
   // Alerts
   userAlerts UserAlert[]
   cityAlerts CityAlert[]
+
+  // Favorites
+  favorites         Favorite[] @relation("UserFavorites")
+  favoritedBy       Favorite[] @relation("FavoriteTargets")
 }
 
 model EscortProfile {
@@ -397,4 +401,19 @@ model AgencyProfile {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  targetUserId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser User @relation("FavoriteTargets", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetUserId])
+  @@index([userId])
+  @@index([targetUserId])
 }
