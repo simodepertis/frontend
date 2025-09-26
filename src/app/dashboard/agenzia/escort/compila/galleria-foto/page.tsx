@@ -15,12 +15,14 @@ function Inner() {
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
   const [size, setSize] = useState<number>(0);
+  const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/agency/escort/foto?escortUserId=${escortUserId}`, { credentials: 'include' });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch(`/api/agency/escort/foto?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
       if (res.ok) {
         const j = await res.json();
         setPhotos(j.photos || []);
@@ -35,8 +37,9 @@ function Inner() {
     if (!url || !name) { alert('Inserisci URL e Nome'); return; }
     setSaving(true);
     try {
+      const token = localStorage.getItem('auth-token') || '';
       const res = await fetch('/api/agency/escort/foto', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify({ escortUserId, url, name, size: Number(size || 0) })
       });
       const j = await res.json();
@@ -47,14 +50,40 @@ function Inner() {
 
   async function del(id: number) {
     if (!confirm('Eliminare questa foto?')) return;
-    const res = await fetch('/api/agency/escort/foto', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ escortUserId, id }) });
+    const token = localStorage.getItem('auth-token') || '';
+    const res = await fetch('/api/agency/escort/foto', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId, id }) });
     if (res.ok) await load(); else alert('Errore eliminazione');
   }
 
   async function toggleFace(id: number, v: boolean) {
-    const res = await fetch('/api/agency/escort/foto', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ escortUserId, id, isFace: v }) });
+    const token = localStorage.getItem('auth-token') || '';
+    const res = await fetch('/api/agency/escort/foto', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId, id, isFace: v }) });
     if (res.ok) await load(); else alert('Errore aggiornamento');
   }
+
+  async function sendForReview() {
+    if (!escortUserId) { alert('escortUserId mancante'); return; }
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/agency/escort/submit', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ escortUserId })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(j?.error || 'Errore invio a verifica'); return; }
+      alert('Foto inviate in revisione. Requisiti: min 3 foto, almeno una col volto.');
+      await load(); // Ricarica per vedere eventuali cambi di stato
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const faceCount = photos.filter((p: any) => !!p.isFace).length;
+  const hasFace = faceCount >= 1;
+  const hasMinPhotos = photos.length >= 3;
+  const canSubmit = hasMinPhotos && hasFace;
 
   return (
     <div className="space-y-6">
@@ -73,7 +102,8 @@ function Inner() {
               const fd = new FormData();
               fd.append('file', f);
               fd.append('escortUserId', String(escortUserId));
-              const res = await fetch('/api/agency/escort/photos/upload', { method: 'POST', body: fd, credentials: 'include' });
+              const token = localStorage.getItem('auth-token') || '';
+              const res = await fetch('/api/agency/escort/photos/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined, body: fd });
               if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore upload'); }
             }
             (e.target as HTMLInputElement).value = '';
@@ -118,6 +148,30 @@ function Inner() {
 
         <div className="flex items-center justify-between">
           <a href={`/dashboard/agenzia/escort/compila?escortUserId=${escortUserId}`} className="text-sm text-blue-400 hover:underline">« Torna all'hub</a>
+        </div>
+      </div>
+
+      {/* Requisiti e invio a verifica */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Requisiti per la verifica</div>
+        <ul className="text-sm text-gray-300 list-disc pl-5 space-y-1 mb-4">
+          <li>Minimo 3 foto totali</li>
+          <li>Almeno 1 foto del volto chiaramente visibile</li>
+          <li>Immagini nitide e di buona qualità</li>
+          <li>Nessun watermark invadente</li>
+        </ul>
+        
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-400">
+            Stato: {photos.length >= 3 ? '3+ foto ✓' : `${3 - photos.length} foto mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'}
+          </div>
+          <Button 
+            onClick={sendForReview} 
+            disabled={!canSubmit || submitting || !escortUserId}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {submitting ? 'Invio…' : 'Invia a verifica'}
+          </Button>
         </div>
       </div>
     </div>
