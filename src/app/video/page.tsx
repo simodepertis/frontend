@@ -1,6 +1,4 @@
 "use client";
-
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -83,7 +81,19 @@ export default function VideoPage() {
         {items.map((video, idx) => (
           <div key={video.id} className="relative bg-gray-800 border border-gray-600 rounded-lg shadow overflow-hidden group cursor-pointer" onClick={()=>setLightboxIdx(idx)}>
             <div className="relative w-full aspect-video">
-              <Image src={video.thumb || '/placeholder.png'} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+              {video.thumb ? (
+                <img src={video.thumb} alt={video.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform" />
+              ) : (
+                <video
+                  src={video.url}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  muted
+                  loop
+                  playsInline
+                  autoPlay
+                  preload="metadata"
+                />
+              )}
               <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow">
                   <FontAwesomeIcon icon={faPlay} className="text-neutral-800" />
