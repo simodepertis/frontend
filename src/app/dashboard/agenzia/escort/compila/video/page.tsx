@@ -22,7 +22,8 @@ function Inner() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/agency/escort/video?escortUserId=${escortUserId}`, { credentials: 'include' });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch(`/api/agency/escort/video?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
       if (res.ok) {
         const j = await res.json();
         setVideos(j.videos || []);
@@ -37,8 +38,9 @@ function Inner() {
     if (!url || !title) { alert('Inserisci URL e Titolo'); return; }
     setSaving(true);
     try {
+      const token = localStorage.getItem('auth-token') || '';
       const res = await fetch('/api/agency/escort/video', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify({ escortUserId, url, title, duration, hd, thumb })
       });
       const j = await res.json();
@@ -49,12 +51,14 @@ function Inner() {
 
   async function del(id: number) {
     if (!confirm('Eliminare questo video?')) return;
-    const res = await fetch('/api/agency/escort/video', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ escortUserId, id }) });
+    const token = localStorage.getItem('auth-token') || '';
+    const res = await fetch('/api/agency/escort/video', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId, id }) });
     if (res.ok) await load(); else alert('Errore eliminazione');
   }
 
   async function patch(id: number, data: any) {
-    const res = await fetch('/api/agency/escort/video', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ escortUserId, id, ...data }) });
+    const token = localStorage.getItem('auth-token') || '';
+    const res = await fetch('/api/agency/escort/video', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId, id, ...data }) });
     if (res.ok) await load(); else alert('Errore aggiornamento');
   }
 
@@ -75,7 +79,8 @@ function Inner() {
               const fd = new FormData();
               fd.append('file', f);
               fd.append('escortUserId', String(escortUserId));
-              const res = await fetch('/api/agency/escort/videos/upload-file', { method: 'POST', body: fd, credentials: 'include' });
+              const token = localStorage.getItem('auth-token') || '';
+              const res = await fetch('/api/agency/escort/videos/upload-file', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined, body: fd });
               if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore upload'); }
             }
             (e.target as HTMLInputElement).value = '';

@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     const { url, title, duration, hd, thumb } = req.body || {}
     if (!url || !title) return res.status(400).json({ error: 'Dati mancanti' })
-    const created = await prisma.video.create({ data: { userId: escortUserId, url: String(url), title: String(title), duration: duration ? String(duration) : null as any, hd: !!hd, thumb: thumb ? String(thumb) : null as any } })
+    const created = await prisma.video.create({ data: { userId: escortUserId, url: String(url), title: String(title), duration: duration ? String(duration) : null as any, hd: !!hd, thumb: thumb ? String(thumb) : null as any, status: 'DRAFT' as any } })
     return res.json({ video: created })
   }
 

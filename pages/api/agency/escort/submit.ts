@@ -34,13 +34,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: { consentAcceptedAt: new Date() }
     })
 
-    // Manda tutte le foto dell'escort in revisione
+    // Manda tutte le foto e video dell'escort in revisione
     await prisma.photo.updateMany({
       where: { userId: uid, status: 'DRAFT' },
       data: { status: 'IN_REVIEW' }
     })
 
-    return res.status(200).json({ ok: true, message: 'Foto inviate in revisione' })
+    await prisma.video.updateMany({
+      where: { userId: uid, status: 'DRAFT' },
+      data: { status: 'IN_REVIEW' }
+    })
+
+    return res.status(200).json({ ok: true, message: 'Foto e video inviati in revisione' })
   } catch (e) {
     console.error('❌ /api/agency/escort/submit errore', e)
     return res.status(500).json({ error: 'Errore interno' })
