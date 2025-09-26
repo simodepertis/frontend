@@ -100,6 +100,7 @@ export default function CreditiPage() {
   const [orderForm, setOrderForm] = useState<{ credits: number; method: 'manual_bollettino' | 'manual_bonifico'; phone: string }>({ credits: 10, method: 'manual_bollettino', phone: '' });
   const [orderInstructions, setOrderInstructions] = useState<any | null>(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [creatingPayPal, setCreatingPayPal] = useState(false);
   const [uploadingOrderId, setUploadingOrderId] = useState<number | null>(null);
   // Custom placement settings and form
   const [placementCfg, setPlacementCfg] = useState<{ pricePerDayCredits: number; minDays: number; maxDays: number } | null>(null);
