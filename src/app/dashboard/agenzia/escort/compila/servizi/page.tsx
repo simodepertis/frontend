@@ -11,7 +11,7 @@ function Inner() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [services, setServices] = useState<any>({ general: [], extra: [], fetish: [], virtual: [] });
+  const [services, setServices] = useState<any>({ general: [], extra: [] });
 
   useEffect(() => {
     (async () => {
@@ -24,8 +24,6 @@ function Inner() {
           setServices({
             general: Array.isArray(s.general) ? s.general : [],
             extra: Array.isArray(s.extra) ? s.extra : [],
-            fetish: Array.isArray(s.fetish) ? s.fetish : [],
-            virtual: Array.isArray(s.virtual) ? s.virtual : [],
           });
         }
       } finally { setLoading(false); }
@@ -57,10 +55,31 @@ function Inner() {
   }
 
   const CATS: Array<{ key: keyof typeof services; label: string; items: string[] }> = [
-    { key: 'general', label: 'Servizi Generali', items: ['Massaggio', 'Bacio', '69', 'Orale', 'GFE'] },
-    { key: 'extra', label: 'Extra', items: ['Coppie', 'Doppio', 'Rim', 'Anal', 'Roleplay'] },
-    { key: 'fetish', label: 'Fetish', items: ['Foot', 'Latex', 'Dominazione', 'BDSM light'] },
-    { key: 'virtual', label: 'Virtual', items: ['Videochiamata', 'Chat Hot', 'Foto personalizzate'] },
+    { 
+      key: 'general', 
+      label: 'Servizi Generali', 
+      items: [
+        'Girlfriend Experience (GFE)', 'Bacio alla Francese', 'Dildo Play / Toys', '69 posizione', 
+        'Sesso anale', 'Venuta in bocca', 'Venuta sulla faccia', 'Massaggio rilassante', 
+        'Disponibile a domicilio (outcall)', 'Disponibile in appartamento (incall)', 'Doccia insieme', 
+        'Sesso orale', 'Sesso orale senza (OWO)', 'Porn Star Experience (PSE)', 'Baci senza', 
+        'Disponibile per coppie', 'Disponibile per duo', 'Role play', 'Lingerie / Costumi', 'Consentito foto/video'
+      ] 
+    },
+    { 
+      key: 'extra', 
+      label: 'Servizi Extra', 
+      items: [
+        'Leccare e succhiare le palle', 'Gola Profonda', 'Discorso Sporco', 'Doppia penetrazione', 
+        'Extraball', 'Seduta in faccia', 'Fisting', 'Massaggio sensuale su tutto il corpo', 
+        'Gangbang', 'Kamasutra', 'Bukkake', 'Ingoio', 'Sborra sul seno', 'Sborra sul sedere', 
+        'Bondage', 'BDSM', 'Clinic Sex', 'Feticismo', 'Feticismo dei piedi', 
+        'Pioggia dorata (dare)', 'Pioggia dorata (ricevere)', 'Pelle / Lattice / PVC', 
+        'Padrona (hard)', 'Padrona (soft)', 'Gioco di Ruolo e Fantasia', 'Sculacciata (dare)', 
+        'Sculacciata (ricevere)', 'Strap on', 'Sottomesso / Schiavo (hard)', 'Sottomesso / Schiavo (soft)', 
+        'Squirting', 'Costumi / Uniformi'
+      ] 
+    }
   ];
 
   return (
