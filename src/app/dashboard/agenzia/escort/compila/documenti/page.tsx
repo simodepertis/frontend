@@ -26,7 +26,8 @@ function Inner() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/agency/escort/documenti?escortUserId=${escortUserId}`, { credentials: 'include' });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch(`/api/agency/escort/documenti?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
       if (res.ok) {
         const j = await res.json();
         setDocuments(Array.isArray(j.documents) ? j.documents : []);
@@ -41,8 +42,9 @@ function Inner() {
     if (!url) { alert('Inserisci URL del documento'); return; }
     setSaving(true);
     try {
+      const token = localStorage.getItem('auth-token') || '';
       const res = await fetch('/api/agency/escort/documenti', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify({ escortUserId, type, url })
       });
       const j = await res.json();
@@ -53,7 +55,8 @@ function Inner() {
 
   async function del(id: number) {
     if (!confirm('Eliminare questo documento?')) return;
-    const res = await fetch('/api/agency/escort/documenti', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ escortUserId, id }) });
+    const token = localStorage.getItem('auth-token') || '';
+    const res = await fetch('/api/agency/escort/documenti', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId, id }) });
     if (res.ok) await load(); else alert('Errore eliminazione');
   }
 
@@ -76,7 +79,8 @@ function Inner() {
             fd.append('file', f);
             fd.append('type', type);
             fd.append('escortUserId', String(escortUserId));
-            const res = await fetch('/api/agency/escort/documents/upload', { method: 'POST', body: fd, credentials: 'include' });
+            const token = localStorage.getItem('auth-token') || '';
+            const res = await fetch('/api/agency/escort/documents/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined, body: fd });
             if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore upload documento'); }
             (e.target as HTMLInputElement).value = '';
             await load();

@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         userId: escortUserId,
         type,
-        status: 'IN_REVIEW' as any,
+        status: 'DRAFT' as any,
         url,
       } as any,
     })
