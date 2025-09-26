@@ -621,6 +621,20 @@ export default function EscortDetailPage() {
             <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">
               <FontAwesomeIcon icon={faEuroSign} className="text-gray-200" /> € {escort.prezzo}
             </span>
+            {/* Bio info chips se presenti (slogan/sesso/tipo profilo/nazionalità) */}
+            {(() => {
+              try {
+                const b: any = (data as any)?.contacts?.bioInfo || {};
+                const chips: Array<string> = [];
+                if (b.slogan) chips.push(String(b.slogan));
+                if (b.sesso) chips.push(String(b.sesso));
+                if (b.tipoProfilo) chips.push(String(b.tipoProfilo));
+                if (b.nazionalita) chips.push(String(b.nazionalita));
+                return chips.map((t, i) => (
+                  <span key={`biochip-${i}`} className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">{t}</span>
+                ));
+              } catch { return null; }
+            })()}
             {escort.tier && escort.tier !== 'STANDARD' && (
               <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 ${tierClasses}`}>
                 <FontAwesomeIcon icon={faStar} /> {escort.tier}
@@ -679,6 +693,40 @@ export default function EscortDetailPage() {
               <div className="text-gray-300">{escort.tier} {escort.tierExpiresAt ? `fino al ${new Date(escort.tierExpiresAt).toLocaleDateString()}${countdown ? ` (${countdown})` : ''}` : ''}</div>
             </div>
           )}
+          {/* Orari di lavoro e vacanze (contacts.workingHours) */}
+          {(() => {
+            try {
+              const wh: any = (data as any)?.workingHours || (data as any)?.contacts?.workingHours;
+              if (!wh) return null;
+              const sameDaily = wh?.mode === 'same' || wh?.sameEveryDay;
+              const is247 = !!wh?.always || !!wh?.is247;
+              const ranges: Array<{ start: string; end: string }> = Array.isArray(wh?.ranges) ? wh.ranges : (sameDaily && wh?.start && wh?.end ? [{ start: String(wh.start), end: String(wh.end) }] : []);
+              const vacations: Array<{ from: string; to: string }> = Array.isArray(wh?.vacations) ? wh.vacations : [];
+              return (
+                <div className="mt-4 border-t border-gray-700 pt-4 text-sm">
+                  <div className="font-semibold text-white mb-1">Orari di Lavoro</div>
+                  {is247 && <div className="text-green-400">Disponibile 24/7</div>}
+                  {!is247 && ranges.length > 0 && (
+                    <ul className="list-disc ml-5 text-gray-300">
+                      {ranges.map((r, i) => (
+                        <li key={`wh-${i}`}>{r.start} – {r.end}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {vacations.length > 0 && (
+                    <div className="mt-2">
+                      <div className="font-medium text-white">Vacanze</div>
+                      <ul className="list-disc ml-5 text-gray-300">
+                        {vacations.map((v, i) => (
+                          <li key={`vac-${i}`}>{new Date(v.from).toLocaleDateString()} – {new Date(v.to).toLocaleDateString()}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            } catch { return null; }
+          })()}
           <div className="mt-4 border-t border-gray-700 pt-4 space-y-2 text-sm">
             <div className="flex items-center gap-2 text-gray-300">
               <FontAwesomeIcon icon={faShieldHeart} className="text-green-600" /> Verificata manualmente
