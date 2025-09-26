@@ -71,7 +71,7 @@ export default function BiografiaPage() {
           <Field label="Nome Profilo"><input value={form.nomeProfilo} onChange={(e)=>setForm(f=>({ ...f, nomeProfilo: e.target.value }))} className="inp" /></Field>
           <Field label="Slogan"><input value={form.slogan} onChange={(e)=>setForm(f=>({ ...f, slogan: e.target.value }))} className="inp" /></Field>
           <Field label="Età"><input value={form.eta} onChange={(e)=>setForm(f=>({ ...f, eta: e.target.value }))} className="inp" /></Field>
-          <Field label="Sesso"><select value={form.sesso} onChange={(e)=>setForm(f=>({ ...f, sesso: e.target.value }))} className="inp"><option>Donna</option><option>Uomo</option><option>Trans</option></select></Field>
+          <Field label="Sesso"><select value={form.sesso} onChange={(e)=>setForm(f=>({ ...f, sesso: e.target.value }))} className="inp"><option>Donna</option><option>Gigolo</option><option>Trans</option></select></Field>
           <Field label="Tipo profilo"><select value={form.tipoProfilo} onChange={(e)=>setForm(f=>({ ...f, tipoProfilo: e.target.value }))} className="inp"><option>Single</option><option>Duo</option></select></Field>
           <Field label="Nazionalità"><input value={form.nazionalita} onChange={(e)=>setForm(f=>({ ...f, nazionalita: e.target.value }))} className="inp" /></Field>
           <Field label="Città di residenza" className="md:col-span-3"><input value={form.cittaResidenza} onChange={(e)=>setForm(f=>({ ...f, cittaResidenza: e.target.value }))} className="inp" /></Field>
