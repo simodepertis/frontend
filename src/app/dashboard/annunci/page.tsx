@@ -8,10 +8,38 @@ export default function PiccoliAnnunciPage() {
   const [hasAccess, setHasAccess] = useState(false);
   const [creatingPayPal, setCreatingPayPal] = useState(false);
   const [items, setItems] = useState<Array<{ id: string; title: string; city: string; price: string; description: string; photos: string[] }>>([]);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    try { setHasAccess(localStorage.getItem('apt-ads-access') === '1'); } catch {}
-    try { const raw = localStorage.getItem('apt-ads'); if (raw) setItems(JSON.parse(raw)); } catch {}
+    try {
+      // Auto-unlock se ritorno da PayPal
+      const u = new URL(window.location.href);
+      if (u.searchParams.get('unlocked') === '1') {
+        localStorage.setItem('apt-ads-access', '1');
+        setNotice('Accesso agli annunci attivato con successo.');
+        // pulisci query
+        u.searchParams.delete('unlocked');
+        window.history.replaceState({}, '', u.toString());
+      }
+      // Stato locale
+      setHasAccess(localStorage.getItem('apt-ads-access') === '1');
+      const raw = localStorage.getItem('apt-ads'); if (raw) setItems(JSON.parse(raw));
+    } catch {}
+    // Verifica lato server (più affidabile)
+    (async()=>{
+      try {
+        const token = localStorage.getItem('auth-token') || '';
+        if (!token) return;
+        const r = await fetch('/api/annunci/access', { headers: { 'Authorization': `Bearer ${token}` }});
+        if (r.ok) {
+          const j = await r.json();
+          if (j?.hasAccess) {
+            localStorage.setItem('apt-ads-access','1');
+            setHasAccess(true);
+          }
+        }
+      } catch {}
+    })();
   }, []);
   useEffect(() => { try { localStorage.setItem('apt-ads', JSON.stringify(items)); } catch {} }, [items]);
 
@@ -38,6 +66,10 @@ export default function PiccoliAnnunciPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Affitti Appartamenti / B&B" subtitle="Inserisci un annuncio di affitto. Accesso riservato a chi paga l’attivazione." />
+
+      {notice && (
+        <div className="rounded-md p-3 text-sm bg-green-50 text-green-800 border border-green-200">{notice}</div>
+      )}
 
       {!hasAccess ? (
         <div className="rounded-xl border bg-gray-800 p-5 space-y-3">
