@@ -2,7 +2,7 @@
 
 // Using native img to avoid any optimizer/runtime issues with dynamic uploads
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCrown, faStar, faIdBadge, faUser, faShieldHalved, faGem, faVideo, faComment } from "@fortawesome/free-solid-svg-icons";
+import { faCrown, faStar, faIdBadge, faUser, faShieldHalved, faGem, faVideo, faComment, faComments } from "@fortawesome/free-solid-svg-icons";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 
 export type Escort = {
@@ -17,6 +17,7 @@ export type Escort = {
   isVerified?: boolean;
   videoCount?: number;
   reviewCount?: number;
+  commentCount?: number;
 };
 
 function getRankDetails(rank?: string) {
@@ -63,22 +64,6 @@ export default function EscortCard({ escort }: { escort: Escort }) {
             ✓ Verificato
           </div>
         )}
-        
-        {/* Iconcine video e recensioni */}
-        <div className="absolute bottom-2 left-2 z-10 flex gap-2">
-          {(escort.videoCount ?? 0) > 0 && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-black/70 text-white shadow">
-              <FontAwesomeIcon icon={faVideo} className="text-[8px]" />
-              <span>{escort.videoCount}</span>
-            </div>
-          )}
-          {(escort.reviewCount ?? 0) > 0 && (
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-black/70 text-white shadow">
-              <FontAwesomeIcon icon={faComment} className="text-[8px]" />
-              <span>{escort.reviewCount}</span>
-            </div>
-          )}
-        </div>
         <img
           src={escort.foto?.startsWith('/uploads/') ? ('/api' + escort.foto) : escort.foto}
           alt={escort.nome}
@@ -90,7 +75,28 @@ export default function EscortCard({ escort }: { escort: Escort }) {
         <h3 className="text-lg font-bold mb-1">{escort.nome}, {escort.eta}</h3>
         <p className="text-gray-300 text-sm mb-3">{escort.citta}</p>
         <div className="mt-auto flex justify-between items-center">
-          <FontAwesomeIcon icon={faWhatsapp} className="text-2xl text-green-500" />
+          <div className="flex items-center gap-2">
+            <FontAwesomeIcon icon={faWhatsapp} className="text-2xl text-green-500" />
+            {/* Iconcine video, recensioni e commenti */}
+            {(escort.videoCount ?? 0) > 0 && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-black/70 text-white shadow">
+                <FontAwesomeIcon icon={faVideo} className="text-[7px]" />
+                <span>{escort.videoCount}</span>
+              </div>
+            )}
+            {(escort.reviewCount ?? 0) > 0 && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-black/70 text-white shadow">
+                <FontAwesomeIcon icon={faComment} className="text-[7px]" />
+                <span>{escort.reviewCount}</span>
+              </div>
+            )}
+            {(escort.commentCount ?? 0) > 0 && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-black/70 text-white shadow">
+                <FontAwesomeIcon icon={faComments} className="text-[7px]" />
+                <span>{escort.commentCount}</span>
+              </div>
+            )}
+          </div>
           <span className="text-lg font-semibold text-white">€ {escort.prezzo}</span>
         </div>
       </div>
