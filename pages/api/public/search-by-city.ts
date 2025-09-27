@@ -32,46 +32,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Cerca nelle città dell'escort profile usando la sintassi Prisma corretta per JSON
+    // Cerca nelle città dell'escort profile - usa raw SQL per evitare problemi con JSON
     const cityFilter = {
-      OR: [
-        // Cerca in baseCity
-        {
-          escortProfile: {
-            cities: {
-              path: '$.baseCity',
-              equals: city
-            }
-          }
-        },
-        // Cerca in secondCity
-        {
-          escortProfile: {
-            cities: {
-              path: '$.secondCity', 
-              equals: city
-            }
-          }
-        },
-        // Cerca in thirdCity
-        {
-          escortProfile: {
-            cities: {
-              path: '$.thirdCity',
-              equals: city
-            }
-          }
-        },
-        // Cerca in fourthCity
-        {
-          escortProfile: {
-            cities: {
-              path: '$.fourthCity',
-              equals: city
-            }
-          }
+      escortProfile: {
+        cities: {
+          not: null
         }
-      ]
+      }
     }
 
     whereConditions.AND = [cityFilter]
@@ -156,8 +123,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ]
     })
 
-    console.log(`📊 Trovati ${users.length} utenti per città ${city}`)
-    users.forEach(u => {
+    console.log(`📊 Trovati ${users.length} utenti totali, filtro per città ${city}`)
+    
+    // Filtra per città dopo aver recuperato i dati
+    const filteredUsers = users.filter(u => {
+      const cities = u.escortProfile?.cities
+      if (!cities) return false
+      
+      // Se cities è una stringa, cerca direttamente
+      if (typeof cities === 'string') {
+        return cities.toLowerCase().includes(city.toLowerCase())
+      }
+      
+      // Se cities è un oggetto, cerca in tutti i campi
+      if (typeof cities === 'object' && cities !== null) {
+        const cityStr = JSON.stringify(cities).toLowerCase()
+        return cityStr.includes(city.toLowerCase())
+      }
+      
+      return false
+    })
+    
+    console.log(`📊 Dopo filtro città: ${filteredUsers.length} utenti per ${city}`)
+    filteredUsers.forEach(u => {
       console.log(`👤 User ${u.id} (${u.nome}) - Cities:`, u.escortProfile?.cities)
     })
 
@@ -182,8 +170,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
-    // Formatta i risultati
-    const results = users.map(user => {
+    // Formatta i risultati usando gli utenti filtrati
+    const results = filteredUsers.map(user => {
       const profile = user.escortProfile
       const cities = profile?.cities || {}
       
@@ -233,9 +221,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        totalPages: Math.ceil(total / limitNum),
-        hasNext: pageNum < Math.ceil(total / limitNum),
+        total: filteredUsers.length,
+        totalPages: Math.ceil(filteredUsers.length / limitNum),
+        hasNext: pageNum < Math.ceil(filteredUsers.length / limitNum),
         hasPrev: pageNum > 1
       }
     })
