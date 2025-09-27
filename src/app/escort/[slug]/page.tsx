@@ -864,15 +864,20 @@ export default function EscortDetailPage() {
                   push('Tipo profilo', get(['tipoProfilo','profileType']));
                   push('Nazionalità', get(['nazionalita','nationality']));
                   push('Città di residenza', get(['cittaResidenza','residenceCity']));
-                  push('Colore Capelli', get(['coloreCapelli','capelli','hairColor']));
-                  push('Colore Occhi', get(['coloreOcchi','occhi','eyeColor']));
+                  // Debug per vedere tutti i campi disponibili
+                  console.log('🔍 BioInfo Debug:', bioInfo);
+                  push('Colore Capelli', get(['coloreCapelli','capelli','hairColor','coloreCapelli']));
+                  push('Colore Occhi', get(['coloreOcchi','occhi','eyeColor','coloreOcchi']));
                   push('Altezza', get(['altezza','height']));
                   push('Peso', get(['peso','weight']));
                   push('Seno / Coppa', get(['seno','cup','coppa','breast']));
                   push('Vita', get(['vita','waist']));
                   push('Fianchi', get(['fianchi','hips']));
-                  push('Tatuaggi', get(['tatuaggi','tattoos']) ? 'Sì' : undefined);
-                  push('Piercing', get(['piercing','piercings']) ? 'Sì' : undefined);
+                  // Controlla se sono boolean o string
+                  const hasTattoos = b?.tatuaggi;
+                  const hasPiercings = b?.piercing;
+                  push('Tatuaggi', hasTattoos === true ? 'Sì' : (hasTattoos === false ? 'No' : (hasTattoos ? String(hasTattoos) : undefined)));
+                  push('Piercing', hasPiercings === true ? 'Sì' : (hasPiercings === false ? 'No' : (hasPiercings ? String(hasPiercings) : undefined)));
                   return rows.map((r, i) => (
                     <div key={`bio-row-${i}`} className="flex items-start justify-between gap-4 border border-gray-700 rounded-md px-3 py-2 bg-gray-900">
                       <span className="text-gray-400">{r.label}</span>
