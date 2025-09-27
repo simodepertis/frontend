@@ -847,6 +847,89 @@ export default function EscortDetailPage() {
             )}
           </div>
 
+          {/* Dettagli fisici e informazioni profilo (da contacts.bioInfo) */}
+          {bioInfo && (
+            <div className="bg-gray-800 border rounded-xl shadow-sm p-4">
+              <div className="text-lg font-semibold mb-3 text-white">Dettagli</div>
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm text-gray-200">
+                {(() => {
+                  const rows: Array<{ label: string; value?: string }> = [];
+                  const b:any = bioInfo;
+                  const get = (keys:string[]) => { for (const k of keys) { const v = b?.[k]; if (v !== undefined && v !== null && String(v).trim() !== '') return String(v); } };
+                  const push = (label:string, value?:string)=>{ if (value) rows.push({ label, value }); };
+                  push('Nome Profilo', get(['nomeProfilo','profileName']));
+                  push('Slogan', get(['slogan']));
+                  push('Età', get(['eta','age']));
+                  push('Sesso', get(['sesso','gender']));
+                  push('Tipo profilo', get(['tipoProfilo','profileType']));
+                  push('Nazionalità', get(['nazionalita','nationality']));
+                  push('Città di residenza', get(['cittaResidenza','residenceCity']));
+                  push('Colore Capelli', get(['coloreCapelli','capelli','hairColor']));
+                  push('Colore Occhi', get(['coloreOcchi','occhi','eyeColor']));
+                  push('Altezza', get(['altezza','height']));
+                  push('Peso', get(['peso','weight']));
+                  push('Seno / Coppa', get(['seno','cup','coppa','breast']));
+                  push('Vita', get(['vita','waist']));
+                  push('Fianchi', get(['fianchi','hips']));
+                  push('Tatuaggi', get(['tatuaggi','tattoos']) ? 'Sì' : undefined);
+                  push('Piercing', get(['piercing','piercings']) ? 'Sì' : undefined);
+                  return rows.map((r, i) => (
+                    <div key={`bio-row-${i}`} className="flex items-start justify-between gap-4 border border-gray-700 rounded-md px-3 py-2 bg-gray-900">
+                      <span className="text-gray-400">{r.label}</span>
+                      <span className="font-medium text-white">{r.value}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* Orari di Lavoro */}
+          {(() => {
+            try {
+              const wh: any = (data as any)?.workingHours || (data as any)?.contacts?.workingHours;
+              if (!wh) return null;
+              const sameDaily = wh?.mode === 'same' || wh?.sameEveryDay;
+              const is247 = !!wh?.always || !!wh?.is247;
+              const ranges: Array<{ start: string; end: string }> = Array.isArray(wh?.ranges)
+                ? wh.ranges
+                : (sameDaily && wh?.start && wh?.end ? [{ start: String(wh.start), end: String(wh.end) }] : []);
+              // Supporto forma a giorni: { days: { mon:{start,end,enabled}, ... } }
+              const dayMap = wh?.days && typeof wh.days === 'object' ? wh.days : null;
+              const vacations: Array<{ from: string; to: string }> = Array.isArray(wh?.vacations) ? wh.vacations : [];
+              return (
+                <div className="bg-gray-800 border rounded-xl shadow-sm p-4">
+                  <div className="text-lg font-semibold mb-3 text-white">Orari di Lavoro</div>
+                  {is247 && <div className="text-green-400 text-sm">Disponibile 24/7</div>}
+                  {!is247 && ranges.length > 0 && (
+                    <ul className="list-disc ml-5 text-gray-300 text-sm">
+                      {ranges.map((r, i) => (
+                        <li key={`wh-${i}`}>{r.start} – {r.end}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {!is247 && !ranges.length && dayMap && (
+                    <ul className="list-disc ml-5 text-gray-300 text-sm">
+                      {Object.entries(dayMap).filter(([,v]: any)=> !!v && (v.enabled || (v.start && v.end))).map(([d,v]: any, i) => (
+                        <li key={`wh-day-${i}`}>{d.toUpperCase()}: {v.start || '—'} – {v.end || '—'}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {vacations.length > 0 && (
+                    <div className="mt-3">
+                      <div className="font-medium text-white mb-1">Vacanze</div>
+                      <ul className="list-disc ml-5 text-gray-300 text-sm">
+                        {vacations.map((v, i) => (
+                          <li key={`vac-${i}`}>{new Date(v.from).toLocaleDateString()} – {new Date(v.to).toLocaleDateString()}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            } catch { return null; }
+          })()}
+
           {/* Lingue */}
           <div id="lingue" className="bg-gray-800 border rounded-xl shadow-sm p-4">
             <div className="text-lg font-semibold mb-2 text-white">Lingue</div>
