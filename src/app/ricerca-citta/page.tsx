@@ -34,19 +34,31 @@ export default function RicercaCittaPage() {
     setRicercaEffettuata(true);
 
     try {
-      // LOGICA CORRETTA: Ricerca solo escort verificati con pacchetto attivo
-      // Al momento non ci sono escort che hanno:
-      // 1. Verificato l'identità (documenti approvati dall'admin)
-      // 2. Acquistato pacchetto attivo (VIP/ORO/TITANIUM/ARGENTO)
-      // 3. Completato il profilo per la città selezionata
+      // Costruisci i parametri di ricerca
+      const params = new URLSearchParams({
+        city: cittaSelezionata,
+        page: '1',
+        limit: '20'
+      });
+
+      if (filtroTipo) params.set('tipo', filtroTipo);
+      if (filtroEta) params.set('eta', filtroEta);
+      if (filtroPrezzo) params.set('prezzo', filtroPrezzo);
+
+      const response = await fetch(`/api/public/search-by-city?${params.toString()}`);
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        throw new Error('Errore nella ricerca');
+      }
+
+      const data = await response.json();
+      console.log(`🔍 Ricerca per ${cittaSelezionata}:`, data);
       
-      console.log(`🔍 Ricerca per ${cittaSelezionata}: Nessun escort verificato trovato`);
-      setRisultati([]);
+      setRisultati(data.results || []);
     } catch (error) {
       console.error("Errore ricerca:", error);
       setRisultati([]);
+      alert("Errore durante la ricerca. Riprova più tardi.");
     } finally {
       setLoading(false);
     }
