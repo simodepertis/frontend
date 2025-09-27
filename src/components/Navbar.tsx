@@ -86,7 +86,7 @@ export default function Navbar() {
         <div className="w-1/3 flex justify-end items-center gap-4 text-sm font-medium">
             <Link href="/nuove-escort" className="hover:text-blue-400 transition-colors">Nuove Escort</Link>
             <Link href="/tours" className="hover:text-blue-400 transition-colors">Tours</Link>
-            <Link href="/uomini" className="hover:text-blue-400 transition-colors">Uomini</Link>
+            <Link href="/uomini" className="hover:text-blue-400 transition-colors">Gigolo</Link>
             <Link href="/instant-book" className="hover:text-blue-400 transition-colors">Instant Book</Link>
             <Link href="/agenzie" className="hover:text-blue-400 transition-colors">Agenzie</Link>
         </div>
