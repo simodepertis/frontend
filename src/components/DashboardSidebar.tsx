@@ -72,6 +72,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/lui-cerca", label: "Lui Cerca", icon: faMagnifyingGlass },
         { href: "/dashboard/tour-citta", label: "Tour Città", icon: faPlane },
         { href: "/dashboard/pubblicita", label: "Acquista Pubblicità", icon: faBullhorn },
+        { href: "/dashboard/annunci", label: "Piccoli Annunci (B&B)", icon: faBullhorn },
         { href: "/dashboard/ragazza-del-giorno", label: "Ragazza Del Giorno", icon: faWandMagicSparkles },
         { href: "/dashboard/bump-profilo", label: "Bump Profilo", icon: faArrowUp },
         { href: "/dashboard/recensioni", label: "Recensioni", icon: faStar },
