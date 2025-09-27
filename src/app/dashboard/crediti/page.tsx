@@ -109,6 +109,7 @@ export default function CreditiPage() {
   const [placement, setPlacement] = useState<null | { code: string; status: 'ACTIVE'|'PAUSED'; startedAt?: string; lastStartAt?: string; lastPauseAt?: string; remainingDays?: number }>(null);
   const [actingPlacement, setActingPlacement] = useState<null | 'pause' | 'resume'>(null);
   const [escortUserId, setEscortUserId] = useState<number>(0);
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     loadAll();
@@ -173,7 +174,7 @@ export default function CreditiPage() {
         }
       } catch {}
 
-      // Load placement from profile
+      // Load placement from profile and user role
       try {
         if (me.ok) {
           const jm = await me.json();
@@ -186,6 +187,8 @@ export default function CreditiPage() {
             lastPauseAt: plc.lastPauseAt,
             remainingDays: plc.remainingDays,
           } : null);
+          // Salva il ruolo utente per nascondere EscortPicker se è escort
+          setUserRole(jm?.user?.ruolo || '');
         }
       } catch {}
     } catch (e) {
@@ -286,10 +289,12 @@ export default function CreditiPage() {
     <div className="space-y-6">
       <SectionHeader title="Crediti" subtitle="Saldo, posizionamenti e storico movimenti" />
 
-      {/* Selezione Escort (Agenzia) */}
-      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
-        <EscortPicker value={escortUserId} onChange={(v)=>{ setEscortUserId(v); setLoading(true); }} />
-      </div>
+      {/* Selezione Escort (solo per Agenzia) */}
+      {userRole === 'agenzia' && (
+        <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+          <EscortPicker value={escortUserId} onChange={(v)=>{ setEscortUserId(v); setLoading(true); }} />
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-2">
