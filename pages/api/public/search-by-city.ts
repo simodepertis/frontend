@@ -29,62 +29,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Solo utenti con profilo escort
       escortProfile: {
         isNot: null,
-      },
-      // Solo utenti attivi
-      isActive: true,
+      }
     }
 
-    // Cerca nelle città dell'escort profile
-    // Supporta sia la struttura legacy (array) che quella nuova (object con baseCity, secondCity, etc.)
+    // Cerca nelle città dell'escort profile usando la sintassi Prisma corretta per JSON
     const cityFilter = {
       OR: [
-        // Struttura legacy: cities è un array di stringi
+        // Cerca in baseCity
         {
           escortProfile: {
             cities: {
-              array_contains: city
-            }
-          }
-        },
-        // Struttura nuova: cities è un oggetto con baseCity, secondCity, etc.
-        {
-          escortProfile: {
-            cities: {
-              path: ['baseCity'],
+              path: '$.baseCity',
               equals: city
             }
           }
         },
+        // Cerca in secondCity
         {
           escortProfile: {
             cities: {
-              path: ['secondCity'],
+              path: '$.secondCity', 
               equals: city
             }
           }
         },
+        // Cerca in thirdCity
         {
           escortProfile: {
             cities: {
-              path: ['thirdCity'],
+              path: '$.thirdCity',
               equals: city
             }
           }
         },
+        // Cerca in fourthCity
         {
           escortProfile: {
             cities: {
-              path: ['fourthCity'],
+              path: '$.fourthCity',
               equals: city
-            }
-          }
-        },
-        // Anche nelle città aggiuntive se è un array
-        {
-          escortProfile: {
-            cities: {
-              path: ['cities'],
-              array_contains: city
             }
           }
         }
@@ -118,6 +101,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
+    console.log('🔍 Ricerca città:', city)
+    console.log('📋 Condizioni WHERE:', JSON.stringify(whereConditions, null, 2))
+
+    // Debug: verifica quante escort ci sono in totale
+    const totalEscorts = await prisma.user.count({
+      where: {
+        escortProfile: { isNot: null }
+      }
+    })
+    console.log(`📈 Totale escort nel database: ${totalEscorts}`)
+
+    // Debug: mostra alcune escort con le loro città
+    const sampleEscorts = await prisma.user.findMany({
+      where: {
+        escortProfile: { isNot: null }
+      },
+      include: {
+        escortProfile: {
+          select: { cities: true }
+        }
+      },
+      take: 5
+    })
+    console.log('🔍 Campione escort e loro città:')
+    sampleEscorts.forEach(u => {
+      console.log(`👤 ${u.nome} (ID: ${u.id}) - Cities:`, u.escortProfile?.cities)
+    })
+
     // Cerca gli utenti
     const users = await prisma.user.findMany({
       where: whereConditions,
@@ -143,6 +154,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Infine per ID
         { id: 'desc' }
       ]
+    })
+
+    console.log(`📊 Trovati ${users.length} utenti per città ${city}`)
+    users.forEach(u => {
+      console.log(`👤 User ${u.id} (${u.nome}) - Cities:`, u.escortProfile?.cities)
     })
 
     // Conta il totale per la paginazione
