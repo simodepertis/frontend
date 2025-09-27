@@ -908,31 +908,51 @@ export default function EscortDetailPage() {
                   </div>
                 );
               }
-              const sameDaily = wh?.mode === 'same' || wh?.sameEveryDay;
-              const is247 = !!wh?.always || !!wh?.is247;
-              const ranges: Array<{ start: string; end: string }> = Array.isArray(wh?.ranges)
-                ? wh.ranges
-                : (sameDaily && wh?.start && wh?.end ? [{ start: String(wh.start), end: String(wh.end) }] : []);
-              // Supporto forma a giorni: { days: { mon:{start,end,enabled}, ... } }
-              const dayMap = wh?.days && typeof wh.days === 'object' ? wh.days : null;
+              
+              // Supporta la struttura corretta dalla dashboard
+              const is247 = wh?.mode === '247';
+              const isSame = wh?.mode === 'same';
+              const isCustom = wh?.mode === 'custom';
+              
+              // Orari "stesso ogni giorno" - array di slot { from, to }
+              const sameSlots: Array<{ from: string; to: string }> = Array.isArray(wh?.same) ? wh.same : [];
+              
+              // Orari personalizzati per giorno - { Lun: [{ from, to }], ... }
+              const perDay = wh?.perDay || {};
+              
+              // Vacanze
               const vacations: Array<{ from: string; to: string }> = Array.isArray(wh?.vacations) ? wh.vacations : [];
+              
               return (
                 <div className="bg-gray-800 border rounded-xl shadow-sm p-4">
                   <div className="text-lg font-semibold mb-3 text-white">Orari di Lavoro</div>
+                  
                   {is247 && <div className="text-green-400 text-sm">Disponibile 24/7</div>}
-                  {!is247 && ranges.length > 0 && (
-                    <ul className="list-disc ml-5 text-gray-300 text-sm">
-                      {ranges.map((r, i) => (
-                        <li key={`wh-${i}`}>{r.start} – {r.end}</li>
-                      ))}
-                    </ul>
+                  
+                  {isSame && sameSlots.length > 0 && (
+                    <div>
+                      <div className="text-sm text-gray-300 mb-1">Stesso orario ogni giorno:</div>
+                      <ul className="list-disc ml-5 text-gray-300 text-sm">
+                        {sameSlots.map((slot, i) => (
+                          <li key={`same-${i}`}>{slot.from} – {slot.to}</li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
-                  {!is247 && !ranges.length && dayMap && (
-                    <ul className="list-disc ml-5 text-gray-300 text-sm">
-                      {Object.entries(dayMap).filter(([,v]: any)=> !!v && (v.enabled || (v.start && v.end))).map(([d,v]: any, i) => (
-                        <li key={`wh-day-${i}`}>{d.toUpperCase()}: {v.start || '—'} – {v.end || '—'}</li>
-                      ))}
-                    </ul>
+                  
+                  {isCustom && Object.keys(perDay).length > 0 && (
+                    <div>
+                      <div className="text-sm text-gray-300 mb-1">Orari personalizzati:</div>
+                      <ul className="list-disc ml-5 text-gray-300 text-sm">
+                        {Object.entries(perDay).map(([day, slots]: [string, any]) => (
+                          Array.isArray(slots) && slots.length > 0 ? (
+                            <li key={day}>
+                              <strong>{day}:</strong> {slots.map((s: any) => `${s.from}–${s.to}`).join(', ')}
+                            </li>
+                          ) : null
+                        )).filter(Boolean)}
+                      </ul>
+                    </div>
                   )}
                   {vacations.length > 0 && (
                     <div className="mt-3">
