@@ -68,7 +68,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/verifica-foto", label: "Verifica Foto al 100%", icon: faCircleCheck },
         { href: "/dashboard/verifica-video", label: "Verifica Video", icon: faVideo },
         { href: "/dashboard/prenotazioni", label: "Prenotazioni Istantanee", icon: faBolt },
-        { href: "/dashboard/annunci/nuovo", label: "Nuovo Annuncio", icon: faBullhorn },
+        // { href: "/dashboard/annunci/nuovo", label: "Nuovo Annuncio", icon: faBullhorn }, // rimosso per escort
         { href: "/dashboard/lui-cerca", label: "Lui Cerca", icon: faMagnifyingGlass },
         { href: "/dashboard/tour-citta", label: "Tour Città", icon: faPlane },
         { href: "/dashboard/pubblicita", label: "Acquista Pubblicità", icon: faBullhorn },
@@ -84,7 +84,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/carrello", label: "Carrello", icon: faCartShopping },
         { href: "/dashboard/avvisi", label: "Avvisi", icon: faBell },
         { href: "/dashboard/avvisi-citta", label: "Avvisi Città", icon: faCity },
-        { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart },
+        // { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart }, // rimosso per escort
         { href: "/dashboard/forum", label: "Forum", icon: faComments },
         { href: "/", label: "Vai all'Area Pubblica", icon: faGlobe },
         { href: "/autenticazione", label: "Esci", icon: faRightFromBracket },
@@ -101,7 +101,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/storie", label: "Storie", icon: faComments },
         { href: "/dashboard/happy-hour", label: "Happy Hour", icon: faBolt },
         { href: "/dashboard/prenotazioni", label: "Prenotazioni Istantanee", icon: faBolt },
-        { href: "/dashboard/annunci/nuovo", label: "Nuovo Annuncio", icon: faBullhorn },
+        // { href: "/dashboard/annunci/nuovo", label: "Nuovo Annuncio", icon: faBullhorn }, // rimosso per agenzia
         { href: "/dashboard/lui-cerca", label: "Lui Cerca", icon: faMagnifyingGlass },
         { href: "/dashboard/tour-citta", label: "Tour Città", icon: faPlane },
         { href: "/dashboard/pubblicita", label: "Acquista Pubblicità", icon: faBullhorn },
@@ -113,7 +113,7 @@ export default function DashboardSidebar() {
         { href: "/dashboard/crediti", label: "Crediti", icon: faBolt },
         { href: "/dashboard/avvisi", label: "Avvisi", icon: faBell },
         { href: "/dashboard/avvisi-citta", label: "Avvisi Città", icon: faCity },
-        { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart },
+        // { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart }, // rimosso per agenzia
         { href: "/dashboard/carrello", label: "Carrello", icon: faCartShopping },
         { href: "/dashboard/forum", label: "Forum", icon: faComments },
         { href: "/", label: "Vai all'Area Pubblica", icon: faGlobe },
