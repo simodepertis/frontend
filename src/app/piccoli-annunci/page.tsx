@@ -17,6 +17,29 @@ export default function PiccoliAnnunciPage() {
   const [items, setItems] = useState<ApiItem[]>([]);
   const [total, setTotal] = useState(0);
   const [pageSize, setPageSize] = useState(40);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
+
+  // Verifica accesso B&B (paywall)
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null;
+        if (!token) { setHasAccess(false); return; }
+        const r = await fetch('/api/annunci/access', { headers: { 'Authorization': `Bearer ${token}` }});
+        if (r.ok) {
+          const j = await r.json();
+          setHasAccess(!!j?.hasAccess);
+        } else {
+          setHasAccess(false);
+        }
+      } catch {
+        setHasAccess(false);
+      } finally {
+        setCheckingAccess(false);
+      }
+    })();
+  }, []);
 
   const categories = [
     { k: 'eventi', t: 'Eventi' },
@@ -48,16 +71,44 @@ export default function PiccoliAnnunciPage() {
         setLoading(false);
       }
     }
-    load();
+    if (hasAccess) load();
     return () => ctrl.abort();
-  }, [city, q, cat, page]);
+  }, [city, q, cat, page, hasAccess]);
+
+  // Stato caricamento accesso
+  if (checkingAccess) {
+    return (
+      <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-80px)]">
+        <h1 className="text-3xl font-bold text-white mb-4">Piccoli Annunci</h1>
+        <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 text-gray-400">Verifica accesso…</div>
+      </main>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-80px)]">
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-white">Piccoli Annunci</h1>
+        </div>
+        <div className="rounded-lg border border-yellow-700 bg-yellow-900/40 p-6 text-yellow-100">
+          <div className="text-lg font-semibold mb-1">Accesso richiesto</div>
+          <p className="text-sm opacity-90">Questa sezione è riservata. Attiva l’accesso B&B per creare e visualizzare i Piccoli Annunci.</p>
+          <div className="mt-3">
+            <Link href="/dashboard/annunci" className="inline-block px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Attiva ora</Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-80px)]">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-3xl font-bold text-white">Piccoli Annunci</h1>
-        <Link href="/dashboard/annunci/nuovo" className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Pubblica annuncio</Link>
+        {/* Accesso attivo: manteniamo la CTA verso dashboard annunci (gestione) */}
+        <Link href="/dashboard/annunci" className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Gestisci annunci</Link>
       </div>
 
       {/* Filter bar */}
