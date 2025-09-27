@@ -207,7 +207,9 @@ export default function RicercaCittaPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {risultati.map((escort) => (
-                <EscortCard key={escort.id} escort={escort} />
+                <Link key={escort.id} href={`/escort/${escort.slug}`} className="block">
+                  <EscortCard escort={escort} />
+                </Link>
               ))}
             </div>
           )}

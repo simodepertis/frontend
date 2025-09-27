@@ -125,21 +125,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`📊 Trovati ${users.length} utenti totali, filtro per città ${city}`)
     
-    // Filtra per città dopo aver recuperato i dati
+    // Filtra per città dopo aver recuperato i dati - logica più permissiva
     const filteredUsers = users.filter(u => {
-      const cities = u.escortProfile?.cities
-      if (!cities) return false
+      const profile = u.escortProfile
+      if (!profile) return false
       
-      // Se cities è una stringa, cerca direttamente
-      if (typeof cities === 'string') {
-        return cities.toLowerCase().includes(city.toLowerCase())
+      const cityLower = city.toLowerCase()
+      
+      // Cerca nelle città
+      const cities = profile.cities
+      if (cities) {
+        // Se cities è una stringa, cerca direttamente
+        if (typeof cities === 'string') {
+          if (cities.toLowerCase().includes(cityLower)) return true
+        }
+        
+        // Se cities è un oggetto, cerca in tutti i campi
+        if (typeof cities === 'object' && cities !== null) {
+          const cityStr = JSON.stringify(cities).toLowerCase()
+          if (cityStr.includes(cityLower)) return true
+        }
       }
       
-      // Se cities è un oggetto, cerca in tutti i campi
-      if (typeof cities === 'object' && cities !== null) {
-        const cityStr = JSON.stringify(cities).toLowerCase()
-        return cityStr.includes(city.toLowerCase())
-      }
+      // Cerca anche nei contatti se presente
+      try {
+        const contacts = profile.contacts as any
+        if (contacts) {
+          const contactsStr = JSON.stringify(contacts).toLowerCase()
+          if (contactsStr.includes(cityLower)) return true
+        }
+      } catch {}
       
       return false
     })
@@ -204,14 +219,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       } catch {}
 
+      // Estrai età dai contatti
+      let eta = 25 // Default
+      try {
+        const contacts = profile?.contacts as any
+        const bioInfo = contacts?.bioInfo
+        if (bioInfo?.eta) eta = Number(bioInfo.eta) || 25
+      } catch {}
+
       return {
         id: user.id,
         nome: user.nome,
         slug: user.slug,
+        eta: eta,
         citta: mainCity,
         prezzo: minPrice,
-        tier: profile?.tier || 'STANDARD',
-        coverUrl: photosByUser[user.id] || '/placeholder.svg',
+        foto: photosByUser[user.id] || '/placeholder.svg',
+        rank: profile?.tier || 'STANDARD',
+        isVerified: false, // TODO: implementare logica verifica
+        videoCount: 0, // TODO: contare video
+        reviewCount: 0, // TODO: contare recensioni  
+        commentCount: 0, // TODO: contare commenti
         updatedAt: profile?.updatedAt || user.createdAt,
       }
     })
