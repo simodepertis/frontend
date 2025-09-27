@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string>("");
+  const [hasAptAds, setHasAptAds] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -33,6 +34,12 @@ export default function Navbar() {
         const data = await res.json();
         setUserName(data?.user?.nome || "");
         console.log('✅ Nome utente caricato:', data?.user?.nome);
+
+        // Verifica accesso Piccoli Annunci (B&B)
+        try {
+          const a = await fetch('/api/annunci/access', { headers: { 'Authorization': `Bearer ${token}` }});
+          if (a.ok) { const j = await a.json(); setHasAptAds(!!j?.hasAccess); } else { setHasAptAds(false); }
+        } catch { setHasAptAds(false); }
       } catch (error) {
         console.log('❌ Errore fetch profilo:', error);
         
@@ -136,7 +143,9 @@ export default function Navbar() {
           <li><Link href="/recensioni" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faStar} /> Recensioni</Link></li>
           <li><Link href="/commenti" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Commenti</Link></li>
           <li><Link href="/top10" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white flex items-center gap-2 transition-colors"><FontAwesomeIcon icon={faTrophy} /> Top 10</Link></li>
-          <li><Link href="/piccoli-annunci" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Piccoli Annunci</Link></li>
+          {hasAptAds && (
+            <li><Link href="/piccoli-annunci" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Piccoli Annunci</Link></li>
+          )}
           <li><Link href="/virtuali" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Virtuali</Link></li>
           <li><Link href="/happy-hour" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Happy Hour</Link></li>
           <li><Link href="/forum" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Forum</Link></li>
