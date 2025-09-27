@@ -708,7 +708,11 @@ export default function EscortDetailPage() {
               if (!wh) return null;
               const sameDaily = wh?.mode === 'same' || wh?.sameEveryDay;
               const is247 = !!wh?.always || !!wh?.is247;
-              const ranges: Array<{ start: string; end: string }> = Array.isArray(wh?.ranges) ? wh.ranges : (sameDaily && wh?.start && wh?.end ? [{ start: String(wh.start), end: String(wh.end) }] : []);
+              const ranges: Array<{ start: string; end: string }> = Array.isArray(wh?.ranges)
+                ? wh.ranges
+                : (sameDaily && wh?.start && wh?.end ? [{ start: String(wh.start), end: String(wh.end) }] : []);
+              // Supporto forma a giorni: { days: { mon:{start,end,enabled}, ... } }
+              const dayMap = wh?.days && typeof wh.days === 'object' ? wh.days : null;
               const vacations: Array<{ from: string; to: string }> = Array.isArray(wh?.vacations) ? wh.vacations : [];
               return (
                 <div className="mt-4 border-t border-gray-700 pt-4 text-sm">
@@ -718,6 +722,13 @@ export default function EscortDetailPage() {
                     <ul className="list-disc ml-5 text-gray-300">
                       {ranges.map((r, i) => (
                         <li key={`wh-${i}`}>{r.start} – {r.end}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {!is247 && !ranges.length && dayMap && (
+                    <ul className="list-disc ml-5 text-gray-300">
+                      {Object.entries(dayMap).filter(([,v]: any)=> !!v && (v.enabled || (v.start && v.end))).map(([d,v]: any, i) => (
+                        <li key={`wh-day-${i}`}>{d.toUpperCase()}: {v.start || '—'} – {v.end || '—'}</li>
                       ))}
                     </ul>
                   )}
@@ -814,7 +825,7 @@ export default function EscortDetailPage() {
                         
                         // Aggiungi città aggiuntive
                         if (Array.isArray(citiesData.cities)) {
-                          allCities.push(...citiesData.cities.filter(c => c && c.trim()));
+                          allCities.push(...citiesData.cities.filter((c: string) => c && c.trim()));
                         }
                         
                         // Rimuovi duplicati e mostra
