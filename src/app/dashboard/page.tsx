@@ -35,6 +35,20 @@ export default function DashboardHome() {
               return;
             }
             
+            // Se è escort, reindirizza alla dashboard escort
+            if (userRole === 'escort') {
+              console.log('💃 Escort rilevato - reindirizzamento a dashboard escort');
+              window.location.href = '/dashboard/escort';
+              return;
+            }
+            
+            // Se è agenzia, reindirizza alla dashboard agenzia
+            if (userRole === 'agenzia') {
+              console.log('🏢 Agenzia rilevata - reindirizzamento a dashboard agenzia');
+              window.location.href = '/dashboard/agenzia';
+              return;
+            }
+            
             setName(data?.user?.nome || 'Utente');
           }
         }
