@@ -518,7 +518,7 @@ export default function EscortDetailPage() {
     } finally { setSubmittingCom(false); }
   }
 
-  const bioInfo: any = useMemo(()=>{ try { return (data as any)?.contacts?.bioInfo || null; } catch { return null; } }, [data]);
+  const bioInfo: any = useMemo(()=>{ try { return (data as any)?.bioInfo || (data as any)?.contacts?.bioInfo || null; } catch { return null; } }, [data]);
 
   function pick(obj:any, keys:string[]): string | undefined {
     for (const k of keys) { const v = obj?.[k]; if (v !== undefined && v !== null && String(v).trim() !== '') return String(v); }

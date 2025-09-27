@@ -95,6 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       services: p?.services ?? [],
       rates: p?.rates ?? [],
       contacts: p?.contacts ?? {},
+      bioInfo: (()=>{ try { return ((p?.contacts as any)?.bioInfo) || null; } catch { return null; } })(),
       workingHours: (()=>{ try { return ((p?.contacts as any)?.workingHours) || null; } catch { return null; } })(),
       languages: p?.languages ?? [],
       bio: p?.bioIt ?? p?.bioEn ?? null,
