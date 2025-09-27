@@ -866,16 +866,18 @@ export default function EscortDetailPage() {
                   push('Città di residenza', get(['cittaResidenza','residenceCity']));
                   // Debug per vedere tutti i campi disponibili
                   console.log('🔍 BioInfo Debug:', bioInfo);
-                  push('Colore Capelli', get(['coloreCapelli','capelli','hairColor','coloreCapelli']));
-                  push('Colore Occhi', get(['coloreOcchi','occhi','eyeColor','coloreOcchi']));
-                  push('Altezza', get(['altezza','height']));
-                  push('Peso', get(['peso','weight']));
-                  push('Seno / Coppa', get(['seno','cup','coppa','breast']));
-                  push('Vita', get(['vita','waist']));
-                  push('Fianchi', get(['fianchi','hips']));
-                  // Controlla se sono boolean o string
-                  const hasTattoos = b?.tatuaggi;
-                  const hasPiercings = b?.piercing;
+                  // Cerca nei campi fisico (struttura corretta dalla dashboard)
+                  const fisico = b?.fisico || {};
+                  push('Colore Capelli', fisico?.capelli || get(['coloreCapelli','capelli','hairColor']));
+                  push('Colore Occhi', fisico?.occhi || get(['coloreOcchi','occhi','eyeColor']));
+                  push('Altezza', fisico?.altezza || get(['altezza','height']));
+                  push('Peso', fisico?.peso || get(['peso','weight']));
+                  push('Seno / Coppa', fisico?.seno || get(['seno','cup','coppa','breast']));
+                  push('Vita', fisico?.vita || get(['vita','waist']));
+                  push('Fianchi', fisico?.fianchi || get(['fianchi','hips']));
+                  // Controlla tatuaggi e piercing (sia in fisico che direttamente)
+                  const hasTattoos = fisico?.tatuaggi ?? b?.tatuaggi;
+                  const hasPiercings = fisico?.piercing ?? b?.piercing;
                   push('Tatuaggi', hasTattoos === true ? 'Sì' : (hasTattoos === false ? 'No' : (hasTattoos ? String(hasTattoos) : undefined)));
                   push('Piercing', hasPiercings === true ? 'Sì' : (hasPiercings === false ? 'No' : (hasPiercings ? String(hasPiercings) : undefined)));
                   return rows.map((r, i) => (
