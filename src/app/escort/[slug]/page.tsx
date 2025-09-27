@@ -888,7 +888,21 @@ export default function EscortDetailPage() {
           {(() => {
             try {
               const wh: any = (data as any)?.workingHours || (data as any)?.contacts?.workingHours;
-              if (!wh) return null;
+              console.log('🕐 Working Hours Debug:', { 
+                dataWorkingHours: (data as any)?.workingHours, 
+                contactsWorkingHours: (data as any)?.contacts?.workingHours,
+                fullContacts: (data as any)?.contacts,
+                wh 
+              });
+              if (!wh) {
+                console.log('❌ No working hours found');
+                return (
+                  <div className="bg-gray-800 border rounded-xl shadow-sm p-4">
+                    <div className="text-lg font-semibold mb-3 text-white">Orari di Lavoro</div>
+                    <div className="text-sm text-gray-400">Orari non specificati.</div>
+                  </div>
+                );
+              }
               const sameDaily = wh?.mode === 'same' || wh?.sameEveryDay;
               const is247 = !!wh?.always || !!wh?.is247;
               const ranges: Array<{ start: string; end: string }> = Array.isArray(wh?.ranges)
