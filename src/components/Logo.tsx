@@ -34,8 +34,8 @@ export default function Logo({ className = "w-[260px]" }: { className?: string }
         <g fontFamily="serif" fontWeight="700" letterSpacing="1.5">
           {/* Tutto oro: INCONTRIESCORT */}
           <text x="165" y="105" fontSize="86" fill="url(#gold)" stroke="url(#goldStroke)" strokeWidth="0.8">INCONTRIESCORT</text>
-          {/* Solo dominio in bianco */}
-          <text x="780" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
+          {/* Solo dominio in bianco - spostato molto più a destra */}
+          <text x="900" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
         </g>
 
         {/* Subtitle */}
