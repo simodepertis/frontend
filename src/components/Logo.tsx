@@ -35,9 +35,9 @@ export default function Logo({ className = "w-[260px]" }: { className?: string }
           {/* Oro: INCONTRIESC */}
           <text x="165" y="105" fontSize="86" fill="url(#gold)" stroke="url(#goldStroke)" strokeWidth="0.8">INCONTRIESC</text>
           {/* Chiaro: ORT */}
-          <text x="760" y="105" fontSize="86" fill="#eaeaea">ORT</text>
+          <text x="715" y="105" fontSize="86" fill="#eaeaea">ORT</text>
           {/* Dominio */}
-          <text x="880" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
+          <text x="820" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
         </g>
 
         {/* Subtitle */}
