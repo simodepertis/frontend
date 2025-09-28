@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Logo from "@/components/Logo";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -92,10 +93,8 @@ export default function Navbar() {
         </div>
 
         {/* COLONNA CENTRALE: Logo */}
-        <div className="w-1/3 text-center">
-            <Link href="/" className="text-2xl font-bold tracking-wider">
-                INCONTRIESCORT.ORG
-            </Link>
+        <div className="w-1/3 flex justify-center">
+            <Logo className="w-[260px]" />
         </div>
 
         {/* COLONNA DESTRA: Azioni e Contatti - MODIFICATO justify-start */}
