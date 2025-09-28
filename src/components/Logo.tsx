@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function Logo({ className = "w-[260px]" }: { className?: string }) {
   return (
     <Link href="/" aria-label="Incontriescort.org" className={`inline-block ${className}`}>
-      <svg viewBox="0 0 1100 210" role="img" aria-labelledby="logoTitle logoDesc" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 1150 210" role="img" aria-labelledby="logoTitle logoDesc" xmlns="http://www.w3.org/2000/svg">
         <title id="logoTitle">INCONTRIESCORT.ORG</title>
         <desc id="logoDesc">Logo con scritta incontRIESCORT.org e sottotitolo Incontri Erotici</desc>
         <defs>
