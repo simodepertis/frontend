@@ -41,7 +41,11 @@ function buildTelegramLink(telegram?: string) {
 }
 
 export default function ContattiPage() {
-  const sections = useMemo(() => contacts.sections || [], []);
+  const sections = useMemo(() => {
+    const arr = (contacts as any).sections || [];
+    const priority: Record<string, number> = { 'annunci': 0, 'altri-problemi': 1 };
+    return [...arr].sort((a: any, b: any) => (priority[a.key] ?? 99) - (priority[b.key] ?? 99));
+  }, []);
 
   return (
     <main className="container mx-auto px-4 py-8">
