@@ -5,7 +5,7 @@ import Link from "next/link";
 export default function Logo({ className = "w-[260px]" }: { className?: string }) {
   return (
     <Link href="/" aria-label="Incontriescort.org" className={`inline-block ${className}`}>
-      <svg viewBox="0 0 820 210" role="img" aria-labelledby="logoTitle logoDesc" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 980 210" role="img" aria-labelledby="logoTitle logoDesc" xmlns="http://www.w3.org/2000/svg">
         <title id="logoTitle">INCONTRIESCORT.ORG</title>
         <desc id="logoDesc">Logo con scritta incontRIESCORT.org e sottotitolo Incontri Erotici</desc>
         <defs>
@@ -35,9 +35,9 @@ export default function Logo({ className = "w-[260px]" }: { className?: string }
           {/* Oro: INCONTRIESC */}
           <text x="165" y="105" fontSize="86" fill="url(#gold)" stroke="url(#goldStroke)" strokeWidth="0.8">INCONTRIESC</text>
           {/* Chiaro: ORT */}
-          <text x="720" y="105" fontSize="86" fill="#eaeaea">ORT</text>
+          <text x="760" y="105" fontSize="86" fill="#eaeaea">ORT</text>
           {/* Dominio */}
-          <text x="820" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
+          <text x="880" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
         </g>
 
         {/* Subtitle */}
