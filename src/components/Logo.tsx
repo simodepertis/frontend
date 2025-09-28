@@ -35,7 +35,7 @@ export default function Logo({ className = "w-[260px]" }: { className?: string }
           {/* Tutto oro: INCONTRIESCORT */}
           <text x="165" y="105" fontSize="86" fill="url(#gold)" stroke="url(#goldStroke)" strokeWidth="0.8">INCONTRIESCORT</text>
           {/* Solo dominio in bianco - ben distanziato e dentro il viewBox */}
-          <text x="950" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
+          <text x="970" y="105" fontSize="60" fill="#eaeaea">.ORG</text>
         </g>
 
         {/* Subtitle */}
