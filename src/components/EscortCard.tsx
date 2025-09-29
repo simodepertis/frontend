@@ -70,6 +70,14 @@ export default function EscortCard({ escort }: { escort: Escort }) {
           className="object-cover w-full h-full absolute inset-0"
           onError={(e) => { const t = e.currentTarget; if (t.src.indexOf('/placeholder.svg') === -1) t.src = '/placeholder.svg'; }}
         />
+        {/* Watermark centrale semi-trasparente */}
+        {escort.foto && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+            <span className="uppercase tracking-[0.35em] font-semibold text-white/35 bg-black/5 px-3 py-1 rounded-md drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+              incontriescort.org
+            </span>
+          </div>
+        )}
       </div>
       <div className="p-4 text-white flex-grow flex flex-col">
         <h3 className="text-lg font-bold mb-1">{escort.nome}, {escort.eta}</h3>
