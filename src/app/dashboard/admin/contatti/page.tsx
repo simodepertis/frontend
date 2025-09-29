@@ -25,6 +25,8 @@ export default function AdminContattiPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<ContactItem | null>(null);
   const [editingSection, setEditingSection] = useState<string>("");
+  const [creatingSection, setCreatingSection] = useState<string>("annunci");
+  const [creating, setCreating] = useState<ContactItem>({ name: "", languages: [] });
 
   useEffect(() => {
     fetchContacts();
@@ -32,7 +34,7 @@ export default function AdminContattiPage() {
 
   const fetchContacts = async () => {
     try {
-      const response = await fetch('/api/admin/contacts');
+      const response = await fetch('/api/admin/contacts', { cache: 'no-store' });
       const data = await response.json();
       setContacts(data.sections || []);
     } catch (error) {
@@ -48,15 +50,39 @@ export default function AdminContattiPage() {
   };
 
   const handleSave = async () => {
-    // TODO: Implementare salvataggio dopo migration database
-    alert('Funzione di salvataggio sarà implementata dopo la migration del database');
+    if (!editing || !editingSection || !editing.name) return;
+    await fetch('/api/admin/contacts', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: editing.id, sectionKey: editingSection, item: editing })
+    });
     setEditing(null);
     setEditingSection("");
+    await fetchContacts();
   };
 
   const handleCancel = () => {
     setEditing(null);
     setEditingSection("");
+  };
+
+  const handleCreate = async () => {
+    if (!creating.name) return;
+    await fetch('/api/admin/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sectionKey: creatingSection, item: creating })
+    });
+    setCreating({ name: "", languages: [] });
+    await fetchContacts();
+  };
+
+  const handleDelete = async (id?: number, sectionKey?: string) => {
+    if (!id || !sectionKey) return;
+    await fetch(`/api/admin/contacts?id=${id}&sectionKey=${encodeURIComponent(sectionKey)}`, {
+      method: 'DELETE'
+    });
+    await fetchContacts();
   };
 
   if (loading) {
@@ -76,8 +102,53 @@ export default function AdminContattiPage() {
         <h2 className="text-lg font-semibold text-blue-400 mb-2">ℹ️ Informazioni</h2>
         <p className="text-gray-300 text-sm">
           Questa è una versione semplificata per permettere al cliente di vedere i contatti attuali. 
-          Le funzioni di modifica saranno implementate dopo la migration del database.
+          Le modifiche vengono salvate nel file <code>src/config/siteContacts.json</code> senza usare il database.
         </p>
+      </div>
+
+      {/* Crea nuovo contatto */}
+      <div className="mb-8 p-4 bg-gray-800 border border-gray-700 rounded-lg">
+        <h2 className="text-xl font-semibold text-white mb-4">Aggiungi contatto</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Sezione</label>
+            <select
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+              value={creatingSection}
+              onChange={(e)=>setCreatingSection(e.target.value)}
+            >
+              <option value="annunci">Contatti per annunci</option>
+              <option value="altri-problemi">Altri problemi</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Nome</label>
+            <input className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" value={creating.name} onChange={(e)=>setCreating({...creating, name:e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+            <input className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" value={creating.email||""} onChange={(e)=>setCreating({...creating, email:e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Telefono</label>
+            <input className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" value={creating.phone||""} onChange={(e)=>setCreating({...creating, phone:e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">WhatsApp</label>
+            <input className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" value={creating.whatsapp||""} onChange={(e)=>setCreating({...creating, whatsapp:e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Lingue (separate da virgola)</label>
+            <input className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" value={(creating.languages||[]).join(", ")} onChange={(e)=>setCreating({...creating, languages:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)})} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-300 mb-1">Note</label>
+            <textarea className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" rows={2} value={creating.notes||""} onChange={(e)=>setCreating({...creating, notes:e.target.value})} />
+          </div>
+        </div>
+        <div className="mt-4">
+          <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">Aggiungi</Button>
+        </div>
       </div>
 
       {contacts.map((section) => (
@@ -172,13 +243,23 @@ export default function AdminContattiPage() {
                         {item.notes && <p>Note: {item.notes}</p>}
                       </div>
                     </div>
-                    <Button 
-                      onClick={() => handleEdit(item, section.key)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Modifica
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleEdit(item, section.key)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Modifica
+                      </Button>
+                      <Button 
+                        onClick={() => handleDelete(item.id, section.key)}
+                        variant="destructive"
+                        size="sm"
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Elimina
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
