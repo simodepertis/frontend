@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { prisma } from '@/lib/prisma';
 
 type ContactItem = {
   id?: number;
@@ -9,36 +8,45 @@ type ContactItem = {
   email?: string;
   phone?: string;
   whatsapp?: string;
+  telegram?: string;
   role?: string;
   notes?: string;
 };
 
-type ContactSection = {
-  key: string;
-  title: string;
-  items: ContactItem[];
-};
-
-type ContactsFile = { sections: ContactSection[] };
-
-const filePath = path.join(process.cwd(), 'src', 'config', 'siteContacts.json');
-
-async function readContacts(): Promise<ContactsFile> {
-  const raw = await fs.readFile(filePath, 'utf8');
-  return JSON.parse(raw);
-}
-
-async function writeContacts(data: ContactsFile) {
-  const tmp = filePath + '.tmp';
-  await fs.writeFile(tmp, JSON.stringify(data, null, 2), 'utf8');
-  await fs.rename(tmp, filePath);
-}
-
 // GET - Recupera tutti i contatti (admin)
 export async function GET() {
   try {
-    const data = await readContacts();
-    return NextResponse.json(data);
+    const contacts = await prisma.siteContact.findMany({
+      orderBy: [{ sectionKey: 'asc' }, { createdAt: 'asc' }]
+    });
+
+    // Raggruppa per sezione
+    const sectionsMap = new Map<string, any>();
+    
+    contacts.forEach((contact: any) => {
+      if (!sectionsMap.has(contact.sectionKey)) {
+        sectionsMap.set(contact.sectionKey, {
+          key: contact.sectionKey,
+          title: contact.sectionTitle,
+          items: []
+        });
+      }
+      
+      sectionsMap.get(contact.sectionKey)!.items.push({
+        id: contact.id,
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        whatsapp: contact.whatsapp,
+        telegram: contact.telegram,
+        languages: contact.languages,
+        role: contact.role,
+        notes: contact.notes
+      });
+    });
+
+    const sections = Array.from(sectionsMap.values());
+    return NextResponse.json({ sections });
   } catch (error) {
     console.error('❌ ERRORE in GET /api/admin/contacts:', error);
     return NextResponse.json({ error: 'Errore nel recupero dei contatti' }, { status: 500 });
@@ -54,22 +62,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 });
     }
 
-    const data = await readContacts();
-    let section = data.sections.find(s => s.key === sectionKey);
-    if (!section) {
-      section = { key: sectionKey, title: sectionTitle || sectionKey, items: [] };
-      data.sections.push(section);
-    } else if (sectionTitle) {
-      section.title = sectionTitle;
-    }
+    const newContact = await prisma.siteContact.create({
+      data: {
+        name: item.name,
+        email: item.email || null,
+        phone: item.phone || null,
+        whatsapp: item.whatsapp || null,
+        telegram: item.telegram || null,
+        languages: item.languages || [],
+        role: item.role || null,
+        notes: item.notes || null,
+        sectionKey: sectionKey,
+        sectionTitle: sectionTitle || sectionKey
+      }
+    });
 
-    // assegna id incrementale
-    const maxId = Math.max(0, ...data.sections.flatMap(s => s.items.map(i => i.id || 0)));
-    item.id = maxId + 1;
-    section.items.push(item);
-
-    await writeContacts(data);
-    return NextResponse.json({ success: true, item });
+    return NextResponse.json({ success: true, item: newContact });
   } catch (error) {
     console.error('❌ ERRORE in POST /api/admin/contacts:', error);
     return NextResponse.json({ error: 'Errore creazione contatto' }, { status: 500 });
@@ -80,18 +88,24 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, sectionKey, item } = body as { id: number; sectionKey: string; item: Partial<ContactItem> };
-    if (!id || !sectionKey) return NextResponse.json({ error: 'ID o sezione mancanti' }, { status: 400 });
+    const { id, item } = body as { id: number; sectionKey: string; item: Partial<ContactItem> };
+    if (!id) return NextResponse.json({ error: 'ID mancante' }, { status: 400 });
 
-    const data = await readContacts();
-    const section = data.sections.find(s => s.key === sectionKey);
-    if (!section) return NextResponse.json({ error: 'Sezione non trovata' }, { status: 404 });
-    const idx = section.items.findIndex(i => i.id === id);
-    if (idx === -1) return NextResponse.json({ error: 'Contatto non trovato' }, { status: 404 });
+    const updatedContact = await prisma.siteContact.update({
+      where: { id },
+      data: {
+        name: item.name,
+        email: item.email || null,
+        phone: item.phone || null,
+        whatsapp: item.whatsapp || null,
+        telegram: item.telegram || null,
+        languages: item.languages || [],
+        role: item.role || null,
+        notes: item.notes || null
+      }
+    });
 
-    section.items[idx] = { ...section.items[idx], ...item };
-    await writeContacts(data);
-    return NextResponse.json({ success: true, item: section.items[idx] });
+    return NextResponse.json({ success: true, item: updatedContact });
   } catch (error) {
     console.error('❌ ERRORE in PUT /api/admin/contacts:', error);
     return NextResponse.json({ error: "Errore aggiornamento contatto" }, { status: 500 });
@@ -103,17 +117,12 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const id = Number(searchParams.get('id'));
-    const sectionKey = searchParams.get('sectionKey') || '';
-    if (!id || !sectionKey) return NextResponse.json({ error: 'Parametri mancanti' }, { status: 400 });
+    if (!id) return NextResponse.json({ error: 'ID mancante' }, { status: 400 });
 
-    const data = await readContacts();
-    const section = data.sections.find(s => s.key === sectionKey);
-    if (!section) return NextResponse.json({ error: 'Sezione non trovata' }, { status: 404 });
-    const before = section.items.length;
-    section.items = section.items.filter(i => i.id !== id);
-    if (section.items.length === before) return NextResponse.json({ error: 'Contatto non trovato' }, { status: 404 });
+    await prisma.siteContact.delete({
+      where: { id }
+    });
 
-    await writeContacts(data);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ ERRORE in DELETE /api/admin/contacts:', error);
