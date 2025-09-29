@@ -417,3 +417,23 @@ model Favorite {
   @@index([userId])
   @@index([targetUserId])
 }
+
+// Contatti del sito modificabili dall'admin
+model SiteContact {
+  id          Int      @id @default(autoincrement())
+  sectionKey  String   // "annunci" o "altri-problemi"
+  sectionTitle String  // "Contatti per annunci"
+  name        String
+  languages   Json     // array di stringhe ["Italian", "English"]
+  email       String?
+  phone       String?
+  whatsapp    String?
+  role        String?  // "forum", "utenti", "supporto"
+  notes       String?
+  order       Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sectionKey, order])
+}

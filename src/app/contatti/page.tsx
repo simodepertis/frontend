@@ -1,7 +1,6 @@
 "use client";
 
-import contacts from "@/config/siteContacts.json";
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 type ContactItem = {
   name: string;
@@ -41,11 +40,90 @@ function buildTelegramLink(telegram?: string) {
 }
 
 export default function ContattiPage() {
+  const [contactsData, setContactsData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        const response = await fetch('/api/public/contacts');
+        const data = await response.json();
+        setContactsData(data);
+      } catch (error) {
+        console.error('Errore nel caricamento contatti:', error);
+        // Fallback ai contatti di default
+        setContactsData({
+          sections: [
+            {
+              key: "annunci",
+              title: "Contatti per annunci",
+              items: [
+                {
+                  name: "Francesco",
+                  languages: ["Italian", "English", "Hungarian"],
+                  phone: "+41 32 580 08 93",
+                  email: "francesco@incontriescort.org",
+                  whatsapp: "+41 762031758"
+                },
+                {
+                  name: "Marco",
+                  languages: ["English"],
+                  email: "marco@incontriescort.org"
+                }
+              ]
+            },
+            {
+              key: "altri-problemi",
+              title: "Contattare per altri problemi",
+              items: [
+                {
+                  name: "Contatto per forum",
+                  languages: ["Italian", "English"],
+                  email: "forum@incontriescort.org",
+                  role: "forum",
+                  notes: ""
+                },
+                {
+                  name: "Contatti per utenti, recensioni, commenti e altro",
+                  languages: ["Italian", "English"],
+                  email: "info@incontriescort.org",
+                  role: "utenti",
+                  notes: ""
+                },
+                {
+                  name: "Contatto per problemi non risolti o lamentele",
+                  languages: ["Italian", "English"],
+                  email: "support@incontriescort.org",
+                  role: "supporto",
+                  notes: "(Si prega di contattare il supporto SOLO se il suo problema NON è stato risolto dall'Admin o dal suo agente di vendita)"
+                }
+              ]
+            }
+          ]
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContacts();
+  }, []);
+
   const sections = useMemo(() => {
-    const arr = (contacts as any).sections || [];
+    if (!contactsData) return [];
+    const arr = contactsData.sections || [];
     const priority: Record<string, number> = { 'annunci': 0, 'altri-problemi': 1 };
     return [...arr].sort((a: any, b: any) => (priority[a.key] ?? 99) - (priority[b.key] ?? 99));
-  }, []);
+  }, [contactsData]);
+
+  if (loading) {
+    return (
+      <main className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6 text-white">Contatti</h1>
+        <div className="text-white">Caricamento contatti...</div>
+      </main>
+    );
+  }
 
   return (
     <main className="container mx-auto px-4 py-8">

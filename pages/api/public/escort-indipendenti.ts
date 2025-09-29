@@ -35,13 +35,14 @@ export default async function handler(
       take: 60,
     })
 
-    // Aggiungo conteggi video e recensioni
+    // Aggiungo conteggi video, recensioni e commenti
     const escortsWithCounts = await Promise.all(escorts.map(async (u) => {
-      const [videoCount, reviewCount] = await Promise.all([
+      const [videoCount, reviewCount, commentCount] = await Promise.all([
         prisma.video.count({ where: { userId: u.id, status: 'APPROVED' as any } }),
-        prisma.review.count({ where: { targetUserId: u.id, status: 'APPROVED' as any } })
+        prisma.review.count({ where: { targetUserId: u.id, status: 'APPROVED' as any } }),
+        prisma.comment.count({ where: { targetUserId: u.id, status: 'APPROVED' as any } })
       ])
-      return { ...u, videoCount, reviewCount }
+      return { ...u, videoCount, reviewCount, commentCount }
     }))
 
     const escortsFormatted = escortsWithCounts.map((u) => {
@@ -80,6 +81,7 @@ export default async function handler(
         girlOfTheDay: girl,
         videoCount: u.videoCount,
         reviewCount: u.reviewCount,
+        commentCount: u.commentCount,
       }
     })
 

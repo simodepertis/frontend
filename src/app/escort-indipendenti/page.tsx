@@ -229,7 +229,7 @@ export default function EscortIndipendentiPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {escortsOrdinati.map((escort) => (
               <Link key={escort.id} href={`/escort/${escort.slug}`} className="relative block">
-                <EscortCard escort={{ id: escort.id, nome: escort.nome, eta: escort.eta, citta: escort.citta, prezzo: escort.prezzo, foto: escort.foto, rank: escort.rank, isVerified: escort.verificata, videoCount: escort.videoCount || 0, reviewCount: escort.reviewCount || 0 }} />
+                <EscortCard escort={{ id: escort.id, nome: escort.nome, eta: escort.eta, citta: escort.citta, prezzo: escort.prezzo, foto: escort.foto, rank: escort.rank, isVerified: escort.verificata, videoCount: escort.videoCount || 0, reviewCount: escort.reviewCount || 0, commentCount: escort.commentCount || 0 }} />
                 {/* Badge Indipendente */}
                 <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
                   <FontAwesomeIcon icon={faUserCheck} className="mr-1" />
