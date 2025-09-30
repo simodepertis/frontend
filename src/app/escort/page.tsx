@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CITIES_ORDER } from "@/lib/cities";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
 import FilterBar from "@/components/FilterBar";
 
-const cittaOptions = ["Milano", "Roma", "Firenze"];
+const cittaOptions = CITIES_ORDER;
 const capelliOptions = ["Biondi", "Castani", "Neri"];
 
 export default function EscortListPage() {

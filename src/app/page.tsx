@@ -3,13 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { CITIES_ORDER } from "@/lib/cities";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button } from "@/components/ui/button";
 import EscortCard from "@/components/EscortCard";
 import FilterBar from "@/components/FilterBar";
 
-const cittaOptions = ["Milano", "Roma", "Firenze"]; // TODO: collegare a elenco reale
+// Usa l'ordine condiviso delle città
+const cittaOptions = CITIES_ORDER;
 const capelliOptions = ["Biondi", "Castani", "Neri"]; // TODO: collegare a elenco reale
 
 function kebab(s: string) {
