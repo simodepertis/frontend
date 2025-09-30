@@ -46,8 +46,15 @@ export default function ContattiPage() {
   useEffect(() => {
     const fetchContacts = async () => {
       try {
-        const response = await fetch('/api/public/contacts');
+        // Forza il refresh senza cache
+        const response = await fetch('/api/public/contacts-simple', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
         const data = await response.json();
+        console.log('📞 Contatti caricati:', data);
         setContactsData(data);
       } catch (error) {
         console.error('Errore nel caricamento contatti:', error);
