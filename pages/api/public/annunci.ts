@@ -20,9 +20,10 @@ function pickPriceFromRates(rates: any): number | null {
 function tierPriority(tier: string, isGirlOfDay: boolean) {
   if (tier === 'VIP') return 100
   if (isGirlOfDay) return 90
-  if (tier === 'TITANIO') return 80
-  if (tier === 'ORO') return 70
-  if (tier === 'ARGENTO') return 60
+  // Priority order requested: VIP > ORO > ARGENTO > TITANIO
+  if (tier === 'ORO') return 80
+  if (tier === 'ARGENTO') return 70
+  if (tier === 'TITANIO') return 60
   return 0
 }
 
