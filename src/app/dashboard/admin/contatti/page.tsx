@@ -35,7 +35,7 @@ export default function AdminContattiPage() {
 
   const fetchContacts = async () => {
     try {
-      const response = await fetch('/api/admin/contacts-simple', { cache: 'no-store' });
+      const response = await fetch('/api/admin/contacts', { cache: 'no-store' });
       const data = await response.json();
       setContacts(data.sections || []);
     } catch (error) {
@@ -53,7 +53,7 @@ export default function AdminContattiPage() {
   const handleSave = async () => {
     if (!editing || !editingSection || !editing.name) return;
     try {
-      await fetch('/api/admin/contacts-simple', {
+      await fetch('/api/admin/contacts', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: editing.id, sectionKey: editingSection, item: editing })
@@ -75,7 +75,7 @@ export default function AdminContattiPage() {
   const handleCreate = async () => {
     if (!creating.name) return;
     try {
-      await fetch('/api/admin/contacts-simple', {
+      await fetch('/api/admin/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sectionKey: creatingSection, item: creating })
@@ -93,7 +93,7 @@ export default function AdminContattiPage() {
     if (!confirm('Sei sicuro di voler eliminare questo contatto?')) return;
     
     try {
-      await fetch(`/api/admin/contacts-simple?id=${id}&sectionKey=${encodeURIComponent(sectionKey)}`, {
+      await fetch(`/api/admin/contacts?id=${id}&sectionKey=${encodeURIComponent(sectionKey)}`, {
         method: 'DELETE'
       });
       await fetchContacts();
@@ -137,12 +137,10 @@ export default function AdminContattiPage() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-white">Gestione Contatti</h1>
       
-      <div className="mb-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
-        <h2 className="text-lg font-semibold text-green-400 mb-2">✅ Sistema Contatti</h2>
+      <div className="mb-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+        <h2 className="text-lg font-semibold text-blue-400 mb-2">🗄️ Contatti su Database</h2>
         <p className="text-gray-300 text-sm">
-          Sistema semplificato che funziona sempre. I contatti vengono salvati in memoria durante la sessione.
-          <br />
-          <strong>Nota:</strong> I contatti si resettano ad ogni deploy, ma il sistema è stabile e funzionale.
+          Tutte le modifiche vengono salvate su PostgreSQL e sono visibili immediatamente nella pagina pubblica.
         </p>
       </div>
 

@@ -47,7 +47,7 @@ export default function ContattiPage() {
     const fetchContacts = async () => {
       try {
         // Forza il refresh senza cache
-        const response = await fetch('/api/public/contacts-simple', {
+        const response = await fetch('/api/public/contacts', {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
