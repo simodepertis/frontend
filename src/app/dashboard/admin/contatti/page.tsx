@@ -27,6 +27,7 @@ export default function AdminContattiPage() {
   const [editingSection, setEditingSection] = useState<string>("");
   const [creatingSection, setCreatingSection] = useState<string>("annunci");
   const [creating, setCreating] = useState<ContactItem>({ name: "", languages: [] });
+  const [setupLoading, setSetupLoading] = useState(false);
 
   useEffect(() => {
     fetchContacts();
@@ -79,10 +80,38 @@ export default function AdminContattiPage() {
 
   const handleDelete = async (id?: number, sectionKey?: string) => {
     if (!id || !sectionKey) return;
-    await fetch(`/api/admin/contacts?id=${id}&sectionKey=${encodeURIComponent(sectionKey)}`, {
-      method: 'DELETE'
-    });
-    await fetchContacts();
+    if (!confirm('Sei sicuro di voler eliminare questo contatto?')) return;
+    
+    try {
+      await fetch(`/api/admin/contacts?id=${id}&sectionKey=${encodeURIComponent(sectionKey)}`, {
+        method: 'DELETE'
+      });
+      await fetchContacts();
+      alert('Contatto eliminato con successo!');
+    } catch (error) {
+      alert('Errore durante eliminazione contatto');
+    }
+  };
+
+  const setupDatabase = async () => {
+    setSetupLoading(true);
+    try {
+      const response = await fetch('/api/admin/setup-database', {
+        method: 'POST'
+      });
+      const result = await response.json();
+      
+      if (result.success) {
+        alert(`Database inizializzato! ${result.message}`);
+        await fetchContacts();
+      } else {
+        alert(`Errore: ${result.error}`);
+      }
+    } catch (error) {
+      alert('Errore durante inizializzazione database');
+    } finally {
+      setSetupLoading(false);
+    }
   };
 
   if (loading) {
@@ -99,11 +128,17 @@ export default function AdminContattiPage() {
       <h1 className="text-3xl font-bold mb-6 text-white">Gestione Contatti</h1>
       
       <div className="mb-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-        <h2 className="text-lg font-semibold text-blue-400 mb-2">ℹ️ Informazioni</h2>
-        <p className="text-gray-300 text-sm">
-          Questa è una versione semplificata per permettere al cliente di vedere i contatti attuali. 
-          Le modifiche vengono salvate nel file <code>src/config/siteContacts.json</code> senza usare il database.
+        <h2 className="text-lg font-semibold text-blue-400 mb-2">🗄️ Database</h2>
+        <p className="text-gray-300 text-sm mb-3">
+          I contatti vengono salvati nel database PostgreSQL. Se non vedi i contatti, inizializza il database.
         </p>
+        <Button 
+          onClick={setupDatabase} 
+          disabled={setupLoading}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          {setupLoading ? 'Inizializzazione...' : '🔧 Inizializza Database'}
+        </Button>
       </div>
 
       {/* Crea nuovo contatto */}
