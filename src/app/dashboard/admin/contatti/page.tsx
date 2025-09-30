@@ -28,6 +28,7 @@ export default function AdminContattiPage() {
   const [creatingSection, setCreatingSection] = useState<string>("annunci");
   const [creating, setCreating] = useState<ContactItem>({ name: "", languages: [] });
   const [setupLoading, setSetupLoading] = useState(false);
+  const [addingDefaults, setAddingDefaults] = useState(false);
 
   useEffect(() => {
     fetchContacts();
@@ -124,6 +125,24 @@ export default function AdminContattiPage() {
     }
   };
 
+  // Aggiunge in modo idempotente le 3 card default della sezione "altri-problemi"
+  const addDefaultOtherProblems = async () => {
+    setAddingDefaults(true);
+    try {
+      const res = await fetch('/api/admin/contacts-add-defaults', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Errore server');
+      }
+      await fetchContacts();
+      alert(`Carte aggiunte: ${data.createdCount}. (Operazione idempotente: le esistenti non vengono duplicate)`);
+    } catch (e) {
+      alert('Errore durante il ripristino delle 3 card default');
+    } finally {
+      setAddingDefaults(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -142,6 +161,11 @@ export default function AdminContattiPage() {
         <p className="text-gray-300 text-sm">
           Tutte le modifiche vengono salvate su PostgreSQL e sono visibili immediatamente nella pagina pubblica.
         </p>
+        <div className="mt-3 flex gap-2">
+          <Button onClick={addDefaultOtherProblems} disabled={addingDefaults} className="bg-indigo-600 hover:bg-indigo-700">
+            {addingDefaults ? 'Ripristino…' : "Ripristina 'Altri problemi' (3 card)"}
+          </Button>
+        </div>
       </div>
 
       {/* Crea nuovo contatto */}
