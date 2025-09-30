@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { CITIES_ORDER } from "@/lib/cities";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faUserCheck, faStar } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
@@ -16,8 +17,8 @@ export default function EscortIndipendentiPage() {
   const [filtroEta, setFiltroEta] = useState("");
   const [filtroPrezzo, setFiltroPrezzo] = useState("");
 
-  // Opzioni per i filtri
-  const cittaOptions = ["Milano", "Roma", "Napoli", "Torino", "Firenze", "Bologna", "Bari", "Palermo"];
+  // Opzioni per i filtri (ordine condiviso richiesto dal cliente)
+  const cittaOptions = CITIES_ORDER;
   const capelliOptions = ["Biondi", "Castani", "Neri", "Rossi"];
   const etaOptions = ["18-25", "26-30", "31-35", "36-40", "40+"];
   const prezzoOptions = ["50-100", "100-150", "150-200", "200-300", "300+"];
