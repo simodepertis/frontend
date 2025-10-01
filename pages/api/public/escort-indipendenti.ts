@@ -45,7 +45,50 @@ export default async function handler(
       return { ...u, videoCount, reviewCount, commentCount }
     }))
 
-    const escortsFormatted = escortsWithCounts.map((u) => {
+    // Funzione per ordinare i tier: VIP > ORO > ARGENTO > TITANIO > STANDARD
+    const getTierPriority = (tier: string) => {
+      switch (tier) {
+        case 'VIP': return 1
+        case 'ORO': return 2
+        case 'ARGENTO': return 3
+        case 'TITANIO': return 4
+        case 'STANDARD': return 5
+        default: return 6
+      }
+    }
+
+    // Ordina per tier priority dopo aver recuperato i dati
+    const sortedEscorts = escortsWithCounts.sort((a, b) => {
+      // Prima: Ragazza del Giorno (se presente)
+      const aGirl = (() => {
+        const d: any = a.escortProfile?.girlOfTheDayDate
+        if (!d) return false
+        const today = new Date().toISOString().slice(0,10)
+        const dd = new Date(d).toISOString().slice(0,10)
+        return dd === today
+      })()
+      const bGirl = (() => {
+        const d: any = b.escortProfile?.girlOfTheDayDate
+        if (!d) return false
+        const today = new Date().toISOString().slice(0,10)
+        const dd = new Date(d).toISOString().slice(0,10)
+        return dd === today
+      })()
+      
+      if (aGirl && !bGirl) return -1
+      if (!aGirl && bGirl) return 1
+      
+      // Poi: Tier priority (VIP > ORO > ARGENTO > TITANIO > STANDARD)
+      const aTier = a.escortProfile?.tier || 'STANDARD'
+      const bTier = b.escortProfile?.tier || 'STANDARD'
+      const tierDiff = getTierPriority(aTier) - getTierPriority(bTier)
+      if (tierDiff !== 0) return tierDiff
+      
+      // Infine: Data di registrazione (più recenti prima)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+
+    const escortsFormatted = sortedEscorts.map((u) => {
       const city = (() => {
         const c = u.escortProfile?.cities as any
         return (c && (c.base || c.city || c.baseCity)) || 'Milano'
