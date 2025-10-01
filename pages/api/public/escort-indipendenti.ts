@@ -81,7 +81,10 @@ export default async function handler(
       // Poi: Tier priority (VIP > ORO > ARGENTO > TITANIO > STANDARD)
       const aTier = a.escortProfile?.tier || 'STANDARD'
       const bTier = b.escortProfile?.tier || 'STANDARD'
-      const tierDiff = getTierPriority(aTier) - getTierPriority(bTier)
+      const aPriority = getTierPriority(aTier)
+      const bPriority = getTierPriority(bTier)
+      // Ordine DECRESCENTE (priorità più alta prima)
+      const tierDiff = bPriority - aPriority
       if (tierDiff !== 0) return tierDiff
       
       // Infine: Data di registrazione (più recenti prima)
