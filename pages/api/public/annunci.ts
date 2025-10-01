@@ -97,9 +97,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         const prio = tierPriority(p.tier as any, isGirl)
-        // Debug logging per tier priority
-        if (p.tier === 'ORO' || p.tier === 'TITANIO') {
-          console.log(`🔍 ${displayName}: tier=${p.tier}, isGirl=${isGirl}, priority=${prio}`)
+        
+        // Debug logging per tier priority E ragazza del giorno
+        if (p.tier === 'ORO' || p.tier === 'TITANIO' || isGirl) {
+          console.log(`🔍 ${displayName}: tier=${p.tier}, isGirl=${isGirl}, girlOfTheDayDate=${p.girlOfTheDayDate}, todayStr=${todayStr}, priority=${prio}`)
         }
         const slug = p.user?.slug || `${kebab(p.user?.nome || '')}-${p.user?.id}`
         const hasApprovedDoc = Array.isArray(p.user?.documents) && p.user.documents.some((d:any)=> d.status === 'APPROVED')
@@ -188,8 +189,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Ordinamento IDENTICO a escort-indipendenti che FUNZIONA
     mapped.sort((a, b) => {
       // Prima: Ragazza del Giorno (se presente)
-      if (a.girlOfTheDay && !b.girlOfTheDay) return -1
-      if (!a.girlOfTheDay && b.girlOfTheDay) return 1
+      if (a.girlOfTheDay && !b.girlOfTheDay) {
+        console.log(`👑 RAGAZZA DEL GIORNO PRIMA: ${a.name} (girlOfTheDay: ${a.girlOfTheDay})`)
+        return -1
+      }
+      if (!a.girlOfTheDay && b.girlOfTheDay) {
+        console.log(`👑 RAGAZZA DEL GIORNO PRIMA: ${b.name} (girlOfTheDay: ${b.girlOfTheDay})`)
+        return 1
+      }
       
       // Poi: Tier priority (VIP > ORO > ARGENTO > TITANIO > STANDARD)
       const aPriority = tierPriority(a.tier || 'STANDARD', a.girlOfTheDay || false)
