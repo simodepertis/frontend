@@ -21,11 +21,12 @@ function tierPriority(tier: string, isGirlOfDay: boolean) {
   // Ragazza del Giorno ha sempre priorità massima
   if (isGirlOfDay) return 1000
   // Ordine corretto: VIP > ORO > ARGENTO > TITANIO > STANDARD
-  if (tier === 'VIP') return 100
-  if (tier === 'ORO') return 80
-  if (tier === 'ARGENTO') return 60
-  if (tier === 'TITANIO') return 40
-  return 0 // STANDARD
+  const t = String(tier || 'STANDARD').toUpperCase()
+  if (t === 'VIP') return 100
+  if (t === 'ORO') return 80
+  if (t === 'ARGENTO') return 60
+  if (t === 'TITANIO') return 40
+  return 0 // STANDARD o null/undefined
 }
 
 function kebab(s: string) {
@@ -94,11 +95,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const base = profiles.map((p: any) => {
         const cities = Array.isArray(p.cities) ? (p.cities as any[]) : []
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
+        const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         const prio = tierPriority(p.tier as any, isGirl)
+        // Debug logging per tier priority
+        if (p.tier === 'ORO' || p.tier === 'TITANIO') {
+          console.log(`🔍 ${displayName}: tier=${p.tier}, isGirl=${isGirl}, priority=${prio}`)
+        }
         const slug = p.user?.slug || `${kebab(p.user?.nome || '')}-${p.user?.id}`
         const hasApprovedDoc = Array.isArray(p.user?.documents) && p.user.documents.some((d:any)=> d.status === 'APPROVED')
         const price = pickPriceFromRates(p.rates as any)
-        const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         const isAgencyEscort = !!p.agencyId
         
         // Log per debug escort agenzia
