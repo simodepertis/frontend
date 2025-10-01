@@ -38,20 +38,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
   try {
-    await ensureSeed()
-    const rows = await prisma.creditProduct.findMany({ where: { active: true } })
-    // keep only VIP, ORO, ARGENTO, TITANIO, GIRL
-    const allowed = rows.filter(r => ['VIP','ORO','ARGENTO','TITANIO','GIRL'].includes(r.code))
-    allowed.sort((a,b)=> (orderMap[a.code]||99)-(orderMap[b.code]||99))
-    const products = allowed.map(r => ({
-      code: r.code,
-      label: r.label,
-      creditsCost: r.creditsCost,
-      durationDays: r.durationDays,
-      pricePerDayCredits: r.pricePerDayCredits ?? undefined,
-      minDays: r.minDays ?? undefined,
-      maxDays: r.maxDays ?? undefined,
+    try {
+      await ensureSeed()
+      const rows = await prisma.creditProduct.findMany({ where: { active: true } })
+      const allowed = rows.filter(r => ['VIP','ORO','ARGENTO','TITANIO','GIRL'].includes(r.code))
+      allowed.sort((a,b)=> (orderMap[a.code]||99)-(orderMap[b.code]||99))
+      const products = allowed.map(r => ({
+        code: r.code,
+        label: r.label,
+        creditsCost: r.creditsCost,
+        durationDays: r.durationDays,
+        pricePerDayCredits: r.pricePerDayCredits ?? undefined,
+        minDays: r.minDays ?? undefined,
+        maxDays: r.maxDays ?? undefined,
+      }))
+      if (products.length > 0) return res.status(200).json({ products })
+    } catch {}
+    // Fallback immediato: mostra i 5 default se il DB non è disponibile
+    const products = DEFAULTS.map(d => ({
+      code: d.code,
+      label: d.label,
+      creditsCost: d.creditsCost ?? 0,
+      durationDays: d.durationDays ?? 1,
+      pricePerDayCredits: d.pricePerDayCredits,
+      minDays: d.minDays,
+      maxDays: d.maxDays,
     }))
+    products.sort((a,b)=> (orderMap[a.code]||99)-(orderMap[b.code]||99))
     return res.status(200).json({ products })
   } catch (e) {
     return res.status(500).json({ error: 'Internal Server Error' })
