@@ -41,17 +41,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await ensureSeed()
       const rows = await prisma.creditProduct.findMany({ where: { active: true } })
-      const allowed = rows.filter(r => ['VIP','ORO','ARGENTO','TITANIO','GIRL'].includes(r.code))
-      allowed.sort((a,b)=> (orderMap[a.code]||99)-(orderMap[b.code]||99))
-      const products = allowed.map(r => ({
-        code: r.code,
-        label: r.label,
-        creditsCost: r.creditsCost,
-        durationDays: r.durationDays,
-        pricePerDayCredits: r.pricePerDayCredits ?? undefined,
-        minDays: r.minDays ?? undefined,
-        maxDays: r.maxDays ?? undefined,
-      }))
+      
+      // Funzione per trovare prodotto per chiave
+      const pick = (key: 'VIP'|'ORO'|'ARGENTO'|'TITANIO'|'GIRL') => {
+        // Prima cerca codice esatto
+        const exact = rows.find(r => r.code === key)
+        if (exact) return exact
+        // Poi cerca per prefisso (es. "VIP 7 giorni" -> VIP)
+        const prefixed = rows.find(r => r.code?.toUpperCase()?.startsWith(key))
+        return prefixed ?? null
+      }
+      
+      const orderedKeys: Array<'VIP'|'ORO'|'ARGENTO'|'TITANIO'|'GIRL'> = ['VIP','ORO','ARGENTO','TITANIO','GIRL']
+      const products = orderedKeys.map(k => {
+        const r = pick(k)
+        if (r) return {
+          code: k, // Normalizza sempre a VIP/ORO/etc per UI
+          label: r.label,
+          creditsCost: r.creditsCost,
+          durationDays: r.durationDays,
+          pricePerDayCredits: r.pricePerDayCredits ?? undefined,
+          minDays: r.minDays ?? undefined,
+          maxDays: r.maxDays ?? undefined,
+        }
+        // Fallback al default per questa chiave
+        const d: any = DEFAULTS.find(x => x.code === k)
+        return {
+          code: k,
+          label: d?.label ?? k,
+          creditsCost: d?.creditsCost ?? 0,
+          durationDays: d?.durationDays ?? 1,
+          pricePerDayCredits: d?.pricePerDayCredits,
+          minDays: d?.minDays,
+          maxDays: d?.maxDays,
+        }
+      }).filter(Boolean)
       if (products.length > 0) return res.status(200).json({ products })
     } catch {}
     // Fallback immediato: mostra i 5 default se il DB non è disponibile

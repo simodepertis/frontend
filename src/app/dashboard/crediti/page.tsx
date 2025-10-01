@@ -6,6 +6,8 @@ import EscortPicker from "@/components/EscortPicker";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faStar, faGem, faShieldHalved, faCircleCheck, faCircleExclamation, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
+import PayPalButton from "@/components/PayPalButton";
+import Script from "next/script";
 
 function Copy({ text, label }: { text: string; label?: string }) {
   return (
@@ -91,14 +93,17 @@ export default function CreditiPage() {
   const [tx, setTx] = useState<Array<{ id: number; amount: number; type: string; reference?: string; createdAt: string }>>([]);
   const [creditsToBuy, setCreditsToBuy] = useState(10);
   const [catalog, setCatalog] = useState<Array<{ code: string; label: string; creditsCost: number; durationDays: number; pricePerDayCredits?: number|null; minDays?: number|null; maxDays?: number|null }>>([]);
-  const [daysByCode, setDaysByCode] = useState<Record<string, number>>({});
-  const [spending, setSpending] = useState<string>("");
+  const [escortUserId, setEscortUserId] = useState<number>(0);
+  const [actingPlacement, setActingPlacement] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [showPayPal, setShowPayPal] = useState(false);
   const minCredits = 10;
   const [tab, setTab] = useState<'crediti' | 'ordini'>('crediti');
   const [orders, setOrders] = useState<Array<{ id: number; credits: number; method: string; status: string; createdAt: string; receiptUrl?: string; phone?: string }>>([]);
   const [orderForm, setOrderForm] = useState<{ credits: number; method: 'manual_bollettino' | 'manual_bonifico'; phone: string }>({ credits: 10, method: 'manual_bollettino', phone: '' });
   const [orderInstructions, setOrderInstructions] = useState<any | null>(null);
+  const [paypalOrderId, setPaypalOrderId] = useState<number | null>(null);
   const [creatingOrder, setCreatingOrder] = useState(false);
   const [creatingPayPal, setCreatingPayPal] = useState(false);
   const [uploadingOrderId, setUploadingOrderId] = useState<number | null>(null);
@@ -107,9 +112,8 @@ export default function CreditiPage() {
   const [placementDays, setPlacementDays] = useState<number>(7);
   // Placement stato corrente dal profilo (contacts.placement)
   const [placement, setPlacement] = useState<null | { code: string; status: 'ACTIVE'|'PAUSED'; startedAt?: string; lastStartAt?: string; lastPauseAt?: string; remainingDays?: number }>(null);
-  const [actingPlacement, setActingPlacement] = useState<null | 'pause' | 'resume'>(null);
-  const [escortUserId, setEscortUserId] = useState<number>(0);
   const [userRole, setUserRole] = useState<string>('');
+  const [daysByCode, setDaysByCode] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadAll();
@@ -199,11 +203,24 @@ export default function CreditiPage() {
   async function buyCredits() {
     const qty = Number(creditsToBuy);
     if (!Number.isFinite(qty) || qty < minCredits) { alert(`Minimo ${minCredits} crediti`); return; }
-    // Porta l'utente nella scheda Ordini precompilando i crediti
-    setOrderForm((p) => ({ ...p, credits: qty }));
-    setOrderInstructions(null);
-    setTab('ordini');
+    // Mostra opzioni di pagamento
+    setShowPayPal(true);
   }
+
+  const handlePayPalSuccess = async (details: any) => {
+    setShowPayPal(false);
+    await loadAll();
+    setNotice({ type: 'success', msg: `Pagamento completato! Accreditati ${details.credits} crediti. Nuovo saldo: ${details.newBalance}` });
+  };
+
+  const handlePayPalError = (error: any) => {
+    console.error('PayPal error:', error);
+    setNotice({ type: 'error', msg: 'Errore durante il pagamento PayPal. Riprova.' });
+  };
+
+  const handlePayPalCancel = () => {
+    setNotice({ type: 'error', msg: 'Pagamento PayPal annullato.' });
+  };
 
   async function spend(code: string) {
     try {
@@ -365,9 +382,37 @@ export default function CreditiPage() {
           <div className="text-sm text-neutral-600">Saldo attuale</div>
           <div className="text-4xl font-extrabold">{balance} crediti</div>
         </div>
-        <div className="flex items-center gap-2">
-          <input type="number" min={minCredits} value={creditsToBuy} onChange={(e) => setCreditsToBuy(Number(e.target.value))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <Button onClick={buyCredits} className="h-10">Procedi al pagamento</Button>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <input type="number" min={minCredits} value={creditsToBuy} onChange={(e) => setCreditsToBuy(Number(e.target.value))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <Button onClick={buyCredits} className="h-10">Procedi al pagamento</Button>
+          </div>
+          {showPayPal && (
+            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+              <div className="text-sm text-gray-300 mb-3">
+                Acquisto {creditsToBuy} crediti - €{(creditsToBuy * 0.50).toFixed(2)}
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  {paypalLoaded && (
+                    <PayPalButton
+                      credits={creditsToBuy}
+                      onSuccess={handlePayPalSuccess}
+                      onError={handlePayPalError}
+                      onCancel={handlePayPalCancel}
+                    />
+                  )}
+                </div>
+                <Button 
+                  variant="secondary" 
+                  onClick={() => setShowPayPal(false)}
+                  className="px-3"
+                >
+                  Annulla
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -568,6 +613,11 @@ export default function CreditiPage() {
         </div>
       </>
       )}
+      <Script
+        src={`https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=EUR`}
+        onLoad={() => setPaypalLoaded(true)}
+        onError={() => console.error('Failed to load PayPal SDK')}
+      />
     </div>
   );
 }
