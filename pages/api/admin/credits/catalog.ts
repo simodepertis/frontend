@@ -76,10 +76,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (req.body?.minDays !== undefined) patch.minDays = numOrNull(req.body.minDays)
       if (req.body?.maxDays !== undefined) patch.maxDays = numOrNull(req.body.maxDays)
       if (req.body?.active !== undefined) patch.active = Boolean(req.body.active)
+      
+      console.log('PATCH request body:', req.body)
+      console.log('Processed patch data:', patch)
+      
       const saved = await prisma.creditProduct.update({
         where: id ? { id: Number(id) } : { code },
         data: patch,
       })
+      
+      console.log('Saved product:', saved)
       return res.status(200).json({ product: saved })
     }
 
