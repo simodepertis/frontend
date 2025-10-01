@@ -18,13 +18,14 @@ function pickPriceFromRates(rates: any): number | null {
 }
 
 function tierPriority(tier: string, isGirlOfDay: boolean) {
+  // Ragazza del Giorno ha sempre priorità massima
+  if (isGirlOfDay) return 1000
+  // Ordine corretto: VIP > ORO > ARGENTO > TITANIO > STANDARD
   if (tier === 'VIP') return 100
-  if (isGirlOfDay) return 90
-  // Priority order requested: VIP > ORO > ARGENTO > TITANIO
   if (tier === 'ORO') return 80
-  if (tier === 'ARGENTO') return 70
-  if (tier === 'TITANIO') return 60
-  return 0
+  if (tier === 'ARGENTO') return 60
+  if (tier === 'TITANIO') return 40
+  return 0 // STANDARD
 }
 
 function kebab(s: string) {
