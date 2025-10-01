@@ -28,8 +28,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const prof = await prisma.escortProfile.findUnique({ where: { userId: uid } })
     if (!prof || prof.agencyId !== payload.userId) return res.status(403).json({ error: 'Escort non collegata alla tua agenzia' })
 
-    const product = await prisma.creditProduct.findUnique({ where: { code: String(code) } })
-    if (!product || !product.active) return res.status(400).json({ error: 'Prodotto non valido' })
+    // Ricerca tollerante: prima codice esatto, poi per prefisso
+    let product = await prisma.creditProduct.findFirst({ where: { code: String(code), active: true } })
+    if (!product) {
+      // Cerca per prefisso (es. "VIP" trova "VIP 7 giorni")
+      const rows = await prisma.creditProduct.findMany({ where: { active: true } })
+      product = rows.find(r => r.code?.toUpperCase()?.startsWith(String(code).toUpperCase())) ?? null
+    }
+    if (!product) return res.status(400).json({ error: 'Prodotto non valido' })
 
     const pAny = product as any
     if (!pAny.pricePerDayCredits) return res.status(400).json({ error: 'Prodotto non a consumo giornaliero' })

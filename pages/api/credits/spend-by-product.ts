@@ -23,8 +23,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const nDays = Number(days)
     if (!Number.isFinite(nDays) || nDays <= 0) return res.status(400).json({ error: 'Giorni non validi' })
 
-    const product = await prisma.creditProduct.findUnique({ where: { code: String(code) } })
-    if (!product || !product.active) return res.status(400).json({ error: 'Prodotto non valido' })
+    // Ricerca tollerante: prima codice esatto, poi per prefisso
+    let product = await prisma.creditProduct.findFirst({ where: { code: String(code), active: true } })
+    if (!product) {
+      // Cerca per prefisso (es. "VIP" trova "VIP 7 giorni")
+      const rows = await prisma.creditProduct.findMany({ where: { active: true } })
+      product = rows.find(r => r.code?.toUpperCase()?.startsWith(String(code).toUpperCase())) ?? null
+    }
+    if (!product) return res.status(400).json({ error: 'Prodotto non valido' })
 
     if (product.pricePerDayCredits == null) {
       return res.status(400).json({ error: 'Questo prodotto non supporta durata variabile' })
