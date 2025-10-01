@@ -22,11 +22,11 @@ function tierPriority(tier: string, isGirlOfDay: boolean) {
   if (isGirlOfDay) return 1000
   // Ordine corretto: VIP > ORO > ARGENTO > TITANIO > STANDARD
   const t = String(tier || 'STANDARD').toUpperCase()
-  if (t === 'VIP') return 100
-  if (t === 'ORO') return 80
-  if (t === 'ARGENTO') return 60
-  if (t === 'TITANIO') return 40
-  return 0 // STANDARD o null/undefined
+  if (t === 'VIP') return 500
+  if (t === 'ORO') return 400  // ORO DEVE essere più alto di ARGENTO e TITANIO
+  if (t === 'ARGENTO') return 300
+  if (t === 'TITANIO') return 200
+  return 100 // STANDARD o null/undefined (non 0 per evitare problemi)
 }
 
 function kebab(s: string) {

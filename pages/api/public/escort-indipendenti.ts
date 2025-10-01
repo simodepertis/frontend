@@ -47,13 +47,14 @@ export default async function handler(
 
     // Funzione per ordinare i tier: VIP > ORO > ARGENTO > TITANIO > STANDARD
     const getTierPriority = (tier: string) => {
-      switch (tier) {
-        case 'VIP': return 1
-        case 'ORO': return 2
-        case 'ARGENTO': return 3
-        case 'TITANIO': return 4
-        case 'STANDARD': return 5
-        default: return 6
+      const t = String(tier || 'STANDARD').toUpperCase()
+      switch (t) {
+        case 'VIP': return 500
+        case 'ORO': return 400
+        case 'ARGENTO': return 300
+        case 'TITANIO': return 200  // TITANIO DEVE essere più alto di STANDARD
+        case 'STANDARD': return 100
+        default: return 50
       }
     }
 
