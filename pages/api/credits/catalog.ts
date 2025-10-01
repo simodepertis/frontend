@@ -1,35 +1,57 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { prisma } from '@/lib/prisma'
 
-// Hardcoded catalog so UI always has packages, independent of DB
-// codes starting with VIP/ORO/ARGENTO/TITANIO are used by the UI for styling
-// Two kinds of products are supported by the UI:
-// - Fixed price in credits: use creditsCost
-// - Variable per day in credits: use pricePerDayCredits + minDays/maxDays
-
-const products = [
-  // VIP placements
-  { code: 'VIP_HOME', label: 'VIP Home (7 giorni)', creditsCost: 700, durationDays: 7 },
-  { code: 'VIP_CATEGORIA', label: 'VIP Categoria (7 giorni)', creditsCost: 420, durationDays: 7 },
-  // ORO placements
-  { code: 'ORO_HOME', label: 'ORO Home (7 giorni)', creditsCost: 560, durationDays: 7 },
-  { code: 'ORO_CATEGORIA', label: 'ORO Categoria (7 giorni)', creditsCost: 350, durationDays: 7 },
-  // ARGENTO placements
-  { code: 'ARGENTO_HOME', label: 'ARGENTO Home (7 giorni)', creditsCost: 420, durationDays: 7 },
-  { code: 'ARGENTO_CATEGORIA', label: 'ARGENTO Categoria (7 giorni)', creditsCost: 280, durationDays: 7 },
-  // TITANIO placements (ultimo nella scala)
-  { code: 'TITANIO_HOME', label: 'TITANIO Home (7 giorni)', creditsCost: 280, durationDays: 7 },
-  { code: 'TITANIO_CATEGORIA', label: 'TITANIO Categoria (7 giorni)', creditsCost: 200, durationDays: 7 },
-
-  // Esempio prodotto a giorni configurabili (mostra input giorni nella UI)
-  { code: 'VIP_HOME_DAILY', label: 'VIP Home (al giorno)', pricePerDayCredits: 110, minDays: 3, maxDays: 30, durationDays: 1 },
+const DEFAULTS = [
+  { code: 'VIP',     label: 'VIP',     pricePerDayCredits: 110, minDays: 1, maxDays: 60 },
+  { code: 'ORO',     label: 'ORO',     pricePerDayCredits: 90,  minDays: 1, maxDays: 60 },
+  { code: 'ARGENTO', label: 'ARGENTO', pricePerDayCredits: 70,  minDays: 1, maxDays: 60 },
+  { code: 'TITANIO', label: 'TITANIO', pricePerDayCredits: 50,  minDays: 1, maxDays: 60 },
+  { code: 'GIRL',    label: 'Ragazza del Giorno', creditsCost: 300, durationDays: 1 },
 ]
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+const orderMap: Record<string, number> = { VIP: 1, ORO: 2, ARGENTO: 3, TITANIO: 4, GIRL: 5 }
+
+async function ensureSeed() {
+  const count = await prisma.creditProduct.count()
+  if (count > 0) return
+  for (const d of DEFAULTS) {
+    await prisma.creditProduct.upsert({
+      where: { code: d.code },
+      update: {},
+      create: {
+        code: d.code,
+        label: d.label,
+        creditsCost: d.creditsCost ?? 0,
+        durationDays: d.durationDays ?? 1,
+        pricePerDayCredits: d.pricePerDayCredits ?? null,
+        minDays: d.minDays ?? null,
+        maxDays: d.maxDays ?? null,
+        active: true,
+      },
+    })
+  }
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
   try {
+    await ensureSeed()
+    const rows = await prisma.creditProduct.findMany({ where: { active: true } })
+    // keep only VIP, ORO, ARGENTO, TITANIO, GIRL
+    const allowed = rows.filter(r => ['VIP','ORO','ARGENTO','TITANIO','GIRL'].includes(r.code))
+    allowed.sort((a,b)=> (orderMap[a.code]||99)-(orderMap[b.code]||99))
+    const products = allowed.map(r => ({
+      code: r.code,
+      label: r.label,
+      creditsCost: r.creditsCost,
+      durationDays: r.durationDays,
+      pricePerDayCredits: r.pricePerDayCredits ?? undefined,
+      minDays: r.minDays ?? undefined,
+      maxDays: r.maxDays ?? undefined,
+    }))
     return res.status(200).json({ products })
   } catch (e) {
     return res.status(500).json({ error: 'Internal Server Error' })

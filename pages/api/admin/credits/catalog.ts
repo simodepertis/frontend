@@ -1,0 +1,67 @@
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { prisma } from '@/lib/prisma'
+
+const DEFAULTS = [
+  { code: 'VIP',     label: 'VIP',     pricePerDayCredits: 110, minDays: 1, maxDays: 60 },
+  { code: 'ORO',     label: 'ORO',     pricePerDayCredits: 90,  minDays: 1, maxDays: 60 },
+  { code: 'ARGENTO', label: 'ARGENTO', pricePerDayCredits: 70,  minDays: 1, maxDays: 60 },
+  { code: 'TITANIO', label: 'TITANIO', pricePerDayCredits: 50,  minDays: 1, maxDays: 60 },
+  { code: 'GIRL',    label: 'Ragazza del Giorno', creditsCost: 300, durationDays: 1 },
+]
+
+async function ensureSeed() {
+  const count = await prisma.creditProduct.count()
+  if (count > 0) return
+  for (const d of DEFAULTS) {
+    await prisma.creditProduct.upsert({
+      where: { code: d.code },
+      update: {},
+      create: {
+        code: d.code,
+        label: d.label,
+        creditsCost: d.creditsCost ?? 0,
+        durationDays: d.durationDays ?? 1,
+        pricePerDayCredits: d.pricePerDayCredits ?? null,
+        minDays: d.minDays ?? null,
+        maxDays: d.maxDays ?? null,
+        active: true,
+      },
+    })
+  }
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    await ensureSeed()
+    if (req.method === 'GET') {
+      const products = await prisma.creditProduct.findMany({ orderBy: { updatedAt: 'desc' } })
+      return res.status(200).json({ products })
+    }
+
+    if (req.method === 'POST') {
+      const { code, label, creditsCost, durationDays, pricePerDayCredits, minDays, maxDays, active } = req.body || {}
+      if (!code || !label) return res.status(400).json({ error: 'code e label sono obbligatori' })
+      const saved = await prisma.creditProduct.upsert({
+        where: { code },
+        update: { label, creditsCost, durationDays, pricePerDayCredits, minDays, maxDays, active },
+        create: { code, label, creditsCost, durationDays, pricePerDayCredits, minDays, maxDays, active: active ?? true },
+      })
+      return res.status(200).json({ product: saved })
+    }
+
+    if (req.method === 'PATCH') {
+      const { id, code, ...patch } = req.body || {}
+      if (!id && !code) return res.status(400).json({ error: 'id o code obbligatorio' })
+      const saved = await prisma.creditProduct.update({
+        where: id ? { id: Number(id) } : { code },
+        data: patch,
+      })
+      return res.status(200).json({ product: saved })
+    }
+
+    res.setHeader('Allow', 'GET, POST, PATCH')
+    return res.status(405).json({ error: 'Method Not Allowed' })
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message || 'Internal Server Error' })
+  }
+}
