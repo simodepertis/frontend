@@ -181,12 +181,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       mapped = approvedEscorts.map(x => ({
         ...x,
         coverUrl: normalizeUrl(x.coverUrl) || '/placeholder.svg',
-        priority: x.coverUrl ? x.priority : Math.min(x.priority, 10),
+        // NON ridurre la priorità se manca la cover - mantieni tier priority
       }))
     }
 
-    // Sort by priority desc then updatedAt desc
-    mapped.sort((a, b) => (b.priority - a.priority) || (new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
+    // Ordinamento IDENTICO a escort-indipendenti che FUNZIONA
+    mapped.sort((a, b) => {
+      // Prima: Ragazza del Giorno (se presente)
+      if (a.girlOfTheDay && !b.girlOfTheDay) return -1
+      if (!a.girlOfTheDay && b.girlOfTheDay) return 1
+      
+      // Poi: Tier priority (VIP > ORO > ARGENTO > TITANIO > STANDARD)
+      const aPriority = tierPriority(a.tier || 'STANDARD', a.girlOfTheDay || false)
+      const bPriority = tierPriority(b.tier || 'STANDARD', b.girlOfTheDay || false)
+      // Ordine DECRESCENTE (priorità più alta prima)
+      const tierDiff = bPriority - aPriority
+      if (tierDiff !== 0) return tierDiff
+      
+      // Infine: Data di aggiornamento (più recenti prima)
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    })
 
     const total = mapped.length
     const start = (page - 1) * pageSize
