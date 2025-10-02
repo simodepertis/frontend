@@ -4,6 +4,7 @@ import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { CITIES_ORDER } from "@/lib/cities";
 
 // Load Leaflet from CDN (no npm package required)
 function loadLeafletFromCDN(): Promise<any> {
@@ -102,12 +103,6 @@ export default function CittaDiLavoroPage() {
   }
   // Chevron dropdown open states per city field
   const [openCity, setOpenCity] = useState<{ [k:string]: boolean }>({});
-  const COMMON_CITIES: string[] = [
-    "Milano","Roma","Torino","Napoli","Bologna","Firenze","Genova","Venezia","Verona","Padova",
-    "Brescia","Monza","Bergamo","Como","Varese","Piacenza","Parma","Modena","Reggio Emilia","Rimini",
-    "Ancona","Pesaro","Perugia","Terni","L'Aquila","Pescara","Bari","Lecce","Taranto","Brindisi",
-    "Cagliari","Sassari","Palermo","Catania","Messina","Reggio Calabria","Trieste","Udine","Bolzano","Trento"
-  ];
 
   // City autocomplete states per field
   const [cityQ, setCityQ] = useState<{ [k:string]: string }>({});
@@ -286,7 +281,7 @@ export default function CittaDiLavoroPage() {
               )}
               {openCity.baseCity && (cityRes.baseCity||[]).length === 0 && (
                 <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {COMMON_CITIES.map((c, idx)=> (
+                  {CITIES_ORDER.map((c, idx)=> (
                     <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, baseCity: c })); setOpenCity(p=>({ ...p, baseCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
                   ))}
                 </div>
@@ -306,7 +301,7 @@ export default function CittaDiLavoroPage() {
               )}
               {openCity.secondCity && (cityRes.secondCity||[]).length === 0 && (
                 <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {COMMON_CITIES.map((c, idx)=> (
+                  {CITIES_ORDER.map((c, idx)=> (
                     <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, secondCity: c })); setOpenCity(p=>({ ...p, secondCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
                   ))}
                 </div>
@@ -326,7 +321,7 @@ export default function CittaDiLavoroPage() {
               )}
               {openCity.thirdCity && (cityRes.thirdCity||[]).length === 0 && (
                 <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {COMMON_CITIES.map((c, idx)=> (
+                  {CITIES_ORDER.map((c, idx)=> (
                     <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, thirdCity: c })); setOpenCity(p=>({ ...p, thirdCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
                   ))}
                 </div>
@@ -346,7 +341,7 @@ export default function CittaDiLavoroPage() {
               )}
               {openCity.fourthCity && (cityRes.fourthCity||[]).length === 0 && (
                 <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {COMMON_CITIES.map((c, idx)=> (
+                  {CITIES_ORDER.map((c, idx)=> (
                     <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, fourthCity: c })); setOpenCity(p=>({ ...p, fourthCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
                   ))}
                 </div>
@@ -379,7 +374,7 @@ export default function CittaDiLavoroPage() {
                   </button>
                   {openCity[`city_${i}`] && (
                     <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                      {COMMON_CITIES.filter(c => c.toLowerCase().includes(city.toLowerCase())).map((commonCity, idx) => (
+                      {CITIES_ORDER.filter(c => c.toLowerCase().includes(city.toLowerCase())).map((commonCity, idx) => (
                         <button 
                           key={idx} 
                           type="button" 
