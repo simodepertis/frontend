@@ -25,7 +25,7 @@ export default async function handler(
         nome: true,
         slug: true,
         createdAt: true,
-        escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true, contacts: true } },
+        escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true, contacts: true, tierExpiresAt: true } },
         photos: { where: { status: 'APPROVED' }, orderBy: { createdAt: 'desc' }, take: 1 },
       },
       orderBy: [
@@ -46,13 +46,20 @@ export default async function handler(
     }))
 
     // Funzione per ordinare i tier: VIP > ORO > ARGENTO > TITANIO > STANDARD
-    const getTierPriority = (tier: string) => {
+    const getTierPriority = (tier: string, tierExpiresAt: any, isGirlOfDay: boolean) => {
+      // Se tier è scaduto o in pausa (tierExpiresAt null), diventa STANDARD
+      const now = new Date()
+      const isExpired = !tierExpiresAt || new Date(tierExpiresAt) <= now
+      if (isExpired && !isGirlOfDay) {
+        return 100 // STANDARD quando in pausa o scaduto
+      }
+      
       const t = String(tier || 'STANDARD').toUpperCase()
       switch (t) {
         case 'VIP': return 500
         case 'ORO': return 400
         case 'ARGENTO': return 300
-        case 'TITANIO': return 200  // TITANIO DEVE essere più alto di STANDARD
+        case 'TITANIO': return 200
         case 'STANDARD': return 100
         default: return 50
       }
@@ -82,8 +89,8 @@ export default async function handler(
       // Poi: Tier priority (VIP > ORO > ARGENTO > TITANIO > STANDARD)
       const aTier = a.escortProfile?.tier || 'STANDARD'
       const bTier = b.escortProfile?.tier || 'STANDARD'
-      const aPriority = getTierPriority(aTier)
-      const bPriority = getTierPriority(bTier)
+      const aPriority = getTierPriority(aTier, a.escortProfile?.tierExpiresAt, aGirl)
+      const bPriority = getTierPriority(bTier, b.escortProfile?.tierExpiresAt, bGirl)
       // Ordine DECRESCENTE (priorità più alta prima)
       const tierDiff = bPriority - aPriority
       if (tierDiff !== 0) return tierDiff
@@ -99,7 +106,7 @@ export default async function handler(
       })()
       const fotoRaw = u.photos[0]?.url || '/images/placeholder.jpg'
       const foto = fotoRaw.startsWith('/uploads/') ? ('/api' + fotoRaw) : fotoRaw
-      const rank = u.escortProfile?.tier || 'STANDARD'
+      
       const girl = (() => {
         const d: any = (u as any).escortProfile?.girlOfTheDayDate
         if (!d) return false
@@ -107,6 +114,12 @@ export default async function handler(
         const dd = new Date(d).toISOString().slice(0,10)
         return dd === today
       })()
+      
+      // Se tier è scaduto o in pausa, mostra come STANDARD
+      const now = new Date()
+      const tierExpiresAt = u.escortProfile?.tierExpiresAt
+      const isExpired = !tierExpiresAt || new Date(tierExpiresAt) <= now
+      const rank = (isExpired && !girl) ? 'STANDARD' : (u.escortProfile?.tier || 'STANDARD')
       const displayName = (() => {
         try {
           const cts: any = (u.escortProfile as any)?.contacts || {}

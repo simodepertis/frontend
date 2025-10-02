@@ -17,16 +17,24 @@ function pickPriceFromRates(rates: any): number | null {
   return min
 }
 
-function tierPriority(tier: string, isGirlOfDay: boolean) {
+function tierPriority(tier: string, isGirlOfDay: boolean, tierExpiresAt: any) {
   // Ragazza del Giorno ha sempre priorità massima
   if (isGirlOfDay) return 1000
+  
+  // Se tier è scaduto o in pausa (tierExpiresAt null), diventa STANDARD
+  const now = new Date()
+  const isExpired = !tierExpiresAt || new Date(tierExpiresAt) <= now
+  if (isExpired && !isGirlOfDay) {
+    return 100 // STANDARD quando in pausa o scaduto
+  }
+  
   // Ordine corretto: VIP > ORO > ARGENTO > TITANIO > STANDARD
   const t = String(tier || 'STANDARD').toUpperCase()
   if (t === 'VIP') return 500
-  if (t === 'ORO') return 400  // ORO DEVE essere più alto di ARGENTO e TITANIO
+  if (t === 'ORO') return 400
   if (t === 'ARGENTO') return 300
   if (t === 'TITANIO') return 200
-  return 100 // STANDARD o null/undefined (non 0 per evitare problemi)
+  return 100 // STANDARD
 }
 
 function kebab(s: string) {
@@ -96,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const cities = Array.isArray(p.cities) ? (p.cities as any[]) : []
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
-        const prio = tierPriority(p.tier as any, isGirl)
+        const prio = tierPriority(p.tier as any, isGirl, p.tierExpiresAt)
         
         // Debug logging per tier priority E ragazza del giorno
         if (p.tier === 'ORO' || p.tier === 'TITANIO' || isGirl) {
@@ -112,12 +120,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.log(`🏢 Escort agenzia trovata: ${displayName} (ID: ${p.userId}, AgencyID: ${p.agencyId}, HasApprovedDoc: ${hasApprovedDoc})`)
         }
         
+        // Se tier è scaduto o in pausa, mostra come STANDARD
+        const now = new Date()
+        const isExpired = !p.tierExpiresAt || new Date(p.tierExpiresAt) <= now
+        const effectiveTier = (isExpired && !isGirl) ? 'STANDARD' : p.tier
+        
         return {
           id: p.userId,
           name: displayName,
           slug,
           cities,
-          tier: p.tier,
+          tier: effectiveTier,
           girlOfTheDay: isGirl,
           priority: prio,
           updatedAt: p.updatedAt,
@@ -125,6 +138,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           price: price || 0,
           isAgencyEscort,
           agencyName: p.agency?.nome || null,
+          tierExpiresAt: p.tierExpiresAt, // Mantieni per debug
         } as any
       })
 
@@ -199,8 +213,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       // Poi: Tier priority (VIP > ORO > ARGENTO > TITANIO > STANDARD)
-      const aPriority = tierPriority(a.tier || 'STANDARD', a.girlOfTheDay || false)
-      const bPriority = tierPriority(b.tier || 'STANDARD', b.girlOfTheDay || false)
+      const aPriority = tierPriority(a.tier || 'STANDARD', a.girlOfTheDay || false, a.tierExpiresAt)
+      const bPriority = tierPriority(b.tier || 'STANDARD', b.girlOfTheDay || false, b.tierExpiresAt)
       // Ordine DECRESCENTE (priorità più alta prima)
       const tierDiff = bPriority - aPriority
       if (tierDiff !== 0) return tierDiff
