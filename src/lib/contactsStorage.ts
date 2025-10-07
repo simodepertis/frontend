@@ -73,11 +73,23 @@ const defaultContacts: ContactsFile = {
 };
 
 function isRender() {
-  return process.env.RENDER || process.env.RENDER_INTERNAL_HOSTNAME || process.env.NEXT_RUNTIME === 'edge' || process.env.NODE_ENV === 'production';
+  return process.env.RENDER || process.env.RENDER_INTERNAL_HOSTNAME;
 }
 
 function storagePath(): string {
-  if (isRender()) return '/var/data/siteContacts.json';
+  if (isRender()) {
+    // Su Render, prova prima /var/data, poi fallback a /tmp
+    const renderPath = '/var/data/siteContacts.json';
+    const fallbackPath = '/tmp/siteContacts.json';
+    try {
+      // Verifica se /var/data esiste
+      require('fs').accessSync('/var/data', require('fs').constants.W_OK);
+      return renderPath;
+    } catch {
+      console.log('⚠️ /var/data non accessibile, uso /tmp come fallback');
+      return fallbackPath;
+    }
+  }
   return path.join(process.cwd(), 'src', 'config', 'siteContacts.json');
 }
 
@@ -100,19 +112,30 @@ export async function ensureFileExists(): Promise<void> {
 
 export async function readContacts(): Promise<ContactsFile> {
   const file = storagePath();
+  console.log(`📖 Lettura contatti da: ${file}`);
   try {
     await ensureFileExists();
     const raw = await fs.readFile(file, 'utf8');
-    return JSON.parse(raw);
-  } catch {
+    const data = JSON.parse(raw);
+    console.log(`✅ Contatti letti: ${data.sections?.length || 0} sezioni`);
+    return data;
+  } catch (error) {
+    console.log(`⚠️ Errore lettura contatti, uso default:`, error);
     return defaultContacts;
   }
 }
 
 export async function writeContacts(data: ContactsFile): Promise<void> {
   const file = storagePath();
-  await fs.mkdir(path.dirname(file), { recursive: true });
-  await atomicWrite(file, JSON.stringify(data, null, 2));
+  console.log(`💾 Scrittura contatti su: ${file}`);
+  try {
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    await atomicWrite(file, JSON.stringify(data, null, 2));
+    console.log(`✅ Contatti salvati: ${data.sections?.length || 0} sezioni`);
+  } catch (error) {
+    console.error(`❌ Errore scrittura contatti:`, error);
+    throw error;
+  }
 }
 
 async function atomicWrite(targetPath: string, content: string): Promise<void> {

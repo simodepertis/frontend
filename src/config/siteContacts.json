@@ -6,21 +6,30 @@
       "items": [
         {
           "name": "Contatto per forum",
-          "languages": ["Italian", "English"],
+          "languages": [
+            "Italian",
+            "English"
+          ],
           "email": "forum@incontriescort.org",
           "role": "forum",
           "notes": ""
         },
         {
           "name": "Contatti per utenti, recensioni, commenti e altro",
-          "languages": ["Italian", "English"],
+          "languages": [
+            "Italian",
+            "English"
+          ],
           "email": "info@incontriescort.org",
           "role": "utenti",
           "notes": ""
         },
         {
           "name": "Contatto per problemi non risolti o lamentele",
-          "languages": ["Italian", "English"],
+          "languages": [
+            "Italian",
+            "English"
+          ],
           "email": "support@incontriescort.org",
           "role": "supporto",
           "notes": "(Si prega di contattare il supporto SOLO se il suo problema NON è stato risolto dall'Admin o dal suo agente di vendita)"
@@ -33,15 +42,30 @@
       "items": [
         {
           "name": "Francesco",
-          "languages": ["Italian", "English", "Hungarian"],
+          "languages": [
+            "Italian",
+            "English",
+            "Hungarian"
+          ],
           "phone": "+41 32 580 08 93",
           "email": "francesco@incontriescort.org",
           "whatsapp": "+41 762031758"
         },
         {
           "name": "Marco",
-          "languages": ["English"],
+          "languages": [
+            "English"
+          ],
           "email": "marco@incontriescort.org"
+        },
+        {
+          "name": "Test Contatto",
+          "email": "test@example.com",
+          "phone": "+39 123 456 7890",
+          "languages": [
+            "Italian"
+          ],
+          "id": 1
         }
       ]
     }

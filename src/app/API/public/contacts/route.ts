@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // GET - Recupera contatti pubblici per la pagina contatti
 export async function GET() {
   try {
+    console.log('📞 Caricamento contatti pubblici dal database...');
+    
     const contacts = await prisma.siteContact.findMany({
       orderBy: [{ sectionKey: 'asc' }, { createdAt: 'asc' }]
     });
 
+    console.log(`📊 Trovati ${contacts.length} contatti nel database`);
+
     // Raggruppa per sezione
     const sectionsMap = new Map<string, any>();
     
-    contacts.forEach(contact => {
+    contacts.forEach((contact) => {
       if (!sectionsMap.has(contact.sectionKey)) {
         sectionsMap.set(contact.sectionKey, {
           key: contact.sectionKey,
@@ -34,6 +40,8 @@ export async function GET() {
     });
 
     const sections = Array.from(sectionsMap.values());
+    console.log(`✅ Restituisco ${sections.length} sezioni`);
+    
     return NextResponse.json({ sections });
   } catch (error) {
     console.error('❌ ERRORE in GET /api/public/contacts:', error);

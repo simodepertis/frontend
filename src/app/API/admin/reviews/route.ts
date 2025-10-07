@@ -46,3 +46,59 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
   }
 }
+
+// Bulk cleanup endpoint: reject/delete reviews matching a phrase or by IDs
+export async function POST(request: NextRequest) {
+  try {
+    const adm = await requireAdmin(request);
+    if (!adm) return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 });
+    const body = await request.json().catch(()=>({}));
+    const mode = String(body?.mode || '').toLowerCase();
+    if (!['reject_by_phrase','delete_by_phrase','reject_by_ids','delete_by_ids'].includes(mode)) {
+      return NextResponse.json({ error: 'Parametri non validi (mode)' }, { status: 400 });
+    }
+
+    if (mode.endsWith('_by_phrase')) {
+      const phrase = String(body?.phrase || '').trim();
+      if (!phrase) return NextResponse.json({ error: 'Frase richiesta' }, { status: 400 });
+      if (mode.startsWith('reject')) {
+        const r = await prisma.review.updateMany({
+          where: {
+            OR: [
+              { body: { contains: phrase, mode: 'insensitive' } as any },
+              { title: { contains: phrase, mode: 'insensitive' } as any },
+            ],
+          },
+          data: { status: 'REJECTED' as any },
+        });
+        return NextResponse.json({ ok: true, count: r.count });
+      } else {
+        const r = await prisma.review.deleteMany({
+          where: {
+            OR: [
+              { body: { contains: phrase, mode: 'insensitive' } as any },
+              { title: { contains: phrase, mode: 'insensitive' } as any },
+            ],
+          },
+        });
+        return NextResponse.json({ ok: true, count: r.count });
+      }
+    }
+
+    if (mode.endsWith('_by_ids')) {
+      const ids = Array.isArray(body?.ids) ? body.ids.map((x:any)=>Number(x)).filter((n:number)=>Number.isFinite(n) && n>0) : [];
+      if (!ids.length) return NextResponse.json({ error: 'ids[] richiesto' }, { status: 400 });
+      if (mode.startsWith('reject')) {
+        const r = await prisma.review.updateMany({ where: { id: { in: ids } }, data: { status: 'REJECTED' as any } });
+        return NextResponse.json({ ok: true, count: r.count });
+      } else {
+        const r = await prisma.review.deleteMany({ where: { id: { in: ids } } });
+        return NextResponse.json({ ok: true, count: r.count });
+      }
+    }
+
+    return NextResponse.json({ error: 'Nessuna azione eseguita' }, { status: 400 });
+  } catch (e) {
+    return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
+  }
+}

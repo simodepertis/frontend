@@ -39,18 +39,36 @@ export async function GET() {
     try {
       await ensureSeed()
       const rows = await prisma.creditProduct.findMany({ where: { active: true } })
-      const allowed = rows.filter(r => ['VIP','ORO','ARGENTO','TITANIO','GIRL'].includes(r.code))
-      allowed.sort((a,b)=> (orderMap[a.code]||99)-(orderMap[b.code]||99))
-      const products = allowed.map(r => ({
-        code: r.code,
-        label: r.label,
-        creditsCost: r.creditsCost,
-        durationDays: r.durationDays,
-        pricePerDayCredits: r.pricePerDayCredits ?? undefined,
-        minDays: r.minDays ?? undefined,
-        maxDays: r.maxDays ?? undefined,
-      }))
-      if (products.length > 0) return NextResponse.json({ products }, { status: 200 })
+      const pick = (key: 'VIP'|'ORO'|'ARGENTO'|'TITANIO'|'GIRL') => {
+        const exact = rows.find(r => r.code === key)
+        if (exact) return exact
+        const pref = rows.find(r => r.code?.toUpperCase()?.startsWith(key))
+        return pref ?? null
+      }
+      const orderedKeys: Array<'VIP'|'ORO'|'ARGENTO'|'TITANIO'|'GIRL'> = ['VIP','ORO','ARGENTO','TITANIO','GIRL']
+      const products = orderedKeys.map(k => {
+        const r = pick(k)
+        if (r) return {
+          code: k,
+          label: r.label,
+          creditsCost: r.creditsCost,
+          durationDays: r.durationDays,
+          pricePerDayCredits: r.pricePerDayCredits ?? undefined,
+          minDays: r.minDays ?? undefined,
+          maxDays: r.maxDays ?? undefined,
+        }
+        const d: any = DEFAULTS.find(x => x.code === k)
+        return {
+          code: k,
+          label: d?.label ?? k,
+          creditsCost: d?.creditsCost ?? 0,
+          durationDays: d?.durationDays ?? 1,
+          pricePerDayCredits: d?.pricePerDayCredits,
+          minDays: d?.minDays,
+          maxDays: d?.maxDays,
+        }
+      })
+      return NextResponse.json({ products }, { status: 200 })
     } catch {}
     // fallback statico
     const products = DEFAULTS.map(d => ({

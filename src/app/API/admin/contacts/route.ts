@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 type ContactItem = {
   id?: number;
@@ -23,7 +25,7 @@ export async function GET() {
     // Raggruppa per sezione
     const sectionsMap = new Map<string, any>();
     
-    contacts.forEach((contact: any) => {
+    contacts.forEach((contact) => {
       if (!sectionsMap.has(contact.sectionKey)) {
         sectionsMap.set(contact.sectionKey, {
           key: contact.sectionKey,
@@ -62,6 +64,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 });
     }
 
+    console.log('💾 Creazione contatto:', { sectionKey, sectionTitle, item });
+
     const newContact = await prisma.siteContact.create({
       data: {
         name: item.name,
@@ -77,6 +81,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    console.log('✅ Contatto creato:', newContact);
     return NextResponse.json({ success: true, item: newContact });
   } catch (error) {
     console.error('❌ ERRORE in POST /api/admin/contacts:', error);
@@ -108,7 +113,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true, item: updatedContact });
   } catch (error) {
     console.error('❌ ERRORE in PUT /api/admin/contacts:', error);
-    return NextResponse.json({ error: "Errore aggiornamento contatto" }, { status: 500 });
+    return NextResponse.json({ error: 'Errore aggiornamento contatto' }, { status: 500 });
   }
 }
 
