@@ -1066,11 +1066,25 @@ export default function EscortDetailPage() {
           <div className="mt-4 border-t pt-4">
             <div className="text-sm font-semibold mb-2">Lascia una recensione</div>
             <div className="grid gap-2">
-              <input className="border rounded-md px-3 py-2" placeholder="Titolo" value={revTitle} onChange={e=>setRevTitle(e.target.value)} />
-              <select className="border rounded-md px-3 py-2 w-32" value={revRating} onChange={e=>setRevRating(Number(e.target.value))}>
+              <input
+                className="bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Titolo"
+                value={revTitle}
+                onChange={e=>setRevTitle(e.target.value)}
+              />
+              <select
+                className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-32 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={revRating}
+                onChange={e=>setRevRating(Number(e.target.value))}
+              >
                 {[5,4,3,2,1].map(v => <option key={v} value={v}>{v} stelle</option>)}
               </select>
-              <textarea className="border rounded-md px-3 py-2 min-h-[100px]" placeholder="Scrivi la tua esperienza" value={revBody} onChange={e=>setRevBody(e.target.value)} />
+              <textarea
+                className="bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md px-3 py-2 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Scrivi la tua esperienza"
+                value={revBody}
+                onChange={e=>setRevBody(e.target.value)}
+              />
               <Button onClick={submitReview} disabled={submittingRev || !revTitle || !revBody} className="bg-red-600 hover:bg-red-700 text-white">{submittingRev ? 'Invio…' : 'Invia recensione'}</Button>
             </div>
           </div>
@@ -1097,7 +1111,12 @@ export default function EscortDetailPage() {
           <div className="mt-4 border-t pt-4">
             <div className="text-sm font-semibold mb-2">Aggiungi un commento</div>
             <div className="grid gap-2">
-              <textarea className="border rounded-md px-3 py-2 min-h-[80px]" placeholder="Scrivi un commento" value={commentBody} onChange={e=>setCommentBody(e.target.value)} />
+              <textarea
+                className="bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md px-3 py-2 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Scrivi un commento"
+                value={commentBody}
+                onChange={e=>setCommentBody(e.target.value)}
+              />
               <Button onClick={submitComment} disabled={submittingCom || !commentBody} className="bg-neutral-900 hover:bg-black text-white">{submittingCom ? 'Invio…' : 'Invia commento'}</Button>
             </div>
           </div>
