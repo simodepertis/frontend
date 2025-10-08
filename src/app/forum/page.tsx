@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+type ThreadItem = { id: number; title: string; createdAt: string; author: { id: number; nome: string } };
 
 export default function ForumPublicPage() {
   const cats = [
@@ -14,6 +17,17 @@ export default function ForumPublicPage() {
     'Evita spam e link malevoli',
     'Segnala contenuti non appropriati allo staff',
   ];
+  const [recent, setRecent] = useState<ThreadItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    (async()=>{
+      try {
+        const res = await fetch('/api/forum/threads?limit=10', { cache: 'no-store' });
+        const j = await res.json();
+        if (res.ok) setRecent((j.items||[]).map((x:any)=>({ id:x.id, title:x.title, createdAt:x.createdAt, author:x.author })));
+      } finally { setLoading(false); }
+    })();
+  }, []);
   return (
     <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-80px)]">
       {/* Hero */}
@@ -41,6 +55,28 @@ export default function ForumPublicPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Discussioni recenti */}
+      <div className="rounded-lg border border-gray-700 bg-gray-800 p-4 mb-6">
+        <div className="text-white font-semibold mb-2">Discussioni recenti</div>
+        {loading ? (
+          <div className="text-sm text-gray-400">Caricamento…</div>
+        ) : recent.length === 0 ? (
+          <div className="text-sm text-gray-400">Ancora nessuna discussione</div>
+        ) : (
+          <div className="divide-y divide-gray-700">
+            {recent.map(t => (
+              <div key={t.id} className="py-2 flex items-center justify-between">
+                <div className="text-gray-300">
+                  <Link href={`/dashboard/forum/${t.id}`} className="text-blue-400 hover:underline">{t.title}</Link>
+                  <span className="text-xs text-gray-500 ml-2">di {t.author?.nome || 'Utente'} · {new Date(t.createdAt).toLocaleDateString()}</span>
+                </div>
+                <Link href={`/dashboard/forum/${t.id}`} className="text-xs text-blue-400 hover:underline">Apri</Link>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* CTA */}

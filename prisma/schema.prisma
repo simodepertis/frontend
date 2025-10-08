@@ -3,6 +3,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+// Forum: discussioni e risposte
+model ForumThread {
+  id        Int      @id @default(autoincrement())
+  authorId  Int
+  category  String   // es: citta | esperienze | eventi | servizi
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+  posts  ForumPost[]
+
+  @@index([category, createdAt])
+}
+
+model ForumPost {
+  id        Int      @id @default(autoincrement())
+  threadId  Int
+  authorId  Int
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  thread ForumThread @relation(fields: [threadId], references: [id])
+  author User        @relation(fields: [authorId], references: [id])
+
+  @@index([threadId, createdAt])
+}
+
 generator client {
   provider = "prisma-client-js"
 }
