@@ -83,7 +83,6 @@ export default function DashboardSidebar() {
         { href: "/dashboard/lista-nera", label: "Lista Nera Clienti", icon: faBan },
         { href: "/dashboard/carrello", label: "Carrello", icon: faCartShopping },
         { href: "/dashboard/avvisi", label: "Avvisi", icon: faBell },
-        { href: "/dashboard/avvisi-citta", label: "Avvisi Città", icon: faCity },
         // { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart }, // rimosso per escort
         { href: "/dashboard/forum", label: "Forum", icon: faComments },
         { href: "/", label: "Vai all'Area Pubblica", icon: faGlobe },
@@ -112,7 +111,6 @@ export default function DashboardSidebar() {
         { href: "/dashboard/statistiche", label: "Statistiche", icon: faChartBar },
         { href: "/dashboard/crediti", label: "Crediti", icon: faBolt },
         { href: "/dashboard/avvisi", label: "Avvisi", icon: faBell },
-        { href: "/dashboard/avvisi-citta", label: "Avvisi Città", icon: faCity },
         // { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart }, // rimosso per agenzia
         { href: "/dashboard/carrello", label: "Carrello", icon: faCartShopping },
         { href: "/dashboard/forum", label: "Forum", icon: faComments },
