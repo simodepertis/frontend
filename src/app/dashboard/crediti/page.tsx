@@ -346,6 +346,19 @@ export default function CreditiPage() {
             {typeof placement.remainingDays === 'number' && (
               <div>Giorni residui: <span className="font-semibold text-white">{placement.remainingDays}</span></div>
             )}
+            {(() => {
+              try {
+                // Calcolo scadenza stimata: oggi + giorni residui
+                // La pausa estende la scadenza perché i giorni residui non calano da PAUSED
+                if (typeof placement?.remainingDays === 'number') {
+                  const base = new Date();
+                  const d = new Date(base.getTime());
+                  d.setDate(d.getDate() + Math.max(0, placement.remainingDays));
+                  return <div>Scadenza stimata: <span className="font-semibold text-white">{d.toLocaleDateString()}</span></div>;
+                }
+              } catch {}
+              return null;
+            })()}
             {placement.lastStartAt && <div>Ripreso: {new Date(placement.lastStartAt).toLocaleDateString()}</div>}
             {placement.lastPauseAt && <div>Pausa: {new Date(placement.lastPauseAt).toLocaleDateString()}</div>}
             <div className="ml-auto flex items-center gap-2">
