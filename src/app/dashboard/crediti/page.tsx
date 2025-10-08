@@ -407,14 +407,12 @@ export default function CreditiPage() {
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
-                  {paypalLoaded && (
-                    <PayPalButton
-                      credits={creditsToBuy}
-                      onSuccess={handlePayPalSuccess}
-                      onError={handlePayPalError}
-                      onCancel={handlePayPalCancel}
-                    />
-                  )}
+                  <PayPalButton
+                    credits={creditsToBuy}
+                    onSuccess={handlePayPalSuccess}
+                    onError={handlePayPalError}
+                    onCancel={handlePayPalCancel}
+                  />
                 </div>
                 <Button 
                   variant="secondary" 
