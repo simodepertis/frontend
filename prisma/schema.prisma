@@ -14,7 +14,7 @@ model ForumThread {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  author User @relation(fields: [authorId], references: [id])
+  author User @relation("ForumThreadsAuthored", fields: [authorId], references: [id])
   posts  ForumPost[]
 
   @@index([category, createdAt])
@@ -29,7 +29,7 @@ model ForumPost {
   updatedAt DateTime @updatedAt
 
   thread ForumThread @relation(fields: [threadId], references: [id])
-  author User        @relation(fields: [authorId], references: [id])
+  author User        @relation("ForumPostsAuthored", fields: [authorId], references: [id])
 
   @@index([threadId, createdAt])
 }
@@ -337,6 +337,10 @@ model User {
   // Favorites
   favorites         Favorite[] @relation("UserFavorites")
   favoritedBy       Favorite[] @relation("FavoriteTargets")
+
+  // Forum authored content
+  forumThreadsAuthored ForumThread[] @relation("ForumThreadsAuthored")
+  forumPostsAuthored   ForumPost[]   @relation("ForumPostsAuthored")
 }
 
 model EscortProfile {

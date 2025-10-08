@@ -4,9 +4,14 @@ import { getTokenFromRequest, verifyToken } from '@/lib/auth'
 
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET
-const PAYPAL_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api-m.paypal.com' 
-  : 'https://api-m.sandbox.paypal.com'
+const PAYPAL_ENV = (process.env.PAYPAL_ENV || '').toLowerCase() // 'live' | 'sandbox'
+const PAYPAL_BASE_URL = PAYPAL_ENV === 'live'
+  ? 'https://api-m.paypal.com'
+  : PAYPAL_ENV === 'sandbox'
+    ? 'https://api-m.sandbox.paypal.com'
+    : (process.env.NODE_ENV === 'production'
+        ? 'https://api-m.paypal.com'
+        : 'https://api-m.sandbox.paypal.com')
 
 async function getPayPalAccessToken() {
   const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64')
