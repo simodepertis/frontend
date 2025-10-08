@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getTokenFromRequest, verifyToken } from '@/lib/auth';
 
@@ -7,15 +7,10 @@ const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
 const PAYPAL_ENV = (process.env.PAYPAL_ENV || '').toLowerCase();
 const PAYPAL_BASE_URL = PAYPAL_ENV === 'live'
   ? 'https://api-m.paypal.com'
-  : PAYPAL_ENV === 'sandbox'
-    ? 'https://api-m.sandbox.paypal.com'
-    : (process.env.NODE_ENV === 'production'
-        ? 'https://api-m.paypal.com'
-        : 'https://api-m.sandbox.paypal.com');
+  : 'https://api-m.sandbox.paypal.com';
 
 async function getPayPalAccessToken() {
   const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
-  
   const response = await fetch(`${PAYPAL_BASE_URL}/v1/oauth2/token`, {
     method: 'POST',
     headers: {
@@ -24,27 +19,21 @@ async function getPayPalAccessToken() {
     },
     body: 'grant_type=client_credentials',
   });
-  
   const data = await response.json();
   return data.access_token;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const raw = getTokenFromRequest(req);
-    if (!raw) return res.status(401).json({ error: 'Non autorizzato' });
-    
-    const payload = verifyToken(raw);
-    if (!payload) return res.status(401).json({ error: 'Token non valido' });
+    const raw = getTokenFromRequest(request);
+    const payload = verifyToken(raw || '');
+    if (!payload) return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
 
-    const { credits } = req.body;
+    const body = await request.json();
+    const { credits } = body;
 
     if (!credits || credits <= 0) {
-      return res.status(400).json({ error: 'Numero crediti non valido' });
+      return NextResponse.json({ error: 'Numero crediti non valido' }, { status: 400 });
     }
 
     const pricePerCredit = 0.50;
@@ -72,10 +61,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
         description: `Acquisto ${credits} crediti`,
       }],
-      application_context: {
-        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/crediti?success=true`,
-        cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/crediti?cancelled=true`,
-      },
     };
 
     const response = await fetch(`${PAYPAL_BASE_URL}/v2/checkout/orders`, {
@@ -91,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!response.ok) {
       console.error('PayPal order creation failed:', paypalData);
-      return res.status(500).json({ error: 'Errore creazione ordine PayPal' });
+      return NextResponse.json({ error: 'Errore creazione ordine PayPal' }, { status: 500 });
     }
 
     await prisma.creditOrder.update({
@@ -104,13 +89,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    return res.json({
+    return NextResponse.json({
       orderId: paypalData.id,
       dbOrderId: order.id,
     });
 
   } catch (error: any) {
     console.error('PayPal create order error:', error);
-    return res.status(500).json({ error: 'Errore interno' });
+    return NextResponse.json({ error: 'Errore interno' }, { status: 500 });
   }
 }
