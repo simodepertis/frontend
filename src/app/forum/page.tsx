@@ -69,10 +69,10 @@ export default function ForumPublicPage() {
             {recent.map(t => (
               <div key={t.id} className="py-2 flex items-center justify-between">
                 <div className="text-gray-300">
-                  <Link href={`/dashboard/forum/${t.id}`} className="text-blue-400 hover:underline">{t.title}</Link>
+                  <Link href={`/forum/${t.id}`} className="text-blue-400 hover:underline">{t.title}</Link>
                   <span className="text-xs text-gray-500 ml-2">di {t.author?.nome || 'Utente'} · {new Date(t.createdAt).toLocaleDateString()}</span>
                 </div>
-                <Link href={`/dashboard/forum/${t.id}`} className="text-xs text-blue-400 hover:underline">Apri</Link>
+                <Link href={`/forum/${t.id}#reply`} className="text-xs text-blue-400 hover:underline">Apri</Link>
               </div>
             ))}
           </div>
