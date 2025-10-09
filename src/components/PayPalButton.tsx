@@ -24,13 +24,20 @@ export default function PayPalButton({ credits, onSuccess, onError, onCancel }: 
   async function ensureSdk(): Promise<void> {
     if (typeof window === 'undefined') throw new Error('SSR');
     if ((window as any).paypal) { setSdkReady(true); return; }
-    // Fetch public clientId from server, so we don't depend on client env
-    const conf = await fetch('/api/credits/paypal/client-config', { cache: 'no-store' });
-    const cj = await conf.json().catch(()=>({}));
-    if (!conf.ok || !cj?.clientId) {
-      throw new Error(cj?.error || 'PayPal clientId non configurato');
+    // Try public env first (faster, avoids 404 if route non disponibile in prod)
+    let clientId: string | null = null;
+    const envClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+    if (envClientId && String(envClientId).trim().length > 0) {
+      clientId = String(envClientId).trim();
+    } else {
+      // Fallback: fetch dal server
+      const conf = await fetch('/api/credits/paypal/client-config', { cache: 'no-store' });
+      const cj = await conf.json().catch(()=>({}));
+      if (!conf.ok || !cj?.clientId) {
+        throw new Error(cj?.error || 'PayPal clientId non configurato');
+      }
+      clientId = cj.clientId as string;
     }
-    const clientId = cj.clientId as string;
     // Avoid duplicate scripts
     const existing = document.querySelector('script[src^="https://www.paypal.com/sdk/js"]') as HTMLScriptElement | null;
     if (existing) {
