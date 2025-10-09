@@ -1,26 +1,46 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { escorts } from "@/lib/mock";
+
+type ReviewItem = {
+  id: number;
+  rating: number;
+  title: string;
+  body: string;
+  createdAt: string;
+  author?: { id: number; nome: string };
+  target?: { id: number; nome: string; slug?: string };
+};
 
 export default function RecensioniPage() {
   const [tab, setTab] = useState<"ricevute" | "scritte">("ricevute");
   const [minStars, setMinStars] = useState(0);
+  const [list, setList] = useState<ReviewItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [acting, setActing] = useState<number | null>(null);
 
-  const mockReviews = useMemo(() => {
-    return escorts.slice(0, 10).map((e, i) => ({
-      id: i + 1,
-      author: tab === "ricevute" ? `${e.nome}` : "Tu",
-      target: tab === "ricevute" ? "Tu" : `${e.nome}`,
-      stars: (i % 5) + 1,
-      text: "Servizio professionale, puntuale e molto cordiale.",
-      date: `${10 + i} set, 2025`,
-      url: `/escort/${e.slug}`,
-    })).filter(r => r.stars >= minStars);
-  }, [tab, minStars]);
+  async function load() {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const type = tab === 'ricevute' ? 'received' : 'written';
+      const res = await fetch(`/api/me/reviews?type=${type}` , { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
+      if (res.ok) {
+        const j = await res.json();
+        const items: ReviewItem[] = (j?.items || []) as any[];
+        setList(items);
+      } else {
+        setList([]);
+      }
+    } finally { setLoading(false); }
+  }
+
+  useEffect(() => { load(); }, [tab]);
+
+  const filtered = useMemo(() => list.filter(r => (minStars ? (r.rating >= minStars) : true)), [list, minStars]);
 
   return (
     <div className="space-y-6">
@@ -43,35 +63,37 @@ export default function RecensioniPage() {
       </div>
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 divide-y divide-gray-700">
-        {mockReviews.map((r) => (
-          <div key={r.id} className="p-4 flex items-start gap-4">
-            <div className="text-sm text-gray-400 w-24 shrink-0">{r.date}</div>
-            <div className="flex-1">
-              <div className="text-sm text-gray-300"><span className="font-semibold text-white">{r.author}</span> → <span className="font-semibold text-white">{r.target}</span></div>
-              <div className="text-yellow-400 text-sm">{"★".repeat(r.stars)}<span className="text-gray-600">{"★".repeat(5 - r.stars)}</span></div>
-              <div className="text-sm text-gray-300 mt-1">{r.text}</div>
+        {loading ? (
+          <div className="p-6 text-center text-sm text-gray-400">Caricamento…</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-6 text-center text-sm text-gray-400">Nessuna recensione</div>
+        ) : (
+          filtered.map((r) => (
+            <div key={r.id} className="p-4 flex items-start gap-4">
+              <div className="text-sm text-gray-400 w-32 shrink-0">{new Date(r.createdAt).toLocaleDateString()}</div>
+              <div className="flex-1">
+                <div className="text-sm text-gray-300">
+                  <span className="font-semibold text-white">{tab==='ricevute' ? (r.author?.nome || '—') : 'Tu'}</span>
+                  {" "}→{" "}
+                  <span className="font-semibold text-white">{tab==='ricevute' ? 'Tu' : (r.target?.nome || '—')}</span>
+                </div>
+                <div className="text-yellow-400 text-sm">{"★".repeat(r.rating)}<span className="text-gray-600">{"★".repeat(Math.max(0,5 - r.rating))}</span></div>
+                <div className="text-white font-medium">{r.title}</div>
+                <div className="text-sm text-gray-300 mt-1 whitespace-pre-line">{r.body}</div>
+              </div>
+              <div className="flex flex-col items-end gap-2 w-40">
+                {r.target?.slug && (
+                  <Link href={`/escort/${r.target.slug}`} className="text-blue-400 hover:underline text-sm">Vedi profilo</Link>
+                )}
+                {tab === "ricevute" ? (
+                  <Button variant="secondary" size="sm" disabled>Rispondi (presto)</Button>
+                ) : (
+                  <Button variant="secondary" size="sm" disabled>Modifica (presto)</Button>
+                )}
+              </div>
             </div>
-            <div className="flex flex-col items-end gap-2 w-40">
-              <Link href={r.url} className="text-blue-400 hover:underline text-sm">Vedi profilo</Link>
-              {tab === "ricevute" ? (
-                <Button variant="secondary" size="sm">Rispondi</Button>
-              ) : (
-                <Button variant="secondary" size="sm">Modifica</Button>
-              )}
-            </div>
-          </div>
-        ))}
-        {mockReviews.length === 0 && (
-          <div className="p-6 text-center text-sm text-gray-400">Nessuna recensione con questi filtri.</div>
+          ))
         )}
-      </div>
-
-      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
-        <h3 className="font-semibold mb-2 text-white">Scrivi una recensione</h3>
-        <p className="text-sm text-gray-400">In futuro collegheremo questo form al DB e alla moderazione; per ora è un placeholder.</p>
-        <div className="mt-3">
-          <Button>Apri form</Button>
-        </div>
       </div>
     </div>
   );
