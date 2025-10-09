@@ -141,6 +141,7 @@ export default function DashboardSidebar() {
       { href: "/dashboard/admin/media/foto", label: "📸 Moderazione Foto", icon: faIdCard },
       { href: "/dashboard/admin/media/video", label: "🎥 Moderazione Video", icon: faVideo },
       { href: "/dashboard/admin/documenti", label: "📄 Moderazione Documenti", icon: faIdCard },
+      { href: "/dashboard/admin/commenti", label: "💬 Moderazione Commenti", icon: faComments },
       { href: "/dashboard/admin/recensioni", label: "⭐ Approva Recensioni", icon: faStar },
       { href: "/dashboard/admin/profili", label: "👤 approvazione Profili", icon: faUser },
       { href: "/dashboard/admin/utenti", label: "👥 Gestione Utenti", icon: faGear },
