@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faStar, faGem, faShieldHalved, faCircleCheck, faCircleExclamation, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
 import PayPalButton from "@/components/PayPalButton";
-import Script from "next/script";
 
 function Copy({ text, label }: { text: string; label?: string }) {
   return (
@@ -96,7 +95,6 @@ export default function CreditiPage() {
   const [escortUserId, setEscortUserId] = useState<number>(0);
   const [actingPlacement, setActingPlacement] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [paypalLoaded, setPaypalLoaded] = useState(false);
   const [showPayPal, setShowPayPal] = useState(false);
   const minCredits = 10;
   const [tab, setTab] = useState<'crediti' | 'ordini'>('crediti');
@@ -624,11 +622,6 @@ export default function CreditiPage() {
         </div>
       </>
       )}
-      <Script
-        src={`https://www.paypal.com/sdk/js?client-id=${process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID}&currency=EUR`}
-        onLoad={() => setPaypalLoaded(true)}
-        onError={() => console.error('Failed to load PayPal SDK')}
-      />
     </div>
   );
 }
