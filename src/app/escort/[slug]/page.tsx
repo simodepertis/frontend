@@ -1060,6 +1060,12 @@ export default function EscortDetailPage() {
                   <span className="ml-2 text-neutral-600">da {r.author?.nome || 'Utente'}</span>
                 </div>
                 <div className="mt-1 text-sm text-gray-300">{r.body}</div>
+                {r.response ? (
+                  <div className="mt-2 border-l-4 border-blue-500 pl-3">
+                    <div className="text-xs text-blue-300 uppercase tracking-wide">Risposta dell'escort</div>
+                    <div className="text-sm text-gray-200 whitespace-pre-line">{r.response}</div>
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
