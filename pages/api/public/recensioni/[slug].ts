@@ -18,6 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         rating: true,
         title: true,
         body: true,
+        response: true,
+        responseAt: true,
         createdAt: true,
         author: { select: { id: true, nome: true } },
         target: { select: { id: true, nome: true, slug: true } },
