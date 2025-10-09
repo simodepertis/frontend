@@ -21,6 +21,8 @@ export default function RecensioniPage() {
   const [list, setList] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<number | null>(null);
+  const [replyForId, setReplyForId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState<string>("");
 
   async function load() {
     setLoading(true);
@@ -80,13 +82,38 @@ export default function RecensioniPage() {
                 <div className="text-yellow-400 text-sm">{"★".repeat(r.rating)}<span className="text-gray-600">{"★".repeat(Math.max(0,5 - r.rating))}</span></div>
                 <div className="text-white font-medium">{r.title}</div>
                 <div className="text-sm text-gray-300 mt-1 whitespace-pre-line">{r.body}</div>
+                {tab === 'ricevute' && replyForId === r.id && (
+                  <div className="mt-2">
+                    <textarea
+                      className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 min-h-[80px]"
+                      placeholder="Scrivi la tua risposta"
+                      value={replyText}
+                      onChange={(e)=>setReplyText(e.target.value)}
+                    />
+                    <div className="mt-2 flex gap-2">
+                      <Button size="sm" disabled={acting===r.id || !replyText.trim()} onClick={async()=>{
+                        setActing(r.id);
+                        try {
+                          const token = localStorage.getItem('auth-token') || '';
+                          const res = await fetch('/api/reviews', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: r.id, action: 'respond', response: replyText.trim() }) });
+                          if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore invio risposta'); return; }
+                          setReplyForId(null); setReplyText("");
+                          await load();
+                        } finally { setActing(null); }
+                      }}>Invia risposta</Button>
+                      <Button size="sm" variant="secondary" onClick={()=>{ setReplyForId(null); setReplyText(""); }}>Annulla</Button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex flex-col items-end gap-2 w-40">
                 {r.target?.slug && (
                   <Link href={`/escort/${r.target.slug}`} className="text-blue-400 hover:underline text-sm">Vedi profilo</Link>
                 )}
                 {tab === "ricevute" ? (
-                  <Button variant="secondary" size="sm" disabled>Rispondi (presto)</Button>
+                  replyForId === r.id ? null : (
+                    <Button variant="secondary" size="sm" onClick={()=>{ setReplyForId(r.id); setReplyText(""); }}>Rispondi</Button>
+                  )
                 ) : (
                   <Button variant="secondary" size="sm" disabled>Modifica (presto)</Button>
                 )}
