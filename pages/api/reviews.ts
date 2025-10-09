@@ -55,14 +55,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const isAdmin = (me?.ruolo || '').toLowerCase() === 'admin';
       if (!isAdmin && payload.userId !== review.targetUserId) return res.status(403).json({ error: 'Non autorizzato' });
       const text = String(response || '').slice(0,2000);
-      // Usa SQL diretto per colonne non mappate in Prisma
+      // Usa SQL diretto per colonne non mappate in Prisma; se fallisce per colonne mancanti, le crea e ritenta una volta
       const now = text ? new Date() : null;
-      await prisma.$executeRawUnsafe(
-        `UPDATE "Review" SET "response" = $1, "responseAt" = $2 WHERE id = $3`,
-        text || null,
-        now,
-        idNum
-      );
+      try {
+        await prisma.$executeRaw`UPDATE "Review" SET "response" = ${text || null}, "responseAt" = ${now} WHERE id = ${idNum}`;
+      } catch (e: any) {
+        // Prova ad aggiungere le colonne e ripeti
+        await prisma.$executeRawUnsafe(`ALTER TABLE "Review" ADD COLUMN IF NOT EXISTS "response" TEXT`);
+        await prisma.$executeRawUnsafe(`ALTER TABLE "Review" ADD COLUMN IF NOT EXISTS "responseAt" TIMESTAMP`);
+        await prisma.$executeRaw`UPDATE "Review" SET "response" = ${text || null}, "responseAt" = ${now} WHERE id = ${idNum}`;
+      }
       return res.status(200).json({ ok: true });
     } catch (e) {
       return res.status(500).json({ error: 'Errore interno' });
