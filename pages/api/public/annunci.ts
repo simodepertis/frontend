@@ -168,7 +168,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (set.size === 0) return true
         const byCity = Array.isArray(list) && list.some((c:any) => set.has(norm(c)))
         const byExplicit = Array.isArray(explicit) && explicit.includes(code)
-        return byCity || byExplicit
+        const result = byCity || byExplicit
+        
+        // Debug per Svizzera
+        if (code === 'CH') {
+          console.log(`🔍 CH Debug - cities:`, list, `explicit:`, explicit, `byCity:`, byCity, `byExplicit:`, byExplicit, `result:`, result)
+        }
+        
+        return result
       }
 
       const filteredBase = base.filter((x: any) => (
