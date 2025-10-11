@@ -104,6 +104,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const cities = Array.isArray(p.cities) ? (p.cities as any[]) : []
         const explicitCountries = (()=>{ try { const arr = (p?.cities as any)?.countries; return Array.isArray(arr) ? arr.map((c:any)=>String(c).toUpperCase()) : []; } catch { return []; } })()
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
+        
+        // Debug per profili con dati internazionali
+        if (cities.length > 0 || explicitCountries.length > 0) {
+          console.log(`🔍 Profilo ${p.userId} - cities:`, cities, `countries:`, explicitCountries, `rawCities:`, p.cities)
+        }
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         const prio = tierPriority(p.tier as any, isGirl, p.tierExpiresAt)
         
@@ -166,23 +171,62 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (!code) return true
         const set = new Set((COUNTRY_CITIES[code] || []).map(norm))
         if (set.size === 0) return true
-        const byCity = Array.isArray(list) && list.some((c:any) => set.has(norm(c)))
-        const byExplicit = Array.isArray(explicit) && explicit.includes(code)
-        const result = byCity || byExplicit
         
-        // Debug per Svizzera
-        if (code === 'CH') {
-          console.log(`🔍 CH Debug - cities:`, list, `explicit:`, explicit, `byCity:`, byCity, `byExplicit:`, byExplicit, `result:`, result)
+        // Controlla se ha città del paese
+        const byCity = Array.isArray(list) && list.some((c:any) => set.has(norm(c)))
+        
+        // Controlla se ha il paese esplicitamente selezionato
+        const byExplicit = Array.isArray(explicit) && explicit.includes(code)
+        
+        // NUOVO: Controlla anche per nomi di città esatti (Paris, London, ecc.)
+        const exactCityMatch = Array.isArray(list) && list.some((c:any) => {
+          const cityNorm = norm(c)
+          // Mapping città internazionali comuni
+          const cityToCountry: Record<string, string[]> = {
+            'paris': ['FR'], 'parigi': ['FR'],
+            'london': ['UK'], 'londra': ['UK'],
+            'zurich': ['CH'], 'zurigo': ['CH'],
+            'geneva': ['CH'], 'ginevra': ['CH'],
+            'berlin': ['DE'], 'berlino': ['DE'],
+            'madrid': ['ES'],
+            'barcelona': ['ES'], 'barcellona': ['ES'],
+            'amsterdam': ['NL'],
+            'brussels': ['BE'], 'bruxelles': ['BE']
+          }
+          return cityToCountry[cityNorm]?.includes(code) || false
+        })
+        
+        const result = byCity || byExplicit || exactCityMatch
+        
+        // Debug per paesi internazionali
+        if (['CH', 'FR', 'UK'].includes(code)) {
+          console.log(`🔍 ${code} Debug - cities:`, list, `explicit:`, explicit, `byCity:`, byCity, `byExplicit:`, byExplicit, `exactCityMatch:`, exactCityMatch, `result:`, result)
         }
         
         return result
       }
 
-      const filteredBase = base.filter((x: any) => (
-        (!city || matchesCity(x.cities, city)) &&
-        (!country || matchesCountry(x.cities, country, x.countries)) &&
-        (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q))))
-      ))
+      const filteredBase = base.filter((x: any) => {
+        const cityMatch = !city || matchesCity(x.cities, city)
+        const countryMatch = !country || matchesCountry(x.cities, country, x.countries)
+        const queryMatch = !q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q)))
+        const result = cityMatch && countryMatch && queryMatch
+        
+        // Debug per filtri Francia
+        if (country === 'FR' && (x.countries?.includes('FR') || x.cities?.some((c:any) => ['paris', 'parigi'].includes(String(c).toLowerCase())))) {
+          console.log(`🔍 FILTRO FR - Profilo ${x.id}:`, {
+            cities: x.cities,
+            countries: x.countries,
+            cityMatch,
+            countryMatch,
+            queryMatch,
+            result,
+            filters: { city, country, q }
+          })
+        }
+        
+        return result
+      })
 
       // Allego cover APPROVED + conteggi video, recensioni e commenti
       const withMeta = await Promise.all(filteredBase.map(async (it: any) => {

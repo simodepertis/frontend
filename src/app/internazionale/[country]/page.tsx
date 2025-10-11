@@ -24,14 +24,19 @@ export default function CountryPage({ params }: { params: { country: string } })
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/public/annunci?country=${countryInfo.code}`);
+        const url = `/api/public/annunci?country=${countryInfo.code}`;
+        console.log(`🔍 Chiamata API per ${countryInfo.name}:`, url);
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
+          console.log(`🔍 Risposta API per ${countryInfo.name}:`, data.items?.length || 0, 'escort trovate');
           setEscorts(data.items || []);
         } else {
+          console.log(`❌ Errore API per ${countryInfo.name}:`, res.status);
           setEscorts([]);
         }
-      } catch {
+      } catch (err) {
+        console.log(`❌ Errore fetch per ${countryInfo.name}:`, err);
         setEscorts([]);
       } finally {
         setLoading(false);
