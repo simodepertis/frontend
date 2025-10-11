@@ -99,17 +99,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         orderBy: { updatedAt: 'desc' },
       })
 
-      // Mappa profili base
+      // Mappa profili base (compat legacy/new)
       const base = profiles.map((p: any) => {
-        // CORREZIONE: p.cities è un oggetto JSON, non un array
-        const citiesData = p.cities || {}
-        const cities = Array.isArray(citiesData.cities) ? citiesData.cities : []
-        const explicitCountries = Array.isArray(citiesData.countries) ? citiesData.countries.map((c:any)=>String(c).toUpperCase()) : []
+        const raw = p.cities
+        const obj = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {}
+        const aggCities: string[] = []
+        if (Array.isArray((obj as any).cities)) aggCities.push(...(obj as any).cities)
+        const baseCity = (obj as any).baseCity || (obj as any).base
+        const secondCity = (obj as any).secondCity
+        const thirdCity = (obj as any).thirdCity
+        const fourthCity = (obj as any).fourthCity
+        for (const c of [baseCity, secondCity, thirdCity, fourthCity]) { if (c) aggCities.push(String(c)) }
+        if (Array.isArray(raw)) aggCities.push(...raw.map((x:any)=> String(x)))
+        const cities = Array.from(new Set(aggCities.filter(Boolean)))
+
+        const explicitCountries = Array.isArray((obj as any).countries)
+          ? (obj as any).countries.map((c:any)=> String(c).toUpperCase())
+          : (Array.isArray((p as any).countries) ? (p as any).countries.map((c:any)=> String(c).toUpperCase()) : [])
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         
         // Debug per profili con dati internazionali
         if (cities.length > 0 || explicitCountries.length > 0) {
-          console.log(`🔍 Profilo ${p.userId} - cities:`, cities, `countries:`, explicitCountries, `citiesData:`, citiesData)
+          console.log(`🔍 Profilo ${p.userId} - cities:`, cities, `countries:`, explicitCountries, `citiesData:`, obj)
         }
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         const prio = tierPriority(p.tier as any, isGirl, p.tierExpiresAt)
