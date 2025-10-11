@@ -118,12 +118,3 @@ export default function CountryCityPage({ params }: { params: { country: string;
   );
 }
 
-export async function generateStaticParams() {
-  const params: { country: string; city: string }[] = [];
-  Object.entries(COUNTRIES).forEach(([countryCode, countryInfo]) => {
-    countryInfo.cities.forEach(city => {
-      params.push({ country: countryCode, city: city.toLowerCase() });
-    });
-  });
-  return params;
-}

@@ -115,6 +115,3 @@ export default function CountryPage({ params }: { params: { country: string } })
   );
 }
 
-export async function generateStaticParams() {
-  return Object.keys(COUNTRIES).map(country => ({ country }));
-}
