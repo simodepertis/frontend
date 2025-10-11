@@ -101,13 +101,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Mappa profili base
       const base = profiles.map((p: any) => {
-        const cities = Array.isArray(p.cities) ? (p.cities as any[]) : []
-        const explicitCountries = (()=>{ try { const arr = (p?.cities as any)?.countries; return Array.isArray(arr) ? arr.map((c:any)=>String(c).toUpperCase()) : []; } catch { return []; } })()
+        // CORREZIONE: p.cities è un oggetto JSON, non un array
+        const citiesData = p.cities || {}
+        const cities = Array.isArray(citiesData.cities) ? citiesData.cities : []
+        const explicitCountries = Array.isArray(citiesData.countries) ? citiesData.countries.map((c:any)=>String(c).toUpperCase()) : []
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         
         // Debug per profili con dati internazionali
         if (cities.length > 0 || explicitCountries.length > 0) {
-          console.log(`🔍 Profilo ${p.userId} - cities:`, cities, `countries:`, explicitCountries, `rawCities:`, p.cities)
+          console.log(`🔍 Profilo ${p.userId} - cities:`, cities, `countries:`, explicitCountries, `citiesData:`, citiesData)
         }
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         const prio = tierPriority(p.tier as any, isGirl, p.tierExpiresAt)
