@@ -68,7 +68,7 @@ export default function InternazionalePage() {
       {/* STRISCIA BANDIERE IN ALTO (SEO + UX) */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
         {flags.map(f => (
-          <Link prefetch={false} key={f.code} href={{ pathname: "/escort", query: { country: f.country } }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-600 bg-gray-800 hover:border-blue-600">
+          <Link prefetch={false} key={f.code} href={`/internazionale/${f.code}`} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-600 bg-gray-800 hover:border-blue-600">
             {/* Se non abbiamo le SVG, fallback a emoji flag */}
             <span className="text-lg">{f.code === 'fr' ? '🇫🇷' : f.code === 'it' ? '🇮🇹' : f.code === 'de' ? '🇩🇪' : f.code === 'es' ? '🇪🇸' : f.code === 'gb' ? '🇬🇧' : f.code === 'ch' ? '🇨🇭' : f.code === 'nl' ? '🇳🇱' : f.code === 'be' ? '🇧🇪' : '🏳️'}</span>
             <span className="text-sm text-white">{f.label}</span>
@@ -81,12 +81,17 @@ export default function InternazionalePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {columns.map((col, idx) => (
             <div key={idx} className="space-y-2">
-              {col.map(c => (
-                <Link prefetch={false} key={c.name} href={{ pathname: "/escort", query: { country: (c.href.split('country=')[1]||'').split('&')[0], citta: decodeURIComponent((c.href.split('citta=')[1]||'')) } }} className={`flex items-center justify-between text-sm ${c.highlight ? 'text-amber-400 font-semibold' : 'text-gray-300 hover:text-white'}`}>
-                  <span>{c.name}</span>
-                  <span>{c.count}</span>
-                </Link>
-              ))}
+              {col.map(c => {
+                const countryCode = (c.href.split('country=')[1]||'').split('&')[0];
+                const cityName = decodeURIComponent((c.href.split('citta=')[1]||''));
+                const countrySlug = countryCode === 'FR' ? 'fr' : countryCode === 'UK' ? 'uk' : countryCode === 'DE' ? 'de' : countryCode === 'ES' ? 'es' : countryCode === 'CH' ? 'ch' : countryCode === 'NL' ? 'nl' : countryCode === 'BE' ? 'be' : 'fr';
+                return (
+                  <Link prefetch={false} key={c.name} href={`/internazionale/${countrySlug}/${cityName.toLowerCase()}`} className={`flex items-center justify-between text-sm ${c.highlight ? 'text-amber-400 font-semibold' : 'text-gray-300 hover:text-white'}`}>
+                    <span>{c.name}</span>
+                    <span>{c.count}</span>
+                  </Link>
+                );
+              })}
             </div>
           ))}
         </div>
