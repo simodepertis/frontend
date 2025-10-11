@@ -118,11 +118,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           : (Array.isArray((p as any).countries) ? (p as any).countries.map((c:any)=> String(c).toUpperCase()) : [])
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         
-        // Debug per profili con dati internazionali
-        if (cities.length > 0 || explicitCountries.length > 0) {
-          console.log(`🔍 Profilo ${p.userId} - cities:`, cities, `countries:`, explicitCountries, `citiesData:`, obj)
-        }
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
+        
+        // Debug SEMPRE per vedere cosa viene letto
+        console.log(`🔍 Profilo ${p.userId} (${displayName}) - rawCities:`, raw, `cities:`, cities, `countries:`, explicitCountries)
         const prio = tierPriority(p.tier as any, isGirl, p.tierExpiresAt)
         
         // Debug logging per tier priority E ragazza del giorno
