@@ -7,14 +7,14 @@ import EscortCard from "@/components/EscortCard";
 
 export default function InternazionalePage() {
   const flags = [
-    { code: "fr", label: "Francia", href: "/escort?country=FR", img: "/flags/fr.svg" },
-    { code: "it", label: "Italia", href: "/escort?country=IT", img: "/flags/it.svg" },
-    { code: "de", label: "Germania", href: "/escort?country=DE", img: "/flags/de.svg" },
-    { code: "es", label: "Spagna", href: "/escort?country=ES", img: "/flags/es.svg" },
-    { code: "gb", label: "UK", href: "/escort?country=UK", img: "/flags/gb.svg" },
-    { code: "ch", label: "Svizzera", href: "/escort?country=CH", img: "/flags/ch.svg" },
-    { code: "nl", label: "Olanda", href: "/escort?country=NL", img: "/flags/nl.svg" },
-    { code: "be", label: "Belgio", href: "/escort?country=BE", img: "/flags/be.svg" },
+    { code: "fr", label: "Francia", country: "FR", img: "/flags/fr.svg" },
+    { code: "it", label: "Italia", country: "IT", img: "/flags/it.svg" },
+    { code: "de", label: "Germania", country: "DE", img: "/flags/de.svg" },
+    { code: "es", label: "Spagna", country: "ES", img: "/flags/es.svg" },
+    { code: "gb", label: "UK", country: "UK", img: "/flags/gb.svg" },
+    { code: "ch", label: "Svizzera", country: "CH", img: "/flags/ch.svg" },
+    { code: "nl", label: "Olanda", country: "NL", img: "/flags/nl.svg" },
+    { code: "be", label: "Belgio", country: "BE", img: "/flags/be.svg" },
   ];
 
   const cities: { name: string; count: number; href: string; highlight?: boolean }[] = [
@@ -68,7 +68,7 @@ export default function InternazionalePage() {
       {/* STRISCIA BANDIERE IN ALTO (SEO + UX) */}
       <div className="mb-6 flex flex-wrap items-center gap-3">
         {flags.map(f => (
-          <Link key={f.code} href={f.href} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-600 bg-gray-800 hover:border-blue-600">
+          <Link prefetch={false} key={f.code} href={{ pathname: "/escort", query: { country: f.country } }} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-600 bg-gray-800 hover:border-blue-600">
             {/* Se non abbiamo le SVG, fallback a emoji flag */}
             <span className="text-lg">{f.code === 'fr' ? '🇫🇷' : f.code === 'it' ? '🇮🇹' : f.code === 'de' ? '🇩🇪' : f.code === 'es' ? '🇪🇸' : f.code === 'gb' ? '🇬🇧' : f.code === 'ch' ? '🇨🇭' : f.code === 'nl' ? '🇳🇱' : f.code === 'be' ? '🇧🇪' : '🏳️'}</span>
             <span className="text-sm text-white">{f.label}</span>
@@ -82,7 +82,7 @@ export default function InternazionalePage() {
           {columns.map((col, idx) => (
             <div key={idx} className="space-y-2">
               {col.map(c => (
-                <Link key={c.name} href={c.href} className={`flex items-center justify-between text-sm ${c.highlight ? 'text-amber-400 font-semibold' : 'text-gray-300 hover:text-white'}`}>
+                <Link prefetch={false} key={c.name} href={{ pathname: "/escort", query: { country: (c.href.split('country=')[1]||'').split('&')[0], citta: decodeURIComponent((c.href.split('citta=')[1]||'')) } }} className={`flex items-center justify-between text-sm ${c.highlight ? 'text-amber-400 font-semibold' : 'text-gray-300 hover:text-white'}`}>
                   <span>{c.name}</span>
                   <span>{c.count}</span>
                 </Link>
@@ -107,7 +107,7 @@ export default function InternazionalePage() {
           <div className="text-sm text-gray-400">Nessun profilo disponibile.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {items.slice(0, 12).map((e: any) => (
+            {items.filter((e:any)=> Array.isArray(e.countries) && e.countries.length>0).slice(0, 12).map((e: any) => (
               <Link key={e.id} href={`/escort/${e.slug}`}>
                 <EscortCard escort={{ id: e.id, nome: e.name, eta: 25, citta: Array.isArray(e.cities)&&e.cities[0]?String(e.cities[0]):'—', prezzo: 0, foto: e.coverUrl || '/placeholder.svg', rank: e.tier, isVerified: e.isVerified }} />
               </Link>
