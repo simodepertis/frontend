@@ -30,6 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       fourthCity: body.fourthCity ?? prev.fourthCity ?? '',
       zones: Array.isArray(body.zones) ? body.zones : (Array.isArray(prev.zones) ? prev.zones : []),
       cities: Array.isArray(body.cities) ? body.cities : (Array.isArray(prev.cities) ? prev.cities : []),
+      countries: Array.isArray(body.countries) ? body.countries.map((c:any)=> String(c).toUpperCase()) : (Array.isArray(prev.countries) ? prev.countries : []),
       availability: typeof body.availability === 'object' && body.availability !== null ? body.availability : (prev.availability || {}),
       position: (() => {
         const p = body.position || {};

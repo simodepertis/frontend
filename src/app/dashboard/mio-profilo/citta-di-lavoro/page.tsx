@@ -67,6 +67,7 @@ export default function CittaDiLavoroPage() {
     thirdCity: "",
     fourthCity: "",
     zones: [] as string[],
+    countries: [] as string[],
     position: { lat: 41.9028, lng: 12.4964 }, // Roma default
     availability: {
       incall: { address: "", cap: "", type: "", other: "" },
@@ -129,7 +130,7 @@ export default function CittaDiLavoroPage() {
         if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
         if (r.ok) {
           const j = await r.json();
-          if (j?.cities) setForm((f: any) => ({ ...f, ...j.cities }));
+          if (j?.cities) setForm((f: any) => ({ ...f, ...j.cities, countries: Array.isArray((j.cities as any).countries) ? (j.cities as any).countries : (f.countries||[]) }));
         }
       } finally {
         setLoading(false);
@@ -411,6 +412,15 @@ export default function CittaDiLavoroPage() {
             <Button variant="secondary" onClick={addZone}>+ Aggiungi zona</Button>
           </div>
           <div className="text-xs text-gray-500 mt-1">Suggerimento: es. Centro, Navigli, Porta Romana…</div>
+        </div>
+
+        {/* Paesi (nazioni) */}
+        <div>
+          <div className="text-sm text-gray-300 mb-1">Nazioni (per l'internazionale)</div>
+          <div className="space-y-2">
+            <CountrySelector value={form.countries || []} onChange={(arr:string[])=> setForm((f:any)=> ({ ...f, countries: arr }))} />
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Seleziona i paesi in cui lavori (es. FR, IT, DE, ES, UK, CH, NL, BE). Useremo queste informazioni nelle pagine internazionali.</div>
         </div>
 
         {/* Posizione esatta su mappa */}

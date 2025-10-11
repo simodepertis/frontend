@@ -102,6 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Mappa profili base
       const base = profiles.map((p: any) => {
         const cities = Array.isArray(p.cities) ? (p.cities as any[]) : []
+        const explicitCountries = (()=>{ try { const arr = (p?.cities as any)?.countries; return Array.isArray(arr) ? arr.map((c:any)=>String(c).toUpperCase()) : []; } catch { return []; } })()
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
         const prio = tierPriority(p.tier as any, isGirl, p.tierExpiresAt)
@@ -130,6 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           name: displayName,
           slug,
           cities,
+          countries: explicitCountries,
           tier: effectiveTier,
           girlOfTheDay: isGirl,
           priority: prio,
@@ -160,16 +162,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const n = norm(needle)
         return Array.isArray(list) && list.some((c:any) => norm(c).includes(n))
       }
-      const matchesCountry = (list: any[], code: string) => {
+      const matchesCountry = (list: any[], code: string, explicit?: string[]) => {
         if (!code) return true
         const set = new Set((COUNTRY_CITIES[code] || []).map(norm))
         if (set.size === 0) return true
-        return Array.isArray(list) && list.some((c:any) => set.has(norm(c)))
+        const byCity = Array.isArray(list) && list.some((c:any) => set.has(norm(c)))
+        const byExplicit = Array.isArray(explicit) && explicit.includes(code)
+        return byCity || byExplicit
       }
 
       const filteredBase = base.filter((x: any) => (
         (!city || matchesCity(x.cities, city)) &&
-        (!country || matchesCountry(x.cities, country)) &&
+        (!country || matchesCountry(x.cities, country, x.countries)) &&
         (!q || String(x.name).toLowerCase().includes(q) || (Array.isArray(x.cities) && x.cities.some((c: any) => String(c).toLowerCase().includes(q))))
       ))
 
