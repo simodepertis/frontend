@@ -143,8 +143,8 @@ export default function VerificaFotoPage() {
     }
   };
 
-  const realBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !Number.isNaN(Number(p.id))).length, [photos]);
-  const uploadingCount = useMemo(() => photos.filter(p => p.status === 'bozza' && Number.isNaN(Number(p.id))).length, [photos]);
+  const realBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !p.url.startsWith('blob:')).length, [photos]);
+  const uploadingCount = useMemo(() => photos.filter(p => p.status === 'bozza' && p.url.startsWith('blob:')).length, [photos]);
   const faceCount = useMemo(() => photos.filter(p => !!p.isFace).length, [photos]);
   const hasFace = faceCount >= 1;
   const hasAnyDoc = docs.length > 0;
@@ -228,8 +228,8 @@ export default function VerificaFotoPage() {
                         <Button 
                           variant="secondary"
                           className={`${p.isFace ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} 
-                          disabled={Number.isNaN(Number(p.id)) || togglingFaceId === p.id}
-                          title={Number.isNaN(Number(p.id)) ? 'Attendi: foto in caricamento' : (togglingFaceId === p.id ? 'Aggiornamento in corso…' : '')}
+                          disabled={p.url.startsWith('blob:') || togglingFaceId === p.id}
+                          title={p.url.startsWith('blob:') ? 'Attendi: foto in caricamento' : (togglingFaceId === p.id ? 'Aggiornamento in corso…' : '')}
                           aria-pressed={p.isFace ? true : false}
                           onClick={async()=>{
                           const idNum = Number(p.id);
