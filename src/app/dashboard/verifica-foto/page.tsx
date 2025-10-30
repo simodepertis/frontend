@@ -143,7 +143,8 @@ export default function VerificaFotoPage() {
     }
   };
 
-  const canSubmit = useMemo(() => photos.some(p => p.status === "bozza"), [photos]);
+  const realBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !Number.isNaN(Number(p.id))).length, [photos]);
+  const uploadingCount = useMemo(() => photos.filter(p => p.status === 'bozza' && Number.isNaN(Number(p.id))).length, [photos]);
   const faceCount = useMemo(() => photos.filter(p => !!p.isFace).length, [photos]);
   const hasFace = faceCount >= 1;
   const hasAnyDoc = docs.length > 0;
@@ -193,7 +194,12 @@ export default function VerificaFotoPage() {
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="font-semibold mb-3 flex items-center justify-between">
           <span>Le tue foto ({photos.length})</span>
-          <span className={`text-xs px-2 py-1 rounded-full ${hasFace ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>Volto: {faceCount}/1</span>
+          <div className="flex items-center gap-2">
+            {uploadingCount > 0 && (
+              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Caricamento in corso: {uploadingCount}</span>
+            )}
+            <span className={`text-xs px-2 py-1 rounded-full ${hasFace ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>Volto: {faceCount}/1</span>
+          </div>
         </div>
         {photos.length === 0 ? (
           <div className="text-sm text-gray-400">Nessuna foto caricata. Aggiungi immagini per inviarle in verifica.</div>
@@ -522,7 +528,7 @@ export default function VerificaFotoPage() {
       {/* Invio per verifica */}
       <div className="flex items-center justify-end gap-3">
         <div className="mr-auto text-xs text-gray-400">
-          Requisiti: almeno 3 foto · almeno 1 con volto — {photos.length >= 3 ? '3+ foto ✓' : `${3 - photos.length} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'}
+          Requisiti: almeno 3 foto caricate · almeno 1 con volto — {realBozzaCount >= 3 ? '3+ foto ✓' : `${Math.max(0, 3 - realBozzaCount)} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'} {uploadingCount>0 ? ' · attendi caricamento…' : ''}
         </div>
         <Button
           variant="secondary"
@@ -541,7 +547,13 @@ export default function VerificaFotoPage() {
         >
           Ritira dalla revisione
         </Button>
-        <Button onClick={sendForReview} disabled={!canSubmit || submitting || !hasAnyDoc} title={!hasAnyDoc ? 'Carica almeno un documento prima di inviare' : ''}>{submitting ? 'Invio…' : 'Invia a verifica'}</Button>
+        <Button 
+          onClick={sendForReview}
+          disabled={submitting || !hasAnyDoc || realBozzaCount < 3 || !hasFace}
+          title={!hasAnyDoc ? 'Carica almeno un documento prima di inviare' : (realBozzaCount < 3 ? 'Servono almeno 3 foto caricate (non in upload)' : (!hasFace ? 'Segna almeno una foto come volto' : ''))}
+        >
+          {submitting ? 'Invio…' : 'Invia a verifica'}
+        </Button>
       </div>
     </div>
   );
