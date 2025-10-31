@@ -264,27 +264,6 @@ export default function IncontriVelociPage() {
         </div>
       )}
 
-      {/* Footer Info */}
-      <div className="mt-12 p-6 bg-gray-800 rounded-lg border border-gray-700">
-        <h3 className="text-lg font-bold text-white mb-3">ℹ️ Come funzionano gli Incontri Veloci</h3>
-        <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-300">
-          <div>
-            <h4 className="font-semibold text-white mb-2">🎯 Sistema di Bump</h4>
-            <ul className="space-y-1">
-              <li><strong>BUMP 2gg:</strong> Risale in prima pagina per 2 giorni</li>
-              <li><strong>BUMP 4gg:</strong> Risale in prima pagina per 4 giorni</li>
-              <li><strong>BUMP 8gg:</strong> Risale in prima pagina per 8 giorni</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-white mb-2">🌙 Pacchetti Notturni</h4>
-            <ul className="space-y-1">
-              <li><strong>NOTTURNO 10x:</strong> 10 risalite tra 00:00-08:00</li>
-              <li><strong>NOTTURNO 3x:</strong> 3 risalite tra 00:00-08:00</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </main>
   );
 }
