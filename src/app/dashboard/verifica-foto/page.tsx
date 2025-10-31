@@ -105,17 +105,27 @@ export default function VerificaFotoPage() {
       const tempId = `${file.name}-${file.size}-${Date.now()}`;
       const tempItem: PhotoItem = { id: tempId, name: file.name, url: tempUrl, size: file.size, status: "bozza" };
       newItems.push(tempItem);
-      // upload reale
+      // upload reale: converti in base64
       try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const token = localStorage.getItem('auth-token') || '';
-        const res = await fetch('/api/escort/photos/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } as any : undefined, body: fd });
-        if (res.ok) {
-          const { photo } = await res.json();
-          // aggiorna l'elemento con id/url reali
-          setPhotos((prev) => prev.map(p => p.id === tempId ? { ...p, id: String(photo.id), url: photo.url, size: photo.size ?? p.size } : p));
-        }
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const base64 = e.target?.result as string;
+          const token = localStorage.getItem('auth-token') || '';
+          const res = await fetch('/api/escort/photos/upload', { 
+            method: 'POST', 
+            headers: { 
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }, 
+            body: JSON.stringify({ url: base64, name: file.name, size: file.size })
+          });
+          if (res.ok) {
+            const { photo } = await res.json();
+            // aggiorna l'elemento con id/url reali
+            setPhotos((prev) => prev.map(p => p.id === tempId ? { ...p, id: String(photo.id), url: photo.url, size: photo.size ?? p.size } : p));
+          }
+        };
+        reader.readAsDataURL(file);
       } catch {}
     }
     if (newItems.length) setPhotos((prev) => [...prev, ...newItems]);

@@ -4,7 +4,9 @@ import { verifyToken } from '@/lib/auth'
 
 export const config = {
   api: {
-    bodyParser: false, // Non analizziamo form-data (non serve il file per questo test)
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
   },
 }
 
@@ -22,13 +24,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!userId) return res.status(401).json({ error: 'Non autenticato' })
 
   try {
-    // Creiamo un record Photo senza salvare realmente il file (placeholder URL)
+    const body = req.body || {}
+    const { url, name, size } = body
+    
+    // Accetta URL base64 o URL normale dal frontend
+    const photoUrl = url || 'https://placehold.co/600x800?text=Foto'
+    const photoName = name || `photo-${Date.now()}.jpg`
+    const photoSize = size || 0
+    
     const photo = await prisma.photo.create({
       data: {
         userId,
-        url: 'https://placehold.co/600x800?text=Foto',
-        name: 'upload.jpg',
-        size: 0,
+        url: photoUrl,
+        name: photoName,
+        size: photoSize,
         status: 'DRAFT',
         isFace: false,
       } as any,
