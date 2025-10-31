@@ -281,11 +281,24 @@ export default function CittaDiLavoroPage() {
   async function save() {
     setSaving(true);
     try {
+      // Raccogli città internazionali dai campi singoli
+      const intlCities = [
+        form.intlBaseCity,
+        form.intlSecondCity,
+        form.intlThirdCity,
+        form.intlFourthCity
+      ].filter(c => c && String(c).trim());
+      
+      const payload = {
+        ...form,
+        internationalCities: intlCities
+      };
+      
       const token = localStorage.getItem("auth-token") || "";
       const r = await fetch("/api/profile/citta", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
       if (!r.ok) {
