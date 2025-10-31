@@ -145,6 +145,7 @@ export default function VerificaFotoPage() {
 
   const realBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !p.url.startsWith('blob:')).length, [photos]);
   const uploadingCount = useMemo(() => photos.filter(p => p.status === 'bozza' && p.url.startsWith('blob:')).length, [photos]);
+  const totalBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza').length, [photos]);
   const faceCount = useMemo(() => photos.filter(p => !!p.isFace).length, [photos]);
   const hasFace = faceCount >= 1;
   const hasAnyDoc = docs.length > 0;
@@ -228,24 +229,25 @@ export default function VerificaFotoPage() {
                         <Button 
                           variant="secondary"
                           className={`${p.isFace ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} 
-                          disabled={p.url.startsWith('blob:') || togglingFaceId === p.id}
-                          title={p.url.startsWith('blob:') ? 'Attendi: foto in caricamento' : (togglingFaceId === p.id ? 'Aggiornamento in corso…' : '')}
+                          disabled={togglingFaceId === p.id}
+                          title={togglingFaceId === p.id ? 'Aggiornamento in corso…' : ''}
                           aria-pressed={p.isFace ? true : false}
                           onClick={async()=>{
                           const idNum = Number(p.id);
-                          if (Number.isNaN(idNum)) return;
                           try {
                             setTogglingFaceId(p.id);
                             // Ottimistico
                             setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: !p.isFace } : x));
-                            const token = localStorage.getItem('auth-token') || '';
-                            const r = await fetch('/api/escort/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, isFace: !p.isFace }) });
-                            const j = await r.json().catch(()=>({}));
-                            if (!r.ok) {
-                              // rollback
-                              setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: p.isFace } : x));
-                              alert(j?.error || 'Errore aggiornamento');
-                              return;
+                            if (!Number.isNaN(idNum)) {
+                              const token = localStorage.getItem('auth-token') || '';
+                              const r = await fetch('/api/escort/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, isFace: !p.isFace }) });
+                              const j = await r.json().catch(()=>({}));
+                              if (!r.ok) {
+                                // rollback
+                                setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: p.isFace } : x));
+                                alert(j?.error || 'Errore aggiornamento');
+                                return;
+                              }
                             }
                           } catch {
                             // rollback
@@ -528,7 +530,7 @@ export default function VerificaFotoPage() {
       {/* Invio per verifica */}
       <div className="flex items-center justify-end gap-3">
         <div className="mr-auto text-xs text-gray-400">
-          Requisiti: almeno 3 foto caricate · almeno 1 con volto — {realBozzaCount >= 3 ? '3+ foto ✓' : `${Math.max(0, 3 - realBozzaCount)} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'} {uploadingCount>0 ? ' · attendi caricamento…' : ''}
+          Requisiti: almeno 3 foto · almeno 1 con volto — {totalBozzaCount >= 3 ? '3+ foto ✓' : `${Math.max(0, 3 - totalBozzaCount)} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'} {uploadingCount>0 ? ' · caricamenti in corso (puoi già segnare il volto)' : ''}
         </div>
         <Button
           variant="secondary"
@@ -549,8 +551,8 @@ export default function VerificaFotoPage() {
         </Button>
         <Button 
           onClick={sendForReview}
-          disabled={submitting || !hasAnyDoc || realBozzaCount < 3 || !hasFace}
-          title={!hasAnyDoc ? 'Carica almeno un documento prima di inviare' : (realBozzaCount < 3 ? 'Servono almeno 3 foto caricate (non in upload)' : (!hasFace ? 'Segna almeno una foto come volto' : ''))}
+          disabled={submitting || !hasAnyDoc || totalBozzaCount < 3 || !hasFace}
+          title={!hasAnyDoc ? 'Carica almeno un documento prima di inviare' : (totalBozzaCount < 3 ? 'Servono almeno 3 foto' : (!hasFace ? 'Segna almeno una foto come volto' : ''))}
         >
           {submitting ? 'Invio…' : 'Invia a verifica'}
         </Button>
