@@ -1,6 +1,40 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
+// Mapping città internazionali -> country code
+const INTERNATIONAL_CITIES: Record<string, string> = {
+  // Francia
+  'Paris': 'FR', 'Parigi': 'FR', 'Lyon': 'FR', 'Marseille': 'FR', 'Nice': 'FR', 'Nizza': 'FR',
+  'Toulouse': 'FR', 'Bordeaux': 'FR', 'Lille': 'FR', 'Strasbourg': 'FR',
+  // UK
+  'London': 'UK', 'Londra': 'UK', 'Manchester': 'UK', 'Birmingham': 'UK', 'Liverpool': 'UK',
+  'Edinburgh': 'UK', 'Glasgow': 'UK', 'Bristol': 'UK',
+  // Germania
+  'Berlin': 'DE', 'Berlino': 'DE', 'Munich': 'DE', 'Monaco': 'DE', 'Hamburg': 'DE', 'Amburgo': 'DE',
+  'Frankfurt': 'DE', 'Francoforte': 'DE', 'Cologne': 'DE', 'Colonia': 'DE', 'Stuttgart': 'DE',
+  // Spagna
+  'Madrid': 'ES', 'Barcelona': 'ES', 'Barcellona': 'ES', 'Valencia': 'ES', 'Seville': 'ES',
+  'Siviglia': 'ES', 'Malaga': 'ES', 'Bilbao': 'ES',
+  // Svizzera
+  'Zurich': 'CH', 'Zurigo': 'CH', 'Geneva': 'CH', 'Ginevra': 'CH', 'Basel': 'CH', 'Basilea': 'CH',
+  'Bern': 'CH', 'Berna': 'CH', 'Lausanne': 'CH', 'Lucerne': 'CH', 'Lugano': 'CH',
+  // Olanda
+  'Amsterdam': 'NL', 'Rotterdam': 'NL', 'The Hague': 'NL', "L'Aia": 'NL', 'Utrecht': 'NL',
+  // Belgio
+  'Brussels': 'BE', 'Bruxelles': 'BE', 'Antwerp': 'BE', 'Anversa': 'BE', 'Bruges': 'BE',
+  // Altri paesi europei
+  'Vienna': 'AT', 'Praga': 'CZ', 'Prague': 'CZ', 'Warsaw': 'PL', 'Varsavia': 'PL',
+  'Budapest': 'HU', 'Bucharest': 'RO', 'Bucarest': 'RO', 'Athens': 'GR', 'Atene': 'GR',
+  'Lisbon': 'PT', 'Lisbona': 'PT', 'Porto': 'PT', 'Dublin': 'IE', 'Dublino': 'IE',
+  // Medio Oriente & Asia
+  'Dubai': 'AE', 'Abu Dhabi': 'AE', 'Doha': 'QA', 'Hong Kong': 'HK',
+  // Nord America
+  'New York': 'US', 'Los Angeles': 'US', 'Miami': 'US', 'Las Vegas': 'US',
+  'Toronto': 'CA', 'Montreal': 'CA', 'Vancouver': 'CA',
+  // Russia
+  'Moscow': 'RU', 'Mosca': 'RU', 'St Petersburg': 'RU', 'San Pietroburgo': 'RU'
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Metodo non consentito' })
 
@@ -46,8 +80,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 }
               }
             } else {
-              // Città italiana o internazionale semplice
-              intlCities.push(city)
+              // Controlla se è una città internazionale nota
+              const countryCode = INTERNATIONAL_CITIES[city]
+              if (countryCode) {
+                intlCities.push(city)
+                if (!countries.includes(countryCode)) {
+                  countries.push(countryCode)
+                }
+              } else {
+                // Città italiana o non riconosciuta
+                intlCities.push(city)
+              }
             }
           })
         }
