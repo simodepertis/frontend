@@ -1,0 +1,82 @@
+#!/bin/bash
+
+echo "🚀 Setup Bot IncontriEscort - Sistema Completo"
+echo "=============================================="
+
+# Installa dipendenze
+echo "📦 Installazione dipendenze..."
+cd "$(dirname "$0")"
+npm install
+
+# Torna alla directory principale
+cd ..
+
+# Aggiorna database con nuovi modelli
+echo "🗄️ Aggiornamento database..."
+npx prisma db push
+
+# Genera client Prisma
+echo "⚙️ Generazione client Prisma..."
+npx prisma generate
+
+echo ""
+echo "✅ Setup completato!"
+echo ""
+echo "🤖 COMANDI DISPONIBILI:"
+echo "======================"
+echo ""
+echo "📖 SCRAPING:"
+echo "  cd scripts && npm run escort-advisor    # Scraping recensioni da escort-advisor.com"
+echo "  cd scripts && npm run bakeca           # Scraping annunci da bakecaincontri.com"
+echo ""
+echo "🔄 BUMP AUTOMATICO:"
+echo "  cd scripts && npm run bump-once        # Esegue un ciclo di bump"
+echo "  cd scripts && npm run bump-daemon      # Avvia bump automatico (daemon)"
+echo ""
+echo "🌐 WEB:"
+echo "  npm run dev                           # Avvia sito web"
+echo "  Vai su: http://localhost:3000/incontri-veloci"
+echo ""
+echo "📊 MONITORAGGIO:"
+echo "  - Logs bump: controllare console del daemon"
+echo "  - Stats database: /api/quick-meetings"
+echo "  - Debug: /api/debug/check-cities"
+echo ""
+echo "⚡ SISTEMA BUMP:"
+echo "==============="
+echo "• 1+1 = 2 giorni di bump giornaliero"
+echo "• 1+3 = 4 giorni di bump giornaliero"  
+echo "• 1+7 = 8 giorni di bump giornaliero"
+echo "• 1x10 = 10 bump notturni (00:00-08:00)"
+echo "• 1x3 = 3 bump notturni (00:00-08:00)"
+echo ""
+echo "🎯 FASCE ORARIE DIURNE:"
+echo "• 08:00-09:00, 09:00-10:00, ..., 23:00-00:00"
+echo "• Ogni annuncio ha una fascia assegnata casualmente"
+echo "• Il bump avviene automaticamente nella fascia corretta"
+echo ""
+echo "🌙 BUMP NOTTURNI:"
+echo "• 1x10: ogni 48 minuti tra 00:00-08:00"
+echo "• 1x3: ogni 2h40m tra 00:00-08:00"
+echo ""
+echo "🔧 CONFIGURAZIONE:"
+echo "=================="
+echo "• Database: PostgreSQL (configurato in .env)"
+echo "• Scraping: Puppeteer headless"
+echo "• Scheduler: node-cron ogni 15 minuti"
+echo "• Cleanup: ogni ora rimuove annunci scaduti"
+echo ""
+echo "📈 MONITORAGGIO PERFORMANCE:"
+echo "============================"
+echo "• Statistiche ogni 6 ore"
+echo "• Log dettagliati per ogni operazione"
+echo "• Gestione errori e retry automatici"
+echo ""
+echo "🚨 IMPORTANTE:"
+echo "=============="
+echo "• Avvia SEMPRE il bump-daemon per il funzionamento automatico"
+echo "• Monitora i logs per eventuali errori"
+echo "• Il sistema è progettato per funzionare 24/7"
+echo "• Backup regolari del database raccomandati"
+echo ""
+echo "🎉 PRONTO PER L'USO!"

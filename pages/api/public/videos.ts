@@ -55,13 +55,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const itemsBase = videos.map((v) => {
       const cities = Array.isArray(v.user?.escortProfile?.cities) ? (v.user?.escortProfile?.cities as any[]) : [];
       const firstCity = cities.length ? String(cities[0]) : '—';
-      const hasApprovedDoc = Array.isArray(v.user?.documents) && v.user?.documents?.some(d => d.status === 'APPROVED');
+      const hasApprovedDoc = Array.isArray(v.user?.documents) && (v.user?.documents as any[])?.some((d:any) => d.status === 'APPROVED');
       const price = pickPriceFromRates(v.user?.escortProfile?.rates as any);
       const isNew = v.createdAt && (Date.now() - new Date(v.createdAt).getTime()) < (7 * 24 * 60 * 60 * 1000);
       const thumbUrl = (() => {
         const t = String((v as any).thumb || '');
         const isImage = /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(t);
-        return isImage ? normalizeUrl(t) : '/placeholder.svg';
+        return isImage ? normalizeUrl(t) : null; // se non è immagine, lascia null per usare <video> preview
       })();
       return {
         id: v.id,

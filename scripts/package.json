@@ -1,0 +1,23 @@
+{
+  "name": "incontriescort-bots",
+  "version": "1.0.0",
+  "description": "Bot per scraping e bump automatico",
+  "main": "index.js",
+  "scripts": {
+    "escort-advisor": "node escort-advisor-scraper.js",
+    "bakeca": "node bakeca-scraper.js",
+    "bump-daemon": "node auto-bump-system.js --daemon",
+    "bump-once": "node auto-bump-system.js",
+    "install-all": "npm install"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "puppeteer": "^24.15.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "typescript": "^5.2.0"
+  }
+}

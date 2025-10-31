@@ -42,11 +42,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const type = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg'
       : ext === '.png' ? 'image/png'
       : ext === '.webp' ? 'image/webp'
+      : ext === '.gif' ? 'image/gif'
+      : ext === '.svg' ? 'image/svg+xml'
+      : ext === '.mp4' ? 'video/mp4'
+      : ext === '.webm' ? 'video/webm'
+      : ext === '.mov' ? 'video/quicktime'
+      : ext === '.mkv' ? 'video/x-matroska'
+      : ext === '.mp3' ? 'audio/mpeg'
+      : ext === '.wav' ? 'audio/wav'
       : ext === '.pdf' ? 'application/pdf'
       : 'application/octet-stream'
-    res.setHeader('Content-Type', type)
+
+    const stat = await fs.promises.stat(filePath)
+    const fileSize = stat.size
+    res.setHeader('Accept-Ranges', 'bytes')
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
 
+    const range = req.headers.range
+    if (range && (type.startsWith('video/') || type.startsWith('audio/'))) {
+      const match = /bytes=(\d+)-(\d+)?/.exec(range)
+      let start = 0
+      let end = fileSize - 1
+      if (match) {
+        start = parseInt(match[1], 10)
+        if (match[2]) end = parseInt(match[2], 10)
+      }
+      if (start >= fileSize || end >= fileSize) {
+        res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end()
+        return
+      }
+      res.status(206)
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`)
+      res.setHeader('Content-Length', String(end - start + 1))
+      res.setHeader('Content-Type', type)
+      const stream = fs.createReadStream(filePath, { start, end })
+      stream.pipe(res)
+      return
+    }
+
+    // Full content
+    res.setHeader('Content-Type', type)
+    res.setHeader('Content-Length', String(fileSize))
     const stream = fs.createReadStream(filePath)
     stream.pipe(res)
   } catch (e) {
