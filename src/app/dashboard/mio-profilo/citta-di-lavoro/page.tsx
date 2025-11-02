@@ -134,16 +134,21 @@ export default function CittaDiLavoroPage() {
           if (j?.cities) {
             // Converti internationalCities da string[] a {country, city}[]
             const intlCitiesRaw = Array.isArray((j.cities as any).internationalCities) ? (j.cities as any).internationalCities : [];
-            const intlCitiesConverted = intlCitiesRaw.map((cityName: string) => {
-              // Cerca la nazione dalla città
+            const intlCitiesConverted = intlCitiesRaw.map((cityStr: string) => {
+              // Se è in formato "City, COUNTRY_CODE"
+              if (cityStr.includes(', ')) {
+                const parts = cityStr.split(', ');
+                return { city: parts[0], country: parts[1] };
+              }
+              // Altrimenti cerca la nazione dalla città (vecchio formato)
               let countryCode = '';
               for (const [code, data] of Object.entries(COUNTRIES_CITIES)) {
-                if (data.cities.includes(cityName)) {
+                if (data.cities.includes(cityStr)) {
                   countryCode = code;
                   break;
                 }
               }
-              return { country: countryCode, city: cityName };
+              return { country: countryCode, city: cityStr };
             });
             
             setForm((f: any) => ({
@@ -260,9 +265,10 @@ export default function CittaDiLavoroPage() {
     setSaving(true);
     try {
       // Estrai solo le città complete (con country e city) dall'array internationalCities
+      // Salva in formato "Città, COUNTRY_CODE" per identificazione univoca
       const intlCities = (form.internationalCities || [])
         .filter((item: any) => item.country && item.city)
-        .map((item: any) => item.city);
+        .map((item: any) => `${item.city}, ${item.country}`);
       
       const payload = {
         ...form,
