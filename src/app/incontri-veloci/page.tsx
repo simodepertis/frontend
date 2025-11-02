@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { COUNTRIES_CITIES, COUNTRY_LIST } from "@/lib/internationalCities";
+import { CITIES_ORDER } from "@/lib/cities";
 
 interface QuickMeeting {
   id: number;
@@ -30,12 +32,27 @@ export default function IncontriVelociPage() {
   const [meetings, setMeetings] = useState<QuickMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
-  const [cities, setCities] = useState<string[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
 
   useEffect(() => {
     loadMeetings();
   }, [selectedCategory, selectedCity]);
+
+  // Aggiorna le città disponibili quando cambia la nazione
+  useEffect(() => {
+    if (selectedCountry === 'ALL') {
+      setAvailableCities([]);
+    } else if (selectedCountry === 'IT') {
+      setAvailableCities(CITIES_ORDER);
+    } else {
+      const countryData = COUNTRIES_CITIES[selectedCountry];
+      setAvailableCities(countryData ? countryData.cities : []);
+    }
+    // Reset città quando cambia nazione
+    setSelectedCity('ALL');
+  }, [selectedCountry]);
 
   const loadMeetings = async () => {
     setLoading(true);
@@ -48,10 +65,6 @@ export default function IncontriVelociPage() {
       if (res.ok) {
         const data = await res.json();
         setMeetings(data.meetings || []);
-        
-        // Estrai città uniche
-        const uniqueCities = Array.from(new Set(data.meetings?.map((m: QuickMeeting) => m.city) || []));
-        setCities(uniqueCities.sort());
       }
     } catch (error) {
       console.error('Errore caricamento incontri:', error);
@@ -106,7 +119,7 @@ export default function IncontriVelociPage() {
 
       {/* Filtri */}
       <div className="mb-8 p-6 bg-gray-800 rounded-lg border border-gray-700">
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
           {/* Filtro Categoria */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -126,6 +139,26 @@ export default function IncontriVelociPage() {
             </select>
           </div>
 
+          {/* Filtro Nazione */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Nazione
+            </label>
+            <select
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">Tutte le nazioni</option>
+              <option value="IT">🇮🇹 Italia</option>
+              {COUNTRY_LIST.map(country => (
+                <option key={country.code} value={country.code}>
+                  {country.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Filtro Città */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -135,14 +168,20 @@ export default function IncontriVelociPage() {
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+              disabled={selectedCountry === 'ALL'}
             >
-              <option value="ALL">Tutte le città</option>
-              {cities.map(city => (
+              <option value="ALL">{selectedCountry === 'ALL' ? 'Seleziona prima una nazione' : 'Tutte le città'}</option>
+              {availableCities.map(city => (
                 <option key={city} value={city}>{city}</option>
               ))}
             </select>
           </div>
         </div>
+        {selectedCountry === 'ALL' && (
+          <div className="mt-3 text-sm text-gray-400">
+            💡 Seleziona una nazione per filtrare per città specifica
+          </div>
+        )}
       </div>
 
       {/* Statistiche */}
