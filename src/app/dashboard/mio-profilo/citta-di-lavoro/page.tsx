@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { CITIES_ORDER } from "@/lib/cities";
+import { COUNTRIES_CITIES, COUNTRY_LIST } from "@/lib/internationalCities";
 
 // Load Leaflet from CDN (no npm package required)
 function loadLeafletFromCDN(): Promise<any> {
@@ -66,13 +67,9 @@ export default function CittaDiLavoroPage() {
     secondCity: "",
     thirdCity: "",
     fourthCity: "",
-    intlBaseCity: "",
-    intlSecondCity: "",
-    intlThirdCity: "",
-    intlFourthCity: "",
     zones: [] as string[],
     countries: [] as string[],
-    internationalCities: [] as string[],
+    internationalCities: [] as Array<{country: string; city: string}>,
     position: { lat: 41.9028, lng: 12.4964 }, // Roma default
     availability: {
       incall: { address: "", cap: "", type: "", other: "" },
@@ -107,36 +104,11 @@ export default function CittaDiLavoroPage() {
       } catch {}
     }, 500);
   }
-  // Chevron dropdown open states per city field
-  const [openCity, setOpenCity] = useState<{ [k:string]: boolean }>({});
-
-  // City autocomplete states per field
+  // State per città italiane aggiuntive
   const [cityQ, setCityQ] = useState<{ [k:string]: string }>({});
+  const [openCity, setOpenCity] = useState<{ [k:string]: boolean }>({});
   const [cityRes, setCityRes] = useState<{ [k:string]: any[] }>({});
   const [cityLoading, setCityLoading] = useState<{ [k:string]: boolean }>({});
-  const [intlOpen, setIntlOpen] = useState(false);
-  const [intlQuery, setIntlQuery] = useState("");
-  const [openIntl, setOpenIntl] = useState<{ [k:string]: boolean }>({});
-  const [intlQ, setIntlQ] = useState<{ [k:string]: string }>({});
-  const [intlRes, setIntlRes] = useState<{ [k:string]: string[] }>({});
-
-  const INTERNATIONAL_CITIES = [
-    "Paris", "London", "Zurich", "Geneva", "Amsterdam", "Berlin", "Munich", "Madrid",
-    "Barcelona", "Valencia", "Seville", "Lisbon", "Porto", "Vienna", "Prague", "Warsaw",
-    "Krakow", "Budapest", "Bucharest", "Sofia", "Athens", "Istanbul", "Dubai", "Abu Dhabi",
-    "Doha", "Riyadh", "Jeddah", "Cairo", "Casablanca", "Marrakesh", "New York", "Los Angeles",
-    "Miami", "Chicago", "Toronto", "Montreal", "Vancouver", "Mexico City", "Buenos Aires",
-    "Santiago", "Lima", "Sao Paulo", "Rio de Janeiro", "Bogota", "London", "Manchester",
-    "Birmingham", "Edinburgh", "Dublin", "Copenhagen", "Stockholm", "Oslo", "Helsinki",
-    "Zurich", "Basel", "Geneva", "Lausanne", "Brussels", "Antwerp", "Rotterdam", "The Hague",
-    "Luxembourg", "Monaco", "Nice", "Marseille", "Lyon", "Toulouse", "Nantes", "Hamburg",
-    "Cologne", "Frankfurt", "Stuttgart", "Dusseldorf", "Leipzig", "Hanover", "Venice",
-    "Milan", "Rome", "Naples", "Florence", "Turin", "Bologna", "Palermo", "Catania",
-    "Valletta", "Athens", "Thessaloniki", "Skopje", "Zagreb", "Ljubljana", "Sarajevo",
-    "Belgrade", "Podgorica", "Pristina", "Tirana", "Prague", "Bratislava", "Kiev",
-    "Hong Kong", "Singapore", "Bangkok", "Phuket", "Kuala Lumpur", "Jakarta", "Manila",
-    "Tokyo", "Osaka", "Seoul", "Taipei", "Shanghai", "Beijing", "Shenzhen", "Guangzhou"
-  ];
 
   useEffect(() => {
     // inject Leaflet CSS once
@@ -150,16 +122,6 @@ export default function CittaDiLavoroPage() {
     }
   }, []);
 
-  // Local filter for international selectors
-  useEffect(() => {
-    const keys = Object.keys(intlQ);
-    if (keys.length === 0) return;
-    keys.forEach((k) => {
-      const q = (intlQ[k] || '').trim().toLowerCase();
-      const list = INTERNATIONAL_CITIES.filter(c => c.toLowerCase().includes(q)).slice(0, 100);
-      setIntlRes(prev => ({ ...prev, [k]: list }));
-    });
-  }, [intlQ]);
 
   useEffect(() => {
     (async () => {
@@ -169,12 +131,28 @@ export default function CittaDiLavoroPage() {
         if (r.status === 401) { window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
         if (r.ok) {
           const j = await r.json();
-          if (j?.cities) setForm((f: any) => ({
-            ...f,
-            ...j.cities,
-            countries: Array.isArray((j.cities as any).countries) ? (j.cities as any).countries : (f.countries||[]),
-            internationalCities: Array.isArray((j.cities as any).internationalCities) ? (j.cities as any).internationalCities : (f.internationalCities||[])
-          }));
+          if (j?.cities) {
+            // Converti internationalCities da string[] a {country, city}[]
+            const intlCitiesRaw = Array.isArray((j.cities as any).internationalCities) ? (j.cities as any).internationalCities : [];
+            const intlCitiesConverted = intlCitiesRaw.map((cityName: string) => {
+              // Cerca la nazione dalla città
+              let countryCode = '';
+              for (const [code, data] of Object.entries(COUNTRIES_CITIES)) {
+                if (data.cities.includes(cityName)) {
+                  countryCode = code;
+                  break;
+                }
+              }
+              return { country: countryCode, city: cityName };
+            });
+            
+            setForm((f: any) => ({
+              ...f,
+              ...j.cities,
+              countries: Array.isArray((j.cities as any).countries) ? (j.cities as any).countries : (f.countries||[]),
+              internationalCities: intlCitiesConverted
+            }));
+          }
         }
       } finally {
         setLoading(false);
@@ -281,13 +259,10 @@ export default function CittaDiLavoroPage() {
   async function save() {
     setSaving(true);
     try {
-      // Raccogli città internazionali dai campi singoli
-      const intlCities = [
-        form.intlBaseCity,
-        form.intlSecondCity,
-        form.intlThirdCity,
-        form.intlFourthCity
-      ].filter(c => c && String(c).trim());
+      // Estrai solo le città complete (con country e city) dall'array internationalCities
+      const intlCities = (form.internationalCities || [])
+        .filter((item: any) => item.country && item.city)
+        .map((item: any) => item.city);
       
       const payload = {
         ...form,
@@ -409,95 +384,59 @@ export default function CittaDiLavoroPage() {
           </Field>
         </div>
         
-        {/* Città Internazionali (stesso UI con dropdown) */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <Field label="Città Internazionale 1">
-            <div className="relative">
-              <input
-                value={form.intlBaseCity}
-                onChange={(e)=>{ setForm((f:any)=>({ ...f, intlBaseCity: e.target.value })); setIntlQ(prev=>({ ...prev, intlBaseCity: e.target.value })); setOpenIntl(p=>({ ...p, intlBaseCity: true })); }}
-                className="inp w-full pr-9"
-                placeholder="Es. London"
-                autoComplete="off"
-                onFocus={()=> setOpenIntl(p=>({ ...p, intlBaseCity: true }))}
-              />
-              <button type="button" onClick={()=> setOpenIntl(p=>({ ...p, intlBaseCity: !p.intlBaseCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
-              {((intlRes.intlBaseCity||[]).length>0) && (
-                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {(intlRes.intlBaseCity||[]).map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlBaseCity: c })); setOpenIntl(p=>({ ...p, intlBaseCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
+        {/* Città Internazionali con selettore Nazione → Città */}
+        <div>
+          <div className="text-sm text-gray-300 mb-3">Città Internazionali</div>
+          <div className="space-y-3">
+            {(form.internationalCities || []).map((item: any, i: number) => (
+              <div key={i} className="grid md:grid-cols-3 gap-3 items-end">
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Nazione</label>
+                  <select
+                    value={item.country || ''}
+                    onChange={(e) => {
+                      const newList = [...(form.internationalCities || [])];
+                      newList[i] = { ...newList[i], country: e.target.value, city: '' };
+                      setForm((f: any) => ({ ...f, internationalCities: newList }));
+                    }}
+                    className="inp w-full"
+                  >
+                    <option value="">Seleziona nazione</option>
+                    {COUNTRY_LIST.map(c => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-              {openIntl.intlBaseCity && (intlRes.intlBaseCity||[]).length === 0 && (
-                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {INTERNATIONAL_CITIES.map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlBaseCity: c })); setOpenIntl(p=>({ ...p, intlBaseCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Città</label>
+                  <select
+                    value={item.city || ''}
+                    onChange={(e) => {
+                      const newList = [...(form.internationalCities || [])];
+                      newList[i] = { ...newList[i], city: e.target.value };
+                      setForm((f: any) => ({ ...f, internationalCities: newList }));
+                    }}
+                    className="inp w-full"
+                    disabled={!item.country}
+                  >
+                    <option value="">Seleziona città</option>
+                    {item.country && COUNTRIES_CITIES[item.country]?.cities.map((city: string) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
-            </div>
-          </Field>
-          <Field label="Città Internazionale 2">
-            <div className="relative">
-              <input value={form.intlSecondCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, intlSecondCity: e.target.value })); setIntlQ(prev=>({ ...prev, intlSecondCity: e.target.value })); setOpenIntl(p=>({ ...p, intlSecondCity: true })); }} className="inp w-full pr-9" placeholder="Es. Zurich" autoComplete="off" onFocus={()=> setOpenIntl(p=>({ ...p, intlSecondCity: true }))} />
-              <button type="button" onClick={()=> setOpenIntl(p=>({ ...p, intlSecondCity: !p.intlSecondCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
-              {((intlRes.intlSecondCity||[]).length>0) && (
-                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {(intlRes.intlSecondCity||[]).map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlSecondCity: c })); setOpenIntl(p=>({ ...p, intlSecondCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
-                </div>
-              )}
-              {openIntl.intlSecondCity && (intlRes.intlSecondCity||[]).length === 0 && (
-                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {INTERNATIONAL_CITIES.map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlSecondCity: c })); setOpenIntl(p=>({ ...p, intlSecondCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Field>
-          <Field label="Città Internazionale 3">
-            <div className="relative">
-              <input value={form.intlThirdCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, intlThirdCity: e.target.value })); setIntlQ(prev=>({ ...prev, intlThirdCity: e.target.value })); setOpenIntl(p=>({ ...p, intlThirdCity: true })); }} className="inp w-full pr-9" autoComplete="off" onFocus={()=> setOpenIntl(p=>({ ...p, intlThirdCity: true }))} />
-              <button type="button" onClick={()=> setOpenIntl(p=>({ ...p, intlThirdCity: !p.intlThirdCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
-              {((intlRes.intlThirdCity||[]).length>0) && (
-                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {(intlRes.intlThirdCity||[]).map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlThirdCity: c })); setOpenIntl(p=>({ ...p, intlThirdCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
-                </div>
-              )}
-              {openIntl.intlThirdCity && (intlRes.intlThirdCity||[]).length === 0 && (
-                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {INTERNATIONAL_CITIES.map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlThirdCity: c })); setOpenIntl(p=>({ ...p, intlThirdCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Field>
-          <Field label="Città Internazionale 4">
-            <div className="relative">
-              <input value={form.intlFourthCity} onChange={(e)=>{ setForm((f:any)=>({ ...f, intlFourthCity: e.target.value })); setIntlQ(prev=>({ ...prev, intlFourthCity: e.target.value })); setOpenIntl(p=>({ ...p, intlFourthCity: true })); }} className="inp w-full pr-9" autoComplete="off" onFocus={()=> setOpenIntl(p=>({ ...p, intlFourthCity: true }))} />
-              <button type="button" onClick={()=> setOpenIntl(p=>({ ...p, intlFourthCity: !p.intlFourthCity }))} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300">⌄</button>
-              {((intlRes.intlFourthCity||[]).length>0) && (
-                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {(intlRes.intlFourthCity||[]).map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlFourthCity: c })); setOpenIntl(p=>({ ...p, intlFourthCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
-                </div>
-              )}
-              {openIntl.intlFourthCity && (intlRes.intlFourthCity||[]).length === 0 && (
-                <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
-                  {INTERNATIONAL_CITIES.map((c, idx)=> (
-                    <button key={idx} type="button" onClick={()=>{ setForm((f:any)=>({ ...f, intlFourthCity: c })); setOpenIntl(p=>({ ...p, intlFourthCity: false })); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200">{c}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Field>
+                <Button variant="secondary" onClick={() => {
+                  const newList = (form.internationalCities || []).filter((_:any, idx:number) => idx !== i);
+                  setForm((f: any) => ({ ...f, internationalCities: newList }));
+                }}>Rimuovi</Button>
+              </div>
+            ))}
+            <Button variant="secondary" onClick={() => {
+              const newList = [...(form.internationalCities || []), { country: '', city: '' }];
+              setForm((f: any) => ({ ...f, internationalCities: newList }));
+            }}>+ Aggiungi città internazionale</Button>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">Seleziona prima la nazione, poi la città. Puoi aggiungere più città.</div>
         </div>
 
         {/* Città aggiuntive dinamiche */}

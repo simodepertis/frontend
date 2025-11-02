@@ -38,6 +38,10 @@ const INTERNATIONAL_CITIES: Record<string, string> = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Metodo non consentito' })
 
+  const { country, citta } = req.query
+  const filterCountry = country ? String(country).toUpperCase() : null
+  const filterCity = citta ? String(citta) : null
+
   try {
     // Recupera tutti gli utenti escort con profilo
     const users = await prisma.user.findMany({
@@ -105,6 +109,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           isVerified: profile.consentAcceptedAt ? true : false,
           coverUrl: u.photos[0]?.url || null
         }
+      })
+      .filter(item => {
+        // Filtra per country se specificato
+        if (filterCountry && !item.countries.includes(filterCountry)) {
+          return false
+        }
+        // Filtra per city se specificato
+        if (filterCity && !item.cities.some(c => c.toLowerCase() === filterCity.toLowerCase())) {
+          return false
+        }
+        return true
       })
 
     return res.status(200).json({ items })
