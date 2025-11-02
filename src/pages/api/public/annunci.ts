@@ -84,8 +84,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 }
               }
             } else {
-              // Controlla se è una città internazionale nota
-              const countryCode = INTERNATIONAL_CITIES[city]
+              // Controlla se è una città internazionale nota (case-insensitive)
+              let countryCode = INTERNATIONAL_CITIES[city]
+              if (!countryCode) {
+                // Prova case-insensitive
+                const cityKey = Object.keys(INTERNATIONAL_CITIES).find(k => k.toLowerCase() === city.toLowerCase())
+                if (cityKey) countryCode = INTERNATIONAL_CITIES[cityKey]
+              }
+              
               if (countryCode) {
                 intlCities.push(city)
                 if (!countries.includes(countryCode)) {
@@ -104,7 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           slug: u.slug || `escort-${u.id}`,
           name: u.nome,
           cities: intlCities,
-          countries: countries.length > 0 ? countries : intlCities.length > 0 ? ['IT'] : [],
+          countries: countries.length > 0 ? countries : [],
           tier: profile.tier || 'STANDARD',
           isVerified: profile.consentAcceptedAt ? true : false,
           coverUrl: u.photos[0]?.url || null

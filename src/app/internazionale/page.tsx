@@ -112,7 +112,14 @@ export default function InternazionalePage() {
           <div className="text-sm text-gray-400">Nessun profilo disponibile.</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {items.filter((e:any)=> Array.isArray(e.countries) && e.countries.length>0 && !(e.countries.length === 1 && e.countries[0] === 'IT')).slice(0, 12).map((e: any) => (
+            {items.filter((e:any)=> {
+              // Mostra solo escort con almeno un country code internazionale (non IT, non vuoto)
+              if (!Array.isArray(e.countries) || e.countries.length === 0) return false;
+              // Se ha solo IT, non mostrare
+              if (e.countries.length === 1 && e.countries[0] === 'IT') return false;
+              // Se ha almeno un paese diverso da IT, mostra
+              return e.countries.some((c: string) => c && c !== 'IT');
+            }).slice(0, 12).map((e: any) => (
               <Link key={e.id} href={`/escort/${e.slug}`}>
                 <EscortCard escort={{ id: e.id, nome: e.name, eta: 25, citta: Array.isArray(e.cities)&&e.cities[0]?String(e.cities[0]):'—', prezzo: 0, foto: e.coverUrl || '/placeholder.svg', rank: e.tier, isVerified: e.isVerified }} />
               </Link>
