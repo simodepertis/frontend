@@ -21,16 +21,26 @@ function getUserId(req: NextApiRequest): number | null {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' })
   const userId = getUserId(req)
-  if (!userId) return res.status(401).json({ error: 'Non autenticato' })
+  if (!userId) {
+    console.log('❌ Upload foto: utente non autenticato')
+    return res.status(401).json({ error: 'Non autenticato' })
+  }
 
   try {
     const body = req.body || {}
     const { url, name, size } = body
     
+    if (!url || !name) {
+      console.log('❌ Upload foto: url o name mancanti', { url: !!url, name: !!name })
+      return res.status(400).json({ error: 'URL e nome richiesti' })
+    }
+    
     // Accetta URL base64 o URL normale dal frontend
-    const photoUrl = url || 'https://placehold.co/600x800?text=Foto'
-    const photoName = name || `photo-${Date.now()}.jpg`
+    const photoUrl = url
+    const photoName = name
     const photoSize = size || 0
+    
+    console.log('📸 Creazione foto:', { userId, name: photoName, size: photoSize })
     
     const photo = await prisma.photo.create({
       data: {
@@ -40,12 +50,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         size: photoSize,
         status: 'DRAFT',
         isFace: false,
-      } as any,
+      },
     })
+    
+    console.log('✅ Foto creata con successo:', { id: photo.id, status: photo.status })
 
     return res.status(200).json({ photo })
   } catch (err) {
-    console.error('API /api/escort/photos/upload errore:', err)
-    return res.status(500).json({ error: 'Errore interno' })
+    console.error('❌ API /api/escort/photos/upload errore:', err)
+    return res.status(500).json({ error: 'Errore interno', details: String(err) })
   }
 }

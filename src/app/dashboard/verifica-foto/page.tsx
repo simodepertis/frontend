@@ -20,6 +20,7 @@ export default function VerificaFotoPage() {
   const [consentTick, setConsentTick] = useState(false);
   const [consentSaving, setConsentSaving] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
 
   // Carica/salva bozza in localStorage
   useEffect(() => {
@@ -94,6 +95,30 @@ export default function VerificaFotoPage() {
   useEffect(() => {
     try { localStorage.setItem("escort-verify-photos", JSON.stringify(photos)); } catch {}
   }, [photos]);
+
+  // Drag & Drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      onSelectFiles(files);
+    }
+  };
 
   const onSelectFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -192,12 +217,32 @@ export default function VerificaFotoPage() {
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="font-semibold">Carica Foto</div>
-          <div className="text-xs text-neutral-500">Drag & Drop non supportato: usa il bottone qui sotto</div>
+          <div className="text-xs text-gray-400">👆 Trascina le immagini qui o usa il bottone</div>
         </div>
-        <div className="flex items-center gap-3">
-          <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onSelectFiles(e.target.files)} />
-          <Button onClick={() => inputRef.current?.click()}>Seleziona immagini</Button>
-          <Button variant="secondary" onClick={() => setPhotos([])}>Svuota bozza</Button>
+        <div 
+          className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+            isDragging 
+              ? 'border-blue-500 bg-blue-500/10' 
+              : 'border-gray-600 hover:border-blue-500/50'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <div className="text-4xl">{isDragging ? '📸' : '🖼️'}</div>
+            <div className="text-center">
+              <div className="font-medium text-white mb-1">
+                {isDragging ? 'Rilascia qui le immagini' : 'Trascina le foto qui'}
+              </div>
+              <div className="text-sm text-gray-400">oppure</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onSelectFiles(e.target.files)} />
+              <Button onClick={() => inputRef.current?.click()}>Seleziona immagini</Button>
+              <Button variant="secondary" onClick={() => setPhotos([])}>Svuota bozza</Button>
+            </div>
+          </div>
         </div>
       </div>
 

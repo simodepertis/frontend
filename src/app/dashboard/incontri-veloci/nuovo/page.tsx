@@ -43,6 +43,7 @@ export default function NuovoIncontroVeloce() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     category: '',
     city: '',
@@ -111,6 +112,41 @@ export default function NuovoIncontroVeloce() {
       };
       reader.readAsDataURL(file);
     });
+  };
+
+  const handleFilesUpload = (files: FileList) => {
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          updateField('photos', [...formData.photos, event.target.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      handleFilesUpload(files);
+    }
   };
 
   const removePhoto = (index: number) => {
@@ -460,18 +496,31 @@ export default function NuovoIncontroVeloce() {
             
             {/* Upload */}
             <div className="mb-6">
-              <label className="block w-full px-6 py-8 border-2 border-dashed border-gray-600 rounded-lg text-center cursor-pointer hover:border-pink-500 transition-colors">
-                <div className="text-4xl mb-2">📷</div>
-                <div className="text-white mb-1">Clicca per caricare foto</div>
+              <div 
+                className={`block w-full px-6 py-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
+                  isDragging 
+                    ? 'border-pink-500 bg-pink-500/10' 
+                    : 'border-gray-600 hover:border-pink-500'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('photo-input')?.click()}
+              >
+                <div className="text-4xl mb-2">{isDragging ? '📸' : '📷'}</div>
+                <div className="text-white mb-1">
+                  {isDragging ? 'Rilascia qui le foto' : '👆 Trascina le foto qui o clicca per caricare'}
+                </div>
                 <div className="text-sm text-gray-400">PNG, JPG fino a 10MB</div>
                 <input
+                  id="photo-input"
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handlePhotoUpload}
                   className="hidden"
                 />
-              </label>
+              </div>
             </div>
 
             {/* Galleria */}
