@@ -138,6 +138,7 @@ export default function DashboardSidebar() {
   const adminOnlyItems = isAdmin
     ? [
       { href: "/dashboard/admin", label: "🏠 Dashboard Admin", icon: faGaugeHigh },
+      { href: "/dashboard/admin/import-bakeca", label: "🤖 Import Bakecaincontri", icon: faBolt },
       { href: "/dashboard/admin/annunci", label: "📝 Moderazione Annunci", icon: faBullhorn },
       { href: "/dashboard/admin/crediti/ordini", label: "💳 approvazione Ordini Crediti", icon: faBolt },
       { href: "/dashboard/admin/media/foto", label: "📸 Moderazione Foto", icon: faIdCard },
@@ -152,7 +153,7 @@ export default function DashboardSidebar() {
       { href: "/dashboard/admin/crediti/impostazioni", label: "⚙️ Impostazioni Crediti", icon: faGear },
       { href: "/dashboard/admin/statistiche", label: "📊 Statistiche Sito", icon: faChartBar },
       { href: "/", label: "🌐 Vai al Sito", icon: faGlobe },
-      { href: "/autenticazione", label: "🚪 Esci", icon: faRightFromBracket },
+      { href: "/autenticazione", label: "🚺 Esci", icon: faRightFromBracket },
     ]
     : [];
 
