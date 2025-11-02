@@ -3,20 +3,33 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import EscortCard from "@/components/EscortCard";
+import { COUNTRIES_CITIES } from "@/lib/internationalCities";
 
-const COUNTRIES: Record<string, { name: string; code: string; cities: string[] }> = {
-  fr: { name: "Francia", code: "FR", cities: ["Paris","Marseille","Lyon","Toulouse","Nice","Bordeaux"] },
-  de: { name: "Germania", code: "DE", cities: ["Berlin","Munich","Hamburg","Cologne","Frankfurt","Stuttgart"] },
-  es: { name: "Spagna", code: "ES", cities: ["Madrid","Barcelona","Valencia","Sevilla","Bilbao","Malaga"] },
-  uk: { name: "Regno Unito", code: "UK", cities: ["London","Manchester","Birmingham","Leeds","Liverpool","Glasgow"] },
-  ch: { name: "Svizzera", code: "CH", cities: ["Zurich","Geneva","Basel","Lausanne","Lugano","Bern"] },
-  nl: { name: "Olanda", code: "NL", cities: ["Amsterdam","Rotterdam","The Hague","Utrecht","Eindhoven"] },
-  be: { name: "Belgio", code: "BE", cities: ["Brussels","Antwerp","Ghent","Liège"] },
-  it: { name: "Italia", code: "IT", cities: ["Roma","Milano","Napoli","Torino","Bologna","Firenze"] },
+// Mappa slug -> dati paese
+const COUNTRY_SLUG_MAP: Record<string, { name: string; code: string; cities: string[] }> = {
+  fr: { name: "Francia", code: "FR", cities: COUNTRIES_CITIES.FR.cities },
+  de: { name: "Germania", code: "DE", cities: COUNTRIES_CITIES.DE.cities },
+  es: { name: "Spagna", code: "ES", cities: COUNTRIES_CITIES.ES.cities },
+  uk: { name: "Regno Unito", code: "UK", cities: COUNTRIES_CITIES.UK.cities },
+  ch: { name: "Svizzera", code: "CH", cities: COUNTRIES_CITIES.CH.cities },
+  nl: { name: "Olanda", code: "NL", cities: COUNTRIES_CITIES.NL.cities },
+  be: { name: "Belgio", code: "BE", cities: COUNTRIES_CITIES.BE.cities },
+  at: { name: "Austria", code: "AT", cities: COUNTRIES_CITIES.AT.cities },
+  pt: { name: "Portogallo", code: "PT", cities: COUNTRIES_CITIES.PT.cities },
+  pl: { name: "Polonia", code: "PL", cities: COUNTRIES_CITIES.PL.cities },
+  cz: { name: "Repubblica Ceca", code: "CZ", cities: COUNTRIES_CITIES.CZ.cities },
+  hu: { name: "Ungheria", code: "HU", cities: COUNTRIES_CITIES.HU.cities },
+  ro: { name: "Romania", code: "RO", cities: COUNTRIES_CITIES.RO.cities },
+  gr: { name: "Grecia", code: "GR", cities: COUNTRIES_CITIES.GR.cities },
+  ie: { name: "Irlanda", code: "IE", cities: COUNTRIES_CITIES.IE.cities },
+  se: { name: "Svezia", code: "SE", cities: COUNTRIES_CITIES.SE.cities },
+  no: { name: "Norvegia", code: "NO", cities: COUNTRIES_CITIES.NO.cities },
+  dk: { name: "Danimarca", code: "DK", cities: COUNTRIES_CITIES.DK.cities },
+  fi: { name: "Finlandia", code: "FI", cities: COUNTRIES_CITIES.FI.cities },
 };
 
 export default function CountryCityPage({ params }: { params: { country: string; city: string } }) {
-  const countryInfo = COUNTRIES[params.country] || COUNTRIES.fr;
+  const countryInfo = COUNTRY_SLUG_MAP[params.country] || COUNTRY_SLUG_MAP.fr;
   const cityName = params.city.charAt(0).toUpperCase() + params.city.slice(1);
   const [escorts, setEscorts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +120,7 @@ export default function CountryCityPage({ params }: { params: { country: string;
       <div className="mt-8">
         <div className="text-white font-semibold mb-3">Scopri altri paesi</div>
         <div className="flex flex-wrap gap-2">
-          {Object.entries(COUNTRIES).filter(([code]) => code !== params.country).map(([code, info]) => (
+          {Object.entries(COUNTRY_SLUG_MAP).filter(([code]) => code !== params.country).map(([code, info]) => (
             <Link key={code} href={`/internazionale/${code}`} className="px-3 py-1 rounded-full border border-gray-600 text-gray-300 hover:border-blue-600 hover:text-white text-sm">
               {info.name}
             </Link>
