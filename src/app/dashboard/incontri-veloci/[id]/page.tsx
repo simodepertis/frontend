@@ -9,6 +9,7 @@ export default function EditQuickMeeting() {
   const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [form, setForm] = useState<any>({
     title: "",
     description: "",
@@ -64,7 +65,10 @@ export default function EditQuickMeeting() {
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+    await handleFilesUpload(files);
+  };
 
+  const handleFilesUpload = async (files: File[]) => {
     setPhotoFiles(prev => [...prev, ...files]);
 
     // Crea preview
@@ -79,6 +83,29 @@ export default function EditQuickMeeting() {
     );
 
     setPhotoPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) {
+      await handleFilesUpload(files);
+    }
   };
 
   const removePhoto = (index: number) => {
@@ -197,12 +224,27 @@ export default function EditQuickMeeting() {
         {/* Gestione Foto */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Foto</label>
-          <div className="mb-4">
-            <label className="cursor-pointer inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
-              📷 Aggiungi Foto
-              <input type="file" multiple accept="image/*" onChange={onFileChange} className="hidden" />
-            </label>
-            <span className="ml-3 text-sm text-gray-400">Seleziona una o più immagini</span>
+          <div 
+            className={`mb-4 border-2 border-dashed rounded-lg p-6 transition-colors ${
+              isDragging 
+                ? 'border-blue-500 bg-blue-500/10' 
+                : 'border-gray-600 hover:border-blue-500'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="text-center">
+              <div className="text-4xl mb-2">{isDragging ? '📸' : '📷'}</div>
+              <div className="text-white mb-2">
+                {isDragging ? 'Rilascia qui le foto' : '👆 Trascina le foto qui o clicca per caricare'}
+              </div>
+              <label className="cursor-pointer inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                Seleziona Foto
+                <input type="file" multiple accept="image/*" onChange={onFileChange} className="hidden" />
+              </label>
+              <div className="text-sm text-gray-400 mt-2">PNG, JPG fino a 10MB</div>
+            </div>
           </div>
           
           {photoPreviews.length > 0 && (
