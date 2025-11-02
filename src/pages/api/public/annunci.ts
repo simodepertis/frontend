@@ -64,7 +64,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .filter(u => u.escortProfile)
       .map(u => {
         const profile = u.escortProfile!
-        const cities = (profile.cities as any) || []
+        let cities = (profile.cities as any) || []
+        
+        // COMPATIBILITÀ: Se cities è un oggetto (vecchio formato), estrai le città
+        if (cities && typeof cities === 'object' && !Array.isArray(cities)) {
+          const oldCities = []
+          if (cities.intlBaseCity) oldCities.push(cities.intlBaseCity)
+          if (cities.intlSecondCity) oldCities.push(cities.intlSecondCity)
+          if (cities.intlThirdCity) oldCities.push(cities.intlThirdCity)
+          if (cities.intlFourthCity) oldCities.push(cities.intlFourthCity)
+          // Aggiungi anche da internationalCities array se presente
+          if (Array.isArray(cities.internationalCities)) {
+            oldCities.push(...cities.internationalCities)
+          }
+          cities = oldCities.filter(Boolean)
+        }
         
         // Estrai countries dalle città internazionali
         const countries: string[] = []
