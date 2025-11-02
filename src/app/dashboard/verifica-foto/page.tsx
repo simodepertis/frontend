@@ -24,11 +24,12 @@ export default function VerificaFotoPage() {
 
   // Carica/salva bozza in localStorage
   useEffect(() => {
+    // Pulisci localStorage vecchio per evitare conflitti
     try {
-      const raw = localStorage.getItem("escort-verify-photos");
-      if (raw) setPhotos(JSON.parse(raw));
+      localStorage.removeItem("escort-verify-photos");
     } catch {}
-    // Carica anche da API
+    
+    // Carica da API
     (async () => {
       try {
         const token = localStorage.getItem('auth-token') || '';
@@ -92,9 +93,7 @@ export default function VerificaFotoPage() {
       } catch {}
     })();
   }, []);
-  useEffect(() => {
-    try { localStorage.setItem("escort-verify-photos", JSON.stringify(photos)); } catch {}
-  }, [photos]);
+  // Rimosso salvataggio localStorage per evitare conflitti con API
 
   // Drag & Drop handlers
   const handleDragOver = (e: React.DragEvent) => {
@@ -144,10 +143,22 @@ export default function VerificaFotoPage() {
             }, 
             body: JSON.stringify({ url: base64, name: file.name, size: file.size })
           });
+          console.log('📸 Upload response:', res.status);
           if (res.ok) {
             const { photo } = await res.json();
-            // aggiorna l'elemento con id/url reali
-            setPhotos((prev) => prev.map(p => p.id === tempId ? { ...p, id: String(photo.id), url: photo.url, size: photo.size ?? p.size } : p));
+            console.log('✅ Foto salvata nel DB:', photo);
+            // aggiorna l'elemento con id/url reali e status corretto
+            setPhotos((prev) => prev.map(p => p.id === tempId ? { 
+              ...p, 
+              id: String(photo.id), 
+              url: photo.url, 
+              size: photo.size ?? p.size,
+              status: photo.status === 'DRAFT' ? 'bozza' : photo.status === 'APPROVED' ? 'approvata' : photo.status === 'IN_REVIEW' ? 'in_review' : 'bozza'
+            } : p));
+          } else {
+            const error = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
+            console.error('❌ Upload fallito:', error);
+            alert(`Errore upload foto "${file.name}": ${error.error}`);
           }
         };
         reader.readAsDataURL(file);
