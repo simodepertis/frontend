@@ -3,25 +3,27 @@
 import Link from "next/link";
 import { COUNTRIES_CITIES } from "@/lib/internationalCities";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMapMarkerAlt, faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function RicercaCittaInternazionaliPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
 
-  // Filtra paesi e città in base alla ricerca
-  const filteredData = Object.entries(COUNTRIES_CITIES)
-    .filter(([code, data]) => {
-      if (selectedCountry && code !== selectedCountry) return false;
-      if (!searchTerm) return true;
-      
-      const search = searchTerm.toLowerCase();
-      return (
-        data.name.toLowerCase().includes(search) ||
-        data.cities.some(city => city.toLowerCase().includes(search))
-      );
-    });
+  const availableCities = selectedCountry ? COUNTRIES_CITIES[selectedCountry]?.cities || [] : [];
+
+  const handleSearch = () => {
+    if (!selectedCountry || !selectedCity) {
+      alert('Seleziona sia il paese che la città');
+      return;
+    }
+    
+    const countrySlug = selectedCountry.toLowerCase();
+    const citySlug = selectedCity.toLowerCase();
+    router.push(`/internazionale/${countrySlug}/${citySlug}`);
+  };
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -29,102 +31,117 @@ export default function RicercaCittaInternazionaliPage() {
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-4 text-white flex items-center gap-3">
           <FontAwesomeIcon icon={faGlobe} className="text-blue-500" />
-          Tutte le Città Internazionali
+          Ricerca Città Internazionali
         </h1>
         <p className="text-gray-300 text-lg">
-          Esplora tutte le città disponibili per paese
+          Seleziona un paese e una città per vedere le escort disponibili
         </p>
       </div>
 
-      {/* Filtri */}
+      {/* Selettori */}
       <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Ricerca per nome */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Selezione Paese */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-white">Cerca città o paese</label>
-            <input
-              type="text"
-              placeholder="Es. Paris, Francia, Berlin..."
-              className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <label className="text-sm font-medium text-white">Seleziona Paese *</label>
+            <select
+              className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedCountry}
+              onChange={(e) => {
+                setSelectedCountry(e.target.value);
+                setSelectedCity(""); // Reset città quando cambi paese
+              }}
+            >
+              <option value="">-- Seleziona un paese --</option>
+              {Object.entries(COUNTRIES_CITIES).map(([code, data]) => (
+                <option key={code} value={code}>
+                  {data.name} ({data.cities.length} città)
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Filtro per paese */}
+          {/* Selezione Città */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-white">Filtra per paese</label>
+            <label className="text-sm font-medium text-white">Seleziona Città *</label>
             <select
-              className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={selectedCountry}
-              onChange={(e) => setSelectedCountry(e.target.value)}
+              className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              disabled={!selectedCountry}
             >
-              <option value="">Tutti i paesi</option>
-              {Object.entries(COUNTRIES_CITIES).map(([code, data]) => (
-                <option key={code} value={code}>{data.name}</option>
+              <option value="">
+                {selectedCountry ? '-- Seleziona una città --' : 'Prima seleziona un paese'}
+              </option>
+              {availableCities.map((city) => (
+                <option key={city} value={city}>{city}</option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Reset filtri */}
-        {(searchTerm || selectedCountry) && (
-          <button
-            onClick={() => {
-              setSearchTerm("");
-              setSelectedCountry("");
-            }}
-            className="mt-4 text-sm text-blue-400 hover:text-blue-300"
-          >
-            ✕ Cancella filtri
-          </button>
+        {/* Bottone Cerca */}
+        <button
+          onClick={handleSearch}
+          disabled={!selectedCountry || !selectedCity}
+          className="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+        >
+          <FontAwesomeIcon icon={faSearch} />
+          Cerca Escort
+        </button>
+
+        {/* Anteprima selezione */}
+        {selectedCountry && selectedCity && (
+          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded-lg">
+            <div className="text-sm text-blue-300">
+              📍 Stai cercando escort a: <span className="font-semibold text-white">{selectedCity}, {COUNTRIES_CITIES[selectedCountry]?.name}</span>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Lista città per paese */}
-      <div className="space-y-8">
-        {filteredData.map(([code, data]) => (
-          <div key={code} className="bg-gray-900 rounded-xl border border-gray-700 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Link 
-                href={`/internazionale/${code.toLowerCase()}`}
-                className="text-2xl font-bold text-white hover:text-blue-400 transition-colors"
+      {/* Paesi più ricercati - Quick access */}
+      <div className="bg-gray-900 rounded-xl border border-gray-700 p-6 mb-8">
+        <h2 className="text-xl font-semibold text-white mb-4">🔥 Paesi Più Ricercati</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {['FR', 'DE', 'ES', 'UK', 'CH', 'NL', 'BE', 'AT'].map(code => {
+            const country = COUNTRIES_CITIES[code];
+            if (!country) return null;
+            return (
+              <button
+                key={code}
+                onClick={() => {
+                  setSelectedCountry(code);
+                  setSelectedCity("");
+                }}
+                className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors text-left"
               >
-                {data.name}
-              </Link>
-              <span className="text-gray-400 text-sm">({data.cities.length} città)</span>
-            </div>
+                <div className="font-medium">{country.name}</div>
+                <div className="text-xs text-gray-400">{country.cities.length} città</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {data.cities
-                .filter(city => {
-                  if (!searchTerm) return true;
-                  return city.toLowerCase().includes(searchTerm.toLowerCase());
-                })
-                .map((city) => (
-                  <Link
-                    key={city}
-                    href={`/internazionale/${code.toLowerCase()}/${city.toLowerCase()}`}
-                    className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors text-sm flex items-center gap-2"
-                  >
-                    <FontAwesomeIcon icon={faMapMarkerAlt} className="text-blue-400 text-xs" />
-                    {city}
-                  </Link>
-                ))}
-            </div>
-          </div>
-        ))}
-
-        {filteredData.length === 0 && (
-          <div className="text-center py-12 bg-gray-900 rounded-lg">
-            <p className="text-gray-400 text-lg mb-2">
-              Nessuna città trovata
-            </p>
-            <p className="text-gray-500 text-sm">
-              Prova a modificare i filtri di ricerca
-            </p>
-          </div>
-        )}
+      {/* Lista completa paesi */}
+      <div className="bg-gray-900 rounded-xl border border-gray-700 p-6">
+        <h2 className="text-xl font-semibold text-white mb-4">Tutti i Paesi Disponibili</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Object.entries(COUNTRIES_CITIES).map(([code, data]) => (
+            <Link
+              key={code}
+              href={`/internazionale/${code.toLowerCase()}`}
+              className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-between"
+            >
+              <div>
+                <div className="font-medium">{data.name}</div>
+                <div className="text-xs text-gray-400">{data.cities.length} città</div>
+              </div>
+              <div className="text-blue-400">→</div>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Back link */}
