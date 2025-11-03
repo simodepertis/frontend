@@ -95,6 +95,34 @@ export default function VerificaFotoPage() {
   }, []);
   // Rimosso salvataggio localStorage per evitare conflitti con API
 
+  // Funzione per ricaricare foto dall'API
+  const reloadPhotosFromAPI = async () => {
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/escort/photos', { 
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const { photos } = await res.json();
+        console.log('\ud83d\udd04 Foto ricaricate dall\'API:', photos);
+        if (Array.isArray(photos)) {
+          const mapped: PhotoItem[] = photos.map((p: any) => ({
+            id: String(p.id),
+            name: p.name,
+            url: p.url,
+            size: p.size,
+            status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : p.status === 'IN_REVIEW' ? 'in_review' : 'bozza',
+            isFace: !!p.isFace,
+          }));
+          setPhotos(mapped);
+        }
+      }
+    } catch (e) {
+      console.error('\u274c Errore reload foto:', e);
+    }
+  };
+
   // Drag & Drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -147,18 +175,14 @@ export default function VerificaFotoPage() {
           if (res.ok) {
             const { photo } = await res.json();
             console.log('✅ Foto salvata nel DB:', photo);
-            // aggiorna l'elemento con id/url reali e status corretto
-            setPhotos((prev) => prev.map(p => p.id === tempId ? { 
-              ...p, 
-              id: String(photo.id), 
-              url: photo.url, 
-              size: photo.size ?? p.size,
-              status: photo.status === 'DRAFT' ? 'bozza' : photo.status === 'APPROVED' ? 'approvata' : photo.status === 'IN_REVIEW' ? 'in_review' : 'bozza'
-            } : p));
+            // Ricarica TUTTE le foto dall'API per avere stato aggiornato
+            await reloadPhotosFromAPI();
           } else {
             const error = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
             console.error('❌ Upload fallito:', error);
             alert(`Errore upload foto "${file.name}": ${error.error}`);
+            // Rimuovi la foto temporanea in caso di errore
+            setPhotos((prev) => prev.filter(p => p.id !== tempId));
           }
         };
         reader.readAsDataURL(file);
@@ -168,12 +192,27 @@ export default function VerificaFotoPage() {
   };
 
   const removePhoto = async (id: string) => {
-    setPhotos((prev) => prev.filter(p => p.id !== id));
-    try { 
-      const token = localStorage.getItem('auth-token') || '';
-      await fetch('/api/escort/photos', { method: 'DELETE', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: Number(id) }) }); 
-    } catch {}
+    if (!id.includes('-')) {
+      try {
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch('/api/escort/photos', { 
+          method: 'DELETE', 
+          headers: { 
+            'Content-Type': 'application/json', 
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}) 
+          }, 
+          body: JSON.stringify({ id: Number(id) }) 
+        });
+        if (res.ok) {
+          await reloadPhotosFromAPI();
+        }
+      } catch {}
+    } else {
+      // Foto temporanea, rimuovi solo localmente
+      setPhotos((prev) => prev.filter(p => p.id !== id));
+    }
   };
+
   const sendForReview = async () => {
     setSubmitting(true);
     try {
@@ -192,7 +231,8 @@ export default function VerificaFotoPage() {
   const realBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !p.url.startsWith('blob:')).length, [photos]);
   const uploadingCount = useMemo(() => photos.filter(p => p.status === 'bozza' && p.url.startsWith('blob:')).length, [photos]);
   const totalBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza').length, [photos]);
-  const faceCount = useMemo(() => photos.filter(p => !!p.isFace).length, [photos]);
+  // CORREZIONE: conta solo foto DRAFT con volto (non APPROVED)
+  const faceCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !!p.isFace).length, [photos]);
   const hasFace = faceCount >= 1;
   const hasAnyDoc = docs.length > 0;
   const hasApprovedDoc = docs.some(d => d.status === 'approvato');
@@ -302,22 +342,19 @@ export default function VerificaFotoPage() {
                           const idNum = Number(p.id);
                           try {
                             setTogglingFaceId(p.id);
-                            // Ottimistico
-                            setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: !p.isFace } : x));
                             if (!Number.isNaN(idNum)) {
                               const token = localStorage.getItem('auth-token') || '';
                               const r = await fetch('/api/escort/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, isFace: !p.isFace }) });
                               const j = await r.json().catch(()=>({}));
                               if (!r.ok) {
-                                // rollback
-                                setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: p.isFace } : x));
                                 alert(j?.error || 'Errore aggiornamento');
                                 return;
                               }
+                              // Ricarica foto dall'API per stato aggiornato
+                              await reloadPhotosFromAPI();
                             }
-                          } catch {
-                            // rollback
-                            setPhotos(prev => prev.map(x => x.id === p.id ? { ...x, isFace: p.isFace } : x));
+                          } catch (e) {
+                            console.error('Errore toggle face:', e);
                           } finally {
                             setTogglingFaceId(null);
                           }
