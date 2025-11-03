@@ -170,19 +170,21 @@ export default function VerificaFotoPage() {
   };
 
   const sendForReview = async () => {
+    // IMPORTANTE: calcola bozze PRIMA di setSubmitting per evitare re-render che svuota array
+    const bozze = photos.filter(p => p.status === 'bozza');
+    console.log('📝 Foto da inviare:', bozze.length, bozze);
+    
+    if (bozze.length < 3) { 
+      alert('Seleziona almeno 3 foto'); 
+      return; 
+    }
+    if (!bozze.some(p => p.isFace)) { 
+      alert('Segna almeno 1 foto come volto'); 
+      return; 
+    }
+    
     setSubmitting(true);
     try {
-      // Tutte le foto 'bozza' sono nuove locali (DRAFT dal DB sono escluse)
-      const bozze = photos.filter(p => p.status === 'bozza');
-      console.log('📝 Foto da inviare:', bozze.length, bozze);
-      
-      // DEBUG: mostra info foto
-      const fotoConBase64 = bozze.filter(p => p.url.startsWith('data:'));
-      const fotoConBlob = bozze.filter(p => p.url.startsWith('blob:'));
-      alert(`DEBUG:\nFoto totali: ${photos.length}\nFoto bozza: ${bozze.length}\nCon base64: ${fotoConBase64.length}\nCon blob: ${fotoConBlob.length}\nCon volto: ${bozze.filter(p => p.isFace).length}`);
-      
-      if (bozze.length < 3) { alert('Seleziona almeno 3 foto'); setSubmitting(false); return; }
-      if (!bozze.some(p => p.isFace)) { alert('Segna almeno 1 foto come volto'); setSubmitting(false); return; }
       
       const token = localStorage.getItem('auth-token') || '';
       // Invia TUTTE le foto base64 in batch
