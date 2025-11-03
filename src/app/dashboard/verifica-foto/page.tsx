@@ -191,27 +191,35 @@ export default function VerificaFotoPage() {
       try {
         const base64 = await fileToCompressedBase64(file);
         const token = localStorage.getItem('auth-token') || '';
-        let res = await fetch('/api/escort/photos/upload', { 
-          method: 'POST', 
-          headers: { 
-            'Content-Type': 'application/json',
+        // Primo tentativo: multipart (robusto su Vercel)
+        const fd = new FormData();
+        // Converto base64 in Blob per invio come file
+        const pure = base64.split(',')[1] || base64;
+        const contentType = (base64.match(/^data:(.*?);base64,/)?.[1]) || 'image/jpeg';
+        const byteChars = atob(pure);
+        const byteNumbers = new Array(byteChars.length);
+        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([new Uint8Array(byteNumbers)], { type: contentType });
+        fd.append('file', blob, file.name);
+        let res = await fetch('/api/escort/photos/upload-file', {
+          method: 'POST',
+          headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          }, 
-          body: JSON.stringify({ url: base64, name: file.name, size: file.size })
+          },
+          body: fd
         });
-        console.log('📸 Upload response:', res.status);
+        console.log('📸 Upload multipart response:', res.status);
         if (!res.ok) {
-          // Retry with minimal payload (strip data: prefix if server accetta puro base64)
-          const pure = base64.split(',')[1] || base64;
+          // Fallback JSON
           res = await fetch('/api/escort/photos/upload', { 
             method: 'POST', 
             headers: { 
               'Content-Type': 'application/json',
               ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             }, 
-            body: JSON.stringify({ data: pure, filename: file.name, fileSize: file.size })
+            body: JSON.stringify({ url: base64, name: file.name, size: file.size })
           });
-          console.log('📸 Retry upload response:', res.status);
+          console.log('📸 Fallback JSON upload response:', res.status);
         }
         if (res.ok) {
           const { photo } = await res.json();
