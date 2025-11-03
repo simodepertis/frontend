@@ -28,6 +28,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const body = req.body || {}
+    console.log('🗒️ Body ricevuto:', {
+      hasBody: !!body,
+      bodyKeys: Object.keys(body),
+      hasUrl: !!body.url,
+      hasName: !!body.name,
+      urlLength: body.url?.length || 0,
+      nameValue: body.name
+    })
+    
     const { url, name, size } = body
     
     if (!url || !name) {
