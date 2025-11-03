@@ -185,20 +185,69 @@ export default function VerificaFotoPage() {
     
     setSubmitting(true);
     try {
-      
       const token = localStorage.getItem('auth-token') || '';
-      // Invia TUTTE le foto base64 in batch
-      const photosData = bozze.map(p => ({ url: p.url, name: p.name, size: p.size, isFace: !!p.isFace }));
-      const res = await fetch('/api/escort/photos/submit', { 
+      
+      // Invia foto UNA PER UNA per evitare body troppo grande
+      let successCount = 0;
+      for (const foto of bozze) {
+        try {
+          const res = await fetch('/api/escort/photos/upload', { 
+            method: 'POST', 
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ 
+              url: foto.url, 
+              name: foto.name, 
+              size: foto.size 
+            })
+          });
+          
+          if (res.ok) {
+            const { photo } = await res.json();
+            // Se questa foto era marcata come volto, aggiorna subito
+            if (foto.isFace && photo?.id) {
+              await fetch('/api/escort/photos', { 
+                method: 'PATCH', 
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}` 
+                }, 
+                body: JSON.stringify({ id: photo.id, isFace: true }) 
+              });
+            }
+            successCount++;
+          } else {
+            const err = await res.json().catch(() => ({ error: 'Errore' }));
+            console.error('❌ Upload foto fallito:', foto.name, err);
+          }
+        } catch (e) {
+          console.error('❌ Errore upload foto:', foto.name, e);
+        }
+      }
+      
+      if (successCount === 0) {
+        alert('Nessuna foto è stata caricata. Riprova.');
+        return;
+      }
+      
+      // Ora invia tutte le foto DRAFT a IN_REVIEW
+      const submitRes = await fetch('/api/escort/photos/submit', { 
         method: 'POST', 
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ photos: photosData })
+        body: JSON.stringify({ skipValidation: true })
       });
-      const j = await res.json().catch(()=>({}));
-      if (!res.ok) { alert(j?.error || 'Errore invio a verifica'); return; }
+      
+      const submitData = await submitRes.json().catch(()=>({}));
+      if (!submitRes.ok) { 
+        alert(submitData?.error || 'Errore invio a verifica'); 
+        return; 
+      }
+      
       // Svuota bozze e ricarica dall'API
       setPhotos([]);
       await reloadPhotosFromAPI();
