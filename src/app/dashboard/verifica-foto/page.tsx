@@ -147,35 +147,6 @@ export default function VerificaFotoPage() {
     }
   };
 
-  // Utility: compress image to <= 1600px and ~0.8 quality JPEG/WEBP
-  const fileToCompressedBase64 = async (file: File): Promise<string> => {
-    try {
-      const bitmap = await createImageBitmap(file);
-      const maxSide = 1600;
-      let { width, height } = bitmap;
-      const ratio = Math.min(1, maxSide / Math.max(width, height));
-      width = Math.round(width * ratio);
-      height = Math.round(height * ratio);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas context missing');
-      ctx.drawImage(bitmap, 0, 0, width, height);
-      // Prefer JPEG to limit size
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      try { bitmap.close?.(); } catch {}
-      return dataUrl;
-    } catch {
-      // Fallback to raw base64
-      return await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(file);
-      });
-    }
-  };
 
   const onSelectFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -187,31 +158,13 @@ export default function VerificaFotoPage() {
       const tempId = `${file.name}-${file.size}-${Date.now()}`;
       const tempItem: PhotoItem = { id: tempId, name: file.name, url: tempUrl, size: file.size, status: "bozza" };
       newItems.push(tempItem);
-      // upload reale: comprimi e invia (riduce rischio 400 per body troppo grande)
-      try {
-        const base64 = await fileToCompressedBase64(file);
+      // upload reale: semplice base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string;
         const token = localStorage.getItem('auth-token') || '';
-        // Primo tentativo: multipart (robusto su Vercel)
-        const fd = new FormData();
-        // Converto base64 in Blob per invio come file
-        const pure = base64.split(',')[1] || base64;
-        const contentType = (base64.match(/^data:(.*?);base64,/)?.[1]) || 'image/jpeg';
-        const byteChars = atob(pure);
-        const byteNumbers = new Array(byteChars.length);
-        for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-        const blob = new Blob([new Uint8Array(byteNumbers)], { type: contentType });
-        fd.append('file', blob, file.name);
-        let res = await fetch('/api/escort/photos/upload-file', {
-          method: 'POST',
-          headers: {
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-          },
-          body: fd
-        });
-        console.log('📸 Upload multipart response:', res.status);
-        if (!res.ok) {
-          // Fallback JSON
-          res = await fetch('/api/escort/photos/upload', { 
+        try {
+          const res = await fetch('/api/escort/photos/upload', { 
             method: 'POST', 
             headers: { 
               'Content-Type': 'application/json',
@@ -219,21 +172,23 @@ export default function VerificaFotoPage() {
             }, 
             body: JSON.stringify({ url: base64, name: file.name, size: file.size })
           });
-          console.log('📸 Fallback JSON upload response:', res.status);
-        }
-        if (res.ok) {
-          const { photo } = await res.json();
-          console.log('✅ Foto salvata nel DB:', photo);
-          await reloadPhotosFromAPI();
-        } else {
-          const error = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
-          console.error('❌ Upload fallito:', error);
-          alert(`Errore upload foto "${file.name}": ${error.error}`);
+          console.log('📸 Upload response:', res.status);
+          if (res.ok) {
+            const { photo } = await res.json();
+            console.log('✅ Foto salvata nel DB:', photo);
+            await reloadPhotosFromAPI();
+          } else {
+            const error = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
+            console.error('❌ Upload fallito:', error);
+            alert(`Errore upload foto "${file.name}": ${error.error}`);
+            setPhotos((prev) => prev.filter(p => p.id !== tempId));
+          }
+        } catch (err) {
+          console.error('❌ Upload exception:', err);
           setPhotos((prev) => prev.filter(p => p.id !== tempId));
         }
-      } catch (e) {
-        console.error('❌ Upload exception:', e);
-      }
+      };
+      reader.readAsDataURL(file);
     }
     if (newItems.length) setPhotos((prev) => [...prev, ...newItems]);
   };
