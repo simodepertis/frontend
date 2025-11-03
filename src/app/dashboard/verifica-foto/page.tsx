@@ -176,7 +176,9 @@ export default function VerificaFotoPage() {
   const sendForReview = async () => {
     setSubmitting(true);
     try {
-      const bozze = photos.filter(p => p.status === 'bozza');
+      // Filtro SOLO foto nuove locali (id contiene '-'), NON quelle già nel DB
+      const bozze = photos.filter(p => p.status === 'bozza' && p.id.includes('-'));
+      console.log('📝 Foto da inviare:', bozze.length, bozze);
       if (bozze.length < 3) { alert('Seleziona almeno 3 foto'); setSubmitting(false); return; }
       if (!bozze.some(p => p.isFace)) { alert('Segna almeno 1 foto come volto'); setSubmitting(false); return; }
       
@@ -202,11 +204,11 @@ export default function VerificaFotoPage() {
     }
   };
 
-  const realBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !p.url.startsWith('blob:')).length, [photos]);
-  const uploadingCount = useMemo(() => photos.filter(p => p.status === 'bozza' && p.url.startsWith('blob:')).length, [photos]);
-  const totalBozzaCount = useMemo(() => photos.filter(p => p.status === 'bozza').length, [photos]);
-  // CORREZIONE: conta solo foto DRAFT con volto (non APPROVED)
-  const faceCount = useMemo(() => photos.filter(p => p.status === 'bozza' && !!p.isFace).length, [photos]);
+  // Conta solo foto NUOVE locali (id con '-'), NON quelle già nel DB
+  const newPhotos = useMemo(() => photos.filter(p => p.status === 'bozza' && p.id.includes('-')), [photos]);
+  const uploadingCount = useMemo(() => newPhotos.filter(p => p.url.startsWith('blob:')).length, [newPhotos]);
+  const totalBozzaCount = useMemo(() => newPhotos.length, [newPhotos]);
+  const faceCount = useMemo(() => newPhotos.filter(p => !!p.isFace).length, [newPhotos]);
   const hasFace = faceCount >= 1;
   const hasAnyDoc = docs.length > 0;
   const hasApprovedDoc = docs.some(d => d.status === 'approvato');
