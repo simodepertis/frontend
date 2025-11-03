@@ -44,24 +44,14 @@ export default function VerificaFotoPage() {
               status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : p.status === 'IN_REVIEW' ? 'in_review' : 'bozza',
               isFace: !!p.isFace,
             }));
-            setPhotos((prev) => {
-              // unisci evitando duplicati per id
-              const byId: Record<string, PhotoItem> = {};
-              [...prev, ...mapped].forEach(ph => { byId[ph.id] = ph; });
-              return Object.values(byId);
-            });
+            setPhotos(mapped);
           }
         }
-      } catch {}
-    })();
-    // Carica documenti
-    (async () => {
-      try {
-        const token = localStorage.getItem('auth-token') || '';
-        const res = await fetch('/api/escort/documents', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
-        if (res.ok) {
-          const { documents } = await res.json();
-          const mapped: DocItem[] = (documents || []).map((d: any) => ({
+        // 3) Carica documenti
+        const dr = await fetch('/api/escort/documents', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (dr.ok) {
+          const { documents } = await dr.json();
+          const mapped = documents.map((d: any) => ({
             id: String(d.id),
             type: d.type,
             url: d.url,
@@ -69,25 +59,17 @@ export default function VerificaFotoPage() {
           }));
           setDocs(mapped);
         }
-      } catch {}
-    })();
-    // Carica stato consenso legale e ruolo utente
-    (async () => {
-      try {
-        const token = localStorage.getItem('auth-token');
-        const [consentRes, meRes] = await Promise.all([
-          fetch('/api/escort/consent', { headers: { 'Authorization': `Bearer ${token}` } }),
-          fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } })
-        ]);
-        
-        if (consentRes.ok) {
-          const data = await consentRes.json();
-          setConsentAcceptedAt(data?.consentAcceptedAt || null);
+        // 4) Leggi user role e consenso
+        const ur = await fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (ur.ok) {
+          const { user } = await ur.json();
+          setUserRole(user?.role || '');
         }
-        
-        if (meRes.ok) {
-          const userData = await meRes.json();
-          setUserRole(userData?.user?.ruolo || '');
+        // 5) Carica consenso
+        const cr = await fetch('/api/escort/consent', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (cr.ok) {
+          const { consent } = await cr.json();
+          setConsentAcceptedAt(consent?.acceptedAt || null);
         }
       } catch {}
     })();
@@ -150,23 +132,31 @@ export default function VerificaFotoPage() {
   const onSelectFiles = async (files: FileList | null) => {
     if (!files) return;
     const newItems: PhotoItem[] = [];
-    for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) continue;
-      // anteprima locale immediata
-      const tempUrl = URL.createObjectURL(file);
-      const tempId = `${file.name}-${file.size}-${Date.now()}`;
-      const tempItem: PhotoItem = { id: tempId, name: file.name, url: tempUrl, size: file.size, status: "bozza" };
-      newItems.push(tempItem);
-      // Salva in memoria locale come base64 (come incontri-veloci)
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
-        // Aggiorna l'item con il base64
-        setPhotos((prev) => prev.map(p => p.id === tempId ? { ...p, url: base64 } : p));
-      };
-      reader.readAsDataURL(file);
-    }
-    if (newItems.length) setPhotos((prev) => [...prev, ...newItems]);
+    
+    // Leggi tutti i file PRIMA di aggiungerli
+    const filePromises = Array.from(files).map(file => {
+      if (!file.type.startsWith("image/")) return null;
+      return new Promise<PhotoItem>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string;
+          const tempId = `${file.name}-${file.size}-${Date.now()}-${Math.random()}`;
+          resolve({
+            id: tempId,
+            name: file.name,
+            url: base64,
+            size: file.size,
+            status: "bozza",
+            isFace: false
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    
+    const items = await Promise.all(filePromises);
+    const validItems = items.filter(i => i !== null) as PhotoItem[];
+    if (validItems.length) setPhotos((prev) => [...prev, ...validItems]);
   };
 
   const removePhoto = (id: string) => {
@@ -206,7 +196,6 @@ export default function VerificaFotoPage() {
 
   // Conta solo foto NUOVE locali (id con '-'), NON quelle già nel DB
   const newPhotos = useMemo(() => photos.filter(p => p.status === 'bozza' && p.id.includes('-')), [photos]);
-  const uploadingCount = useMemo(() => newPhotos.filter(p => p.url.startsWith('blob:')).length, [newPhotos]);
   const totalBozzaCount = useMemo(() => newPhotos.length, [newPhotos]);
   const faceCount = useMemo(() => newPhotos.filter(p => !!p.isFace).length, [newPhotos]);
   const hasFace = faceCount >= 1;
@@ -278,9 +267,6 @@ export default function VerificaFotoPage() {
         <div className="font-semibold mb-3 flex items-center justify-between">
           <span>Le tue foto ({photos.length})</span>
           <div className="flex items-center gap-2">
-            {uploadingCount > 0 && (
-              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Caricamento in corso: {uploadingCount}</span>
-            )}
             <span className={`text-xs px-2 py-1 rounded-full ${hasFace ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>Volto: {faceCount}/1</span>
           </div>
         </div>
@@ -594,7 +580,7 @@ export default function VerificaFotoPage() {
       {/* Invio per verifica */}
       <div className="flex items-center justify-end gap-3">
         <div className="mr-auto text-xs text-gray-400">
-          Requisiti: almeno 3 foto · almeno 1 con volto — {totalBozzaCount >= 3 ? '3+ foto ✓' : `${Math.max(0, 3 - totalBozzaCount)} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'} {uploadingCount>0 ? ' · caricamenti in corso (puoi già segnare il volto)' : ''}
+          Requisiti: almeno 3 foto · almeno 1 con volto — {totalBozzaCount >= 3 ? '3+ foto ✓' : `${Math.max(0, 3 - totalBozzaCount)} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'}
         </div>
         <Button
           variant="secondary"
