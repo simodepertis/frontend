@@ -36,14 +36,17 @@ export default function VerificaFotoPage() {
         if (res.ok) {
           const { photos } = await res.json();
           if (Array.isArray(photos)) {
-            const mapped: PhotoItem[] = photos.map((p: any) => ({
-              id: String(p.id),
-              name: p.name,
-              url: p.url,
-              size: p.size,
-              status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : p.status === 'IN_REVIEW' ? 'in_review' : 'bozza',
-              isFace: !!p.isFace,
-            }));
+            // NON caricare foto DRAFT dal DB - solo IN_REVIEW e APPROVED
+            const mapped: PhotoItem[] = photos
+              .filter((p: any) => p.status !== 'DRAFT') // Escludi DRAFT
+              .map((p: any) => ({
+                id: String(p.id),
+                name: p.name,
+                url: p.url,
+                size: p.size,
+                status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : 'in_review',
+                isFace: !!p.isFace,
+              }));
             setPhotos(mapped);
           }
         }
@@ -86,17 +89,20 @@ export default function VerificaFotoPage() {
       });
       if (res.ok) {
         const { photos } = await res.json();
-        console.log('\ud83d\udd04 Foto ricaricate dall\'API:', photos);
         if (Array.isArray(photos)) {
-          const mapped: PhotoItem[] = photos.map((p: any) => ({
-            id: String(p.id),
-            name: p.name,
-            url: p.url,
-            size: p.size,
-            status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : p.status === 'IN_REVIEW' ? 'in_review' : 'bozza',
-            isFace: !!p.isFace,
-          }));
-          setPhotos(mapped);
+          // NON caricare foto DRAFT - solo IN_REVIEW e APPROVED
+          const mapped: PhotoItem[] = photos
+            .filter((p: any) => p.status !== 'DRAFT')
+            .map((p: any) => ({
+              id: String(p.id),
+              name: p.name,
+              url: p.url,
+              size: p.size,
+              status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : 'in_review',
+              isFace: !!p.isFace,
+            }));
+          setPhotos(mapped); // Sostituisci tutto con foto dal DB (non DRAFT)
+          console.log('🔄 Foto ricaricate dall\'API:', mapped);
         }
       }
     } catch (e) {
@@ -166,8 +172,8 @@ export default function VerificaFotoPage() {
   const sendForReview = async () => {
     setSubmitting(true);
     try {
-      // Filtro SOLO foto nuove locali (id contiene '-'), NON quelle già nel DB
-      const bozze = photos.filter(p => p.status === 'bozza' && p.id.includes('-'));
+      // Tutte le foto 'bozza' sono nuove locali (DRAFT dal DB sono escluse)
+      const bozze = photos.filter(p => p.status === 'bozza');
       console.log('📝 Foto da inviare:', bozze.length, bozze);
       if (bozze.length < 3) { alert('Seleziona almeno 3 foto'); setSubmitting(false); return; }
       if (!bozze.some(p => p.isFace)) { alert('Segna almeno 1 foto come volto'); setSubmitting(false); return; }
@@ -194,8 +200,8 @@ export default function VerificaFotoPage() {
     }
   };
 
-  // Conta solo foto NUOVE locali (id con '-'), NON quelle già nel DB
-  const newPhotos = useMemo(() => photos.filter(p => p.status === 'bozza' && p.id.includes('-')), [photos]);
+  // Tutte le foto 'bozza' sono nuove locali (DRAFT dal DB sono escluse)
+  const newPhotos = useMemo(() => photos.filter(p => p.status === 'bozza'), [photos]);
   const totalBozzaCount = useMemo(() => newPhotos.length, [newPhotos]);
   const faceCount = useMemo(() => newPhotos.filter(p => !!p.isFace).length, [newPhotos]);
   const hasFace = faceCount >= 1;
