@@ -28,28 +28,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const body = req.body || {}
+    // Supporta diversi nomi campo usati dal frontend: url | file | image | data
+    const rawUrl: any = (body as any)?.url || (body as any)?.file || (body as any)?.image || (body as any)?.data
+    const rawName: any = (body as any)?.name || (body as any)?.filename || (body as any)?.fileName || 'photo.jpg'
+    const rawSize: any = (body as any)?.size || (body as any)?.fileSize || 0
+
     console.log('🗒️ Body ricevuto:', {
       hasBody: !!body,
       bodyKeys: Object.keys(body),
-      hasUrl: !!body.url,
-      hasName: !!body.name,
-      urlLength: body.url?.length || 0,
-      nameValue: body.name
+      hasUrl: !!rawUrl,
+      hasName: !!rawName,
+      urlLength: typeof rawUrl === 'string' ? rawUrl.length : 0,
+      nameValue: rawName
     })
     
-    const { url, name, size } = body
-    
-    if (!url || !name) {
-      console.log('❌ Upload foto: url o name mancanti', { url: !!url, name: !!name })
-      return res.status(400).json({ error: 'URL e nome richiesti' })
+    if (!rawUrl || !rawName) {
+      console.log('❌ Upload foto: campo file mancante', { hasUrl: !!rawUrl, hasName: !!rawName })
+      return res.status(400).json({ error: 'File mancante' })
     }
+
+    // Normalizza base64: se è oggetto, prova a leggere .base64; se è URL esterno, accetta così com'è
+    let photoUrl = typeof rawUrl === 'string' ? rawUrl : (rawUrl as any)?.base64 || ''
+    if (!photoUrl) {
+      return res.status(400).json({ error: 'File mancante' })
+    }
+    // Se manca il prefix data:, aggiungi un default (assumiamo JPEG)
+    if (photoUrl.startsWith('/')) {
+      // Caso path relativo già caricato altrove: accetta
+    } else if (!photoUrl.startsWith('data:') && !photoUrl.startsWith('http')) {
+      photoUrl = `data:image/jpeg;base64,${photoUrl}`
+    }
+
+    const photoName = String(rawName)
+    const photoSize = Number(rawSize) || 0
     
-    // Accetta URL base64 o URL normale dal frontend
-    const photoUrl = url
-    const photoName = name
-    const photoSize = size || 0
-    
-    console.log('📸 Creazione foto:', { userId, name: photoName, size: photoSize })
+    console.log('📸 Creazione foto:', { userId, name: photoName, size: photoSize, urlPreview: photoUrl?.slice(0, 30) })
     
     const photo = await prisma.photo.create({
       data: {
