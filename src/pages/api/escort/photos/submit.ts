@@ -17,24 +17,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!userId) return res.status(401).json({ error: 'Non autenticato' })
 
   try {
-    // Conta foto in bozza
-    const photos = await prisma.photo.findMany({ 
-      where: { userId, status: 'DRAFT' } 
-    })
+    const { photos } = req.body || {}
+    
+    if (!photos || !Array.isArray(photos)) {
+      return res.status(400).json({ error: 'Array foto mancante' })
+    }
     
     if (photos.length < 3) {
       return res.status(400).json({ error: 'Devi caricare almeno 3 foto' })
     }
     
-    const faceCount = photos.filter(p => p.isFace).length
+    const faceCount = photos.filter((p: any) => p.isFace).length
     if (faceCount < 1) {
       return res.status(400).json({ error: 'Almeno una foto deve essere marcata come volto' })
     }
 
-    // Aggiorna tutte le foto in bozza a IN_REVIEW
-    await prisma.photo.updateMany({
-      where: { userId, status: 'DRAFT' },
-      data: { status: 'IN_REVIEW' }
+    // Crea tutte le foto nel DB come IN_REVIEW
+    await prisma.photo.createMany({
+      data: photos.map((p: any) => ({
+        userId,
+        url: p.url,
+        name: p.name,
+        size: p.size || 0,
+        status: 'IN_REVIEW',
+        isFace: !!p.isFace,
+      }))
     })
 
     return res.status(200).json({ ok: true, message: 'Foto inviate in revisione' })

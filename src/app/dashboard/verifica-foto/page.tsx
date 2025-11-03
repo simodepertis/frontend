@@ -10,7 +10,6 @@ export default function VerificaFotoPage() {
   type PhotoItem = { id: string; name: string; url: string; size: number; status: "bozza" | "in_review" | "approvata" | "rifiutata"; isFace?: boolean };
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [togglingFaceId, setTogglingFaceId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   type DocItem = { id: string; type: 'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'; url: string; status: 'in_review' | 'approvato' | 'rifiutato' };
   const [docs, setDocs] = useState<DocItem[]>([]);
@@ -158,73 +157,46 @@ export default function VerificaFotoPage() {
       const tempId = `${file.name}-${file.size}-${Date.now()}`;
       const tempItem: PhotoItem = { id: tempId, name: file.name, url: tempUrl, size: file.size, status: "bozza" };
       newItems.push(tempItem);
-      // upload reale: semplice base64
+      // Salva in memoria locale come base64 (come incontri-veloci)
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = (e) => {
         const base64 = e.target?.result as string;
-        const token = localStorage.getItem('auth-token') || '';
-        try {
-          const res = await fetch('/api/escort/photos/upload', { 
-            method: 'POST', 
-            headers: { 
-              'Content-Type': 'application/json',
-              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-            }, 
-            body: JSON.stringify({ url: base64, name: file.name, size: file.size })
-          });
-          console.log('📸 Upload response:', res.status);
-          if (res.ok) {
-            const { photo } = await res.json();
-            console.log('✅ Foto salvata nel DB:', photo);
-            await reloadPhotosFromAPI();
-          } else {
-            const error = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
-            console.error('❌ Upload fallito:', error);
-            alert(`Errore upload foto "${file.name}": ${error.error}`);
-            setPhotos((prev) => prev.filter(p => p.id !== tempId));
-          }
-        } catch (err) {
-          console.error('❌ Upload exception:', err);
-          setPhotos((prev) => prev.filter(p => p.id !== tempId));
-        }
+        // Aggiorna l'item con il base64
+        setPhotos((prev) => prev.map(p => p.id === tempId ? { ...p, url: base64 } : p));
       };
       reader.readAsDataURL(file);
     }
     if (newItems.length) setPhotos((prev) => [...prev, ...newItems]);
   };
 
-  const removePhoto = async (id: string) => {
-    if (!id.includes('-')) {
-      try {
-        const token = localStorage.getItem('auth-token') || '';
-        const res = await fetch('/api/escort/photos', { 
-          method: 'DELETE', 
-          headers: { 
-            'Content-Type': 'application/json', 
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}) 
-          }, 
-          body: JSON.stringify({ id: Number(id) }) 
-        });
-        if (res.ok) {
-          await reloadPhotosFromAPI();
-        }
-      } catch {}
-    } else {
-      // Foto temporanea, rimuovi solo localmente
-      setPhotos((prev) => prev.filter(p => p.id !== id));
-    }
+  const removePhoto = (id: string) => {
+    setPhotos((prev) => prev.filter(p => p.id !== id));
   };
 
   const sendForReview = async () => {
     setSubmitting(true);
     try {
+      const bozze = photos.filter(p => p.status === 'bozza');
+      if (bozze.length < 3) { alert('Seleziona almeno 3 foto'); setSubmitting(false); return; }
+      if (!bozze.some(p => p.isFace)) { alert('Segna almeno 1 foto come volto'); setSubmitting(false); return; }
+      
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch('/api/escort/photos/submit', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+      // Invia TUTTE le foto base64 in batch
+      const photosData = bozze.map(p => ({ url: p.url, name: p.name, size: p.size, isFace: !!p.isFace }));
+      const res = await fetch('/api/escort/photos/submit', { 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ photos: photosData })
+      });
       const j = await res.json().catch(()=>({}));
       if (!res.ok) { alert(j?.error || 'Errore invio a verifica'); return; }
-      // porta tutte a in_review lato UI
-      setPhotos((prev) => prev.map(p => ({ ...p, status: 'in_review' })));
-      alert('Foto inviate in revisione. Requisiti: min 3 foto, almeno una col volto.');
+      // Svuota bozze e ricarica dall'API
+      setPhotos([]);
+      await reloadPhotosFromAPI();
+      alert('✅ Foto inviate in revisione con successo!');
     } finally {
       setSubmitting(false);
     }
@@ -336,31 +308,16 @@ export default function VerificaFotoPage() {
                         <Button variant="secondary" className="px-2 py-1 h-7 text-xs whitespace-nowrap" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
                         <Button 
                           variant="secondary"
-                          className={`${p.isFace ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`} 
-                          disabled={togglingFaceId === p.id}
-                          title={togglingFaceId === p.id ? 'Aggiornamento in corso…' : ''}
-                          aria-pressed={p.isFace ? true : false}
-                          onClick={async()=>{
-                          const idNum = Number(p.id);
-                          try {
-                            setTogglingFaceId(p.id);
-                            if (!Number.isNaN(idNum)) {
-                              const token = localStorage.getItem('auth-token') || '';
-                              const r = await fetch('/api/escort/photos', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, isFace: !p.isFace }) });
-                              const j = await r.json().catch(()=>({}));
-                              if (!r.ok) {
-                                alert(j?.error || 'Errore aggiornamento');
-                                return;
-                              }
-                              // Ricarica foto dall'API per stato aggiornato
-                              await reloadPhotosFromAPI();
+                          className={`${p.isFace ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`}
+                          onClick={() => {
+                            // Se già c'è un volto, rimuovi il flag da quello e mettilo su questo
+                            if (p.isFace) {
+                              setPhotos((prev) => prev.map(ph => ph.id === p.id ? { ...ph, isFace: false } : ph));
+                            } else {
+                              setPhotos((prev) => prev.map(ph => ({ ...ph, isFace: ph.id === p.id })));
                             }
-                          } catch (e) {
-                            console.error('Errore toggle face:', e);
-                          } finally {
-                            setTogglingFaceId(null);
-                          }
-                        }}>{p.isFace ? 'Rimuovi volto' : 'Segna come volto'}</Button>
+                          }}
+                        >{p.isFace ? 'Rimuovi volto' : 'Segna come volto'}</Button>
                       </>
                     )}
                   </div>
