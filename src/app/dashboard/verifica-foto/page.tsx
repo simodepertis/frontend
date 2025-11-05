@@ -123,34 +123,76 @@ export default function VerificaFotoPage() {
 
     try {
       const token = localStorage.getItem('auth-token') || '';
-      
-      // Invia TUTTE le foto in un colpo solo
-      const res = await fetch('/api/escort/photos/submit-simple', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          photos: photos.map((url, idx) => ({
-            url,
-            name: `foto-${idx + 1}.jpg`,
-            size: 0,
-            isFace: idx === faceIndex
-          }))
-        })
-      });
+      if (!token) { alert('Devi essere autenticato'); return; }
 
-      if (res.ok) {
-        alert('✅ Foto inviate in revisione con successo!');
-        setPhotos([]);
-        setFaceIndex(-1);
-      } else {
-        const error = await res.json();
-        alert(`Errore: ${error.error || 'Impossibile inviare le foto'}`);
+      // Helper: converte dataURL in Blob
+      const dataURLtoBlob = (dataUrl: string) => {
+        if (!dataUrl || !dataUrl.startsWith('data:')) throw new Error('DataURL non valido');
+        const arr = dataUrl.split(',');
+        if (arr.length < 2) throw new Error('DataURL incompleto');
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        return new Blob([u8arr], { type: mime });
+      };
+
+      // 1) Carica foto UNA PER UNA (multipart con file reale -> /upload) -> DRAFT
+      const created: Array<{ id: number; idx: number }> = [];
+      for (let idx = 0; idx < photos.length; idx++) {
+        const url = photos[idx];
+        try {
+          // Converte dataURL in Blob e invia come 'file'
+          const blob = dataURLtoBlob(url);
+          const fd = new FormData();
+          fd.append('file', blob, `foto-${idx + 1}.jpg`);
+          const up = await fetch('/api/escort/photos/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: fd
+          });
+          const uj = await up.json().catch(()=>({}));
+          if (!up.ok || !uj?.photo?.id) {
+            console.error('Upload multipart (file) error', up.status, uj);
+            throw new Error(`${uj?.error || 'Upload fallito'} (status ${up.status})`);
+          }
+          created.push({ id: Number(uj.photo.id), idx });
+        } catch (e: any) {
+          console.error('Upload foto fallito (idx='+idx+')', e);
+          alert(`Errore upload foto ${idx+1}: ${e?.message || e}`);
+          setSubmitting(false);
+          return;
+        }
       }
+
+      // 2) Imposta volto su quella scelta
+      try {
+        const face = created.find(c => c.idx === faceIndex);
+        if (face) {
+          await fetch('/api/escort/photos', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ id: face.id, isFace: true })
+          });
+        }
+      } catch {}
+
+      // 3) Invio a revisione tutte le DRAFT
+      const submitRes = await fetch('/api/escort/photos/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ skipValidation: true })
+      });
+      const submitData = await submitRes.json().catch(()=>({}));
+      if (!submitRes.ok) { throw new Error(submitData?.error || 'Invio a revisione fallito'); }
+
+      alert('✅ Foto inviate in revisione con successo!');
+      setPhotos([]);
+      setFaceIndex(-1);
     } catch (error) {
-      console.error('Errore:', error);
+      console.error('Errore invio foto:', error);
       alert('Errore durante l\'invio delle foto');
     } finally {
       setSubmitting(false);
