@@ -2,11 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 
-// Supporta sia JSON (data URL) che multipart/form-data nello STESSO endpoint
 export const config = {
   api: {
-    bodyParser: false, // disattivato per poter gestire sia JSON manuale che multipart
-    sizeLimit: '50mb',
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
   },
 }
 
@@ -42,19 +42,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return photo
     }
 
-    if (ct.includes('application/json')) {
+    if (ct.includes('application/json') || ct.includes('text/')) {
       console.log('➡️ Branch: JSON')
-      // Leggi raw JSON manualmente (bodyParser è OFF)
-      const chunks: Buffer[] = []
-      await new Promise<void>((resolve, reject) => {
-        req.on('data', (c) => chunks.push(Buffer.from(c)))
-        req.on('end', () => resolve())
-        req.on('error', reject)
-      })
-      const raw = Buffer.concat(chunks).toString('utf8')
-      let parsed: any = {}
-      try { parsed = JSON.parse(raw || '{}') } catch {}
-      const { url, name, size } = parsed || {}
+      const { url, name, size } = req.body || {}
       if (!url || typeof url !== 'string' || !url.startsWith('data:')) {
         console.log('❌ Upload foto (JSON): URL base64 non valido')
         return res.status(400).json({ error: 'URL base64 (data:) richiesto' })
