@@ -1,68 +1,110 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
-import formidable from 'formidable'
-import fs from 'fs'
-import path from 'path'
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: false, // Leggiamo manualmente per evitare limiti Vercel
   },
 }
 
-async function requireUser(req: NextApiRequest) {
-  const auth = req.headers.authorization || ''
-  const raw = auth.startsWith('Bearer ') ? auth.slice(7) : ''
-  if (!raw) return null
-  const payload = verifyToken(raw)
-  if (!payload) return null
-  const u = await prisma.user.findUnique({ where: { id: payload.userId } })
-  return u || null
+function getUserId(req: NextApiRequest): number | null {
+  const auth = req.headers.authorization
+  const token = auth?.startsWith('Bearer ') ? auth.substring(7) : (req.cookies as any)['auth-token']
+  if (!token) return null
+  const payload = verifyToken(token)
+  return payload?.userId ?? null
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const user = await requireUser(req)
-  if (!user) return res.status(401).json({ error: 'Non autenticato' })
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  console.log('🚀 Upload foto handler START', { method: req.method })
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' })
+
+  const userId = getUserId(req)
+  console.log('👤 getUserId result:', userId)
+  if (!userId) {
+    console.log('❌ Upload foto: utente non autenticato')
+    return res.status(401).json({ error: 'Non autenticato' })
+  }
 
   try {
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    await fs.promises.mkdir(uploadDir, { recursive: true })
+    const ct = String(req.headers['content-type'] || '')
+    console.log('📥 Upload CT:', ct)
 
-    const form = formidable({ multiples: false, maxFileSize: 8 * 1024 * 1024 })
-    const { fields, files } = await new Promise<any>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err)
-        else resolve({ fields, files })
+    // Helper: crea record su DB
+    async function createPhoto(url: string, name?: string, size?: number) {
+      const photoUrl = url
+      const photoName = (typeof name === 'string' && name.trim()) ? name.trim() : 'photo.jpg'
+      const photoSize = (typeof size === 'number' && size > 0) ? size : url.length
+      console.log('📸 Creazione foto:', { userId, name: photoName, size: photoSize, urlPreview: photoUrl.slice(0,30) })
+      const photo = await prisma.photo.create({
+        data: { userId, url: photoUrl, name: photoName, size: photoSize, status: 'DRAFT', isFace: false }
       })
-    })
-
-    const file = (files.file && (Array.isArray(files.file) ? files.file[0] : files.file)) as formidable.File | undefined
-    if (!file || !file.filepath) {
-      return res.status(400).json({ error: 'File mancante' })
+      return photo
     }
 
-    const fileNameSafe = file.originalFilename?.replace(/[^a-zA-Z0-9_.-]+/g, '_') || `photo_${Date.now()}.jpg`
-    const finalPath = path.join(uploadDir, `${Date.now()}_${fileNameSafe}`)
-    await fs.promises.copyFile(file.filepath, finalPath)
+    if (ct.includes('application/json') || ct.includes('text/')) {
+      console.log('➡️ Branch: JSON')
+      // Leggi body manualmente
+      const chunks: Buffer[] = []
+      const MAX_SIZE = 4 * 1024 * 1024 // 4MB max
+      let totalSize = 0
+      
+      try {
+        await new Promise<void>((resolve, reject) => {
+          req.on('data', (chunk: Buffer) => {
+            totalSize += chunk.length
+            if (totalSize > MAX_SIZE) {
+              reject(new Error('Payload troppo grande'))
+              return
+            }
+            chunks.push(chunk)
+          })
+          req.on('end', () => resolve())
+          req.on('error', reject)
+        })
+      } catch (e: any) {
+        console.log('❌ Errore lettura body:', e.message)
+        return res.status(413).json({ error: 'Payload troppo grande (max 4MB)' })
+      }
+      
+      const raw = Buffer.concat(chunks).toString('utf8')
+      console.log('📦 Body letto, lunghezza:', raw.length)
+      
+      let parsed: any = {}
+      try {
+        parsed = JSON.parse(raw || '{}')
+      } catch (e) {
+        console.log('❌ JSON parse error')
+        return res.status(400).json({ error: 'JSON non valido' })
+      }
+      
+      const { url, name, size } = parsed || {}
+      console.log('🔍 Extracted:', { hasUrl: !!url, urlType: typeof url, urlStart: url?.slice(0, 20), name, size })
+      if (!url || typeof url !== 'string' || !url.startsWith('data:')) {
+        console.log('❌ Upload foto (JSON): URL base64 non valido', { url: url?.slice(0, 50) })
+        return res.status(400).json({ error: 'URL base64 (data:) richiesto', debug: { hasUrl: !!url, type: typeof url, starts: url?.slice(0, 20) } })
+      }
+      // Limite esplicito per Vercel/serverless: ~3.5MB sul base64
+      const MAX_BASE64_BYTES = 3.5 * 1024 * 1024
+      if (url.length > MAX_BASE64_BYTES) {
+        const sizeMB = (url.length / 1024 / 1024).toFixed(2)
+        console.log(`❌ Upload foto (JSON): dimensione ${sizeMB}MB supera limite ${(MAX_BASE64_BYTES/1024/1024).toFixed(1)}MB`)
+        return res.status(413).json({ error: `Immagine troppo grande (${sizeMB}MB). Comprimi o riduci risoluzione.` })
+      }
+      const photo = await createPhoto(url, name, size)
+      console.log('✅ Foto creata (JSON):', { id: photo.id })
+      return res.status(200).json({ photo })
+    }
 
-    // Serve via API route to avoid static hosting issues on Render
-    const publicUrl = `/api/uploads/${path.basename(finalPath)}`
+    // Multipart NON supportato su Vercel (read-only filesystem)
+    // Usiamo solo JSON base64
 
-    const created = await prisma.photo.create({
-      data: {
-        userId: user.id,
-        url: publicUrl,
-        name: file.originalFilename || path.basename(finalPath),
-        size: Number(file.size || 0),
-        status: 'IN_REVIEW' as any,
-      },
-    })
-
-    return res.json({ photo: created })
-  } catch (err) {
-    console.error('❌ Upload foto errore:', err)
-    return res.status(500).json({ error: 'Errore upload' })
+    console.log('❌ Upload foto: Content-Type non supportato', ct)
+    return res.status(415).json({ error: 'Solo Content-Type application/json supportato (invia base64)' })
+  } catch (err: any) {
+    console.error('❌ API /api/escort/photos/upload errore:', err?.message || err)
+    const msg = err?.message || 'Errore interno'
+    return res.status(500).json({ error: msg, details: String(err) })
   }
 }

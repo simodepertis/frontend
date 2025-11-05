@@ -164,16 +164,16 @@ export default function VerificaFotoPage() {
       for (let idx = 0; idx < photos.length; idx++) {
         let url = photos[idx];
         try {
-          // Comprimi per stare sotto i limiti delle serverless (Vercel ~4.5MB body)
+          // Comprimi per stare sotto i limiti delle serverless (Vercel ~4MB body)
           const isProd = typeof window !== 'undefined' && /vercel\.app$/.test(window.location.hostname);
-          const targetW = isProd ? 700 : 1200;
-          const targetQ = isProd ? 0.5 : 0.7;
+          const targetW = isProd ? 600 : 1200;
+          const targetQ = isProd ? 0.45 : 0.7;
           try { url = await compressDataUrl(url, targetW, targetQ); } catch (e) { console.warn('Compressione fallita', e); }
 
           // Pre-check dimensione (evita errori su Vercel se troppo grande)
           const estimatedMB = (url.length / 1024 / 1024).toFixed(2);
           console.log(`Foto ${idx+1}: ~${estimatedMB}MB`);
-          if (url.length > 3.0 * 1024 * 1024) {
+          if (url.length > 2.5 * 1024 * 1024) {
             throw new Error(`Foto troppo grande (~${estimatedMB}MB). Riduci qualità o risoluzione e riprova.`);
           }
 
