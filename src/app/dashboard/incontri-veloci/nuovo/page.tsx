@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { COUNTRIES_CITIES, COUNTRY_LIST } from "@/lib/internationalCities";
+import { CITIES_ORDER } from "@/lib/cities";
 
 interface FormData {
   // Step 1: Il tuo annuncio
   category: string;
+  country: string;
   city: string;
   address: string;
   postalCode: string;
@@ -34,18 +37,17 @@ const CATEGORIES = [
   { value: 'CENTRO_MASSAGGI', label: 'Centro Massaggi' }
 ];
 
-const CITIES = [
-  'Milano', 'Roma', 'Torino', 'Bologna', 'Firenze', 'Napoli', 
-  'Venezia', 'Verona', 'Genova', 'Palermo'
-];
+// Le città vengono caricate dinamicamente in base alla nazione selezionata
 
 export default function NuovoIncontroVeloce() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [formData, setFormData] = useState<FormData>({
     category: '',
+    country: '',
     city: '',
     address: '',
     postalCode: '',
@@ -65,9 +67,29 @@ export default function NuovoIncontroVeloce() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Aggiorna le città disponibili quando cambia la nazione
+  useEffect(() => {
+    if (!formData.country) {
+      setAvailableCities([]);
+    } else if (formData.country === 'IT') {
+      setAvailableCities(CITIES_ORDER);
+    } else {
+      const countryData = COUNTRIES_CITIES[formData.country];
+      setAvailableCities(countryData ? countryData.cities : []);
+    }
+    // Reset città quando cambia nazione
+    if (formData.city && formData.country) {
+      updateField('city', '');
+    }
+  }, [formData.country]);
+
   const validateStep1 = () => {
     if (!formData.category) {
       alert('Seleziona una categoria');
+      return false;
+    }
+    if (!formData.country) {
+      alert('Seleziona una nazione');
       return false;
     }
     if (!formData.city) {
@@ -170,6 +192,7 @@ export default function NuovoIncontroVeloce() {
           title: formData.title,
           description: formData.description,
           category: formData.category,
+          country: formData.country,
           city: formData.city.toUpperCase(),
           zone: formData.zone || null,
           phone: formData.phone,
@@ -245,6 +268,23 @@ export default function NuovoIncontroVeloce() {
                 </select>
               </div>
 
+              {/* Nazione */}
+              <div>
+                <label className="block text-white font-medium mb-2">
+                  * Seleziona nazione
+                </label>
+                <select
+                  value={formData.country}
+                  onChange={(e) => updateField('country', e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-500 focus:outline-none"
+                >
+                  <option value="">Seleziona nazione</option>
+                  {COUNTRY_LIST.map(country => (
+                    <option key={country.code} value={country.code}>{country.flag} {country.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Città */}
               <div>
                 <label className="block text-white font-medium mb-2">
@@ -254,12 +294,16 @@ export default function NuovoIncontroVeloce() {
                   value={formData.city}
                   onChange={(e) => updateField('city', e.target.value)}
                   className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-500 focus:outline-none"
+                  disabled={!formData.country}
                 >
-                  <option value="">Seleziona città</option>
-                  {CITIES.map(city => (
+                  <option value="">{!formData.country ? 'Seleziona prima una nazione' : 'Seleziona città'}</option>
+                  {availableCities.map((city: string) => (
                     <option key={city} value={city}>{city}</option>
                   ))}
                 </select>
+                {!formData.country && (
+                  <p className="text-sm text-gray-400 mt-2">💡 Seleziona prima una nazione per vedere le città</p>
+                )}
               </div>
 
               {/* Indirizzo e CAP */}

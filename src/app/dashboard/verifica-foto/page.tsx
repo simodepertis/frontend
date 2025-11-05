@@ -1,7 +1,7 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +12,46 @@ export default function VerificaFotoPage() {
   const [submitting, setSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Documenti & Consenso (ripristino)
+  type DocItem = { id: string; type: 'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'; url: string; status: 'in_review' | 'approvato' | 'rifiutato' };
+  const [docs, setDocs] = useState<DocItem[]>([]);
+  const [docType, setDocType] = useState<'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'>('ID_CARD_FRONT');
+  const [consentAcceptedAt, setConsentAcceptedAt] = useState<string | null>(null);
+  const [consentTick, setConsentTick] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
+
+  // Load documents and consent on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = localStorage.getItem('auth-token') || '';
+        if (!token) return;
+        // Documents
+        try {
+          const dr = await fetch('/api/escort/documents', { headers: { 'Authorization': `Bearer ${token}` } });
+          if (dr.ok) {
+            const { documents } = await dr.json();
+            const mapped = (documents || []).map((d: any) => ({
+              id: String(d.id),
+              type: d.type,
+              url: d.url,
+              status: d.status === 'APPROVED' ? 'approvato' : d.status === 'REJECTED' ? 'rifiutato' : 'in_review',
+            }));
+            setDocs(mapped);
+          }
+        } catch {}
+        // Consent
+        try {
+          const cr = await fetch('/api/escort/consent', { headers: { 'Authorization': `Bearer ${token}` } });
+          if (cr.ok) {
+            const { consent } = await cr.json();
+            setConsentAcceptedAt(consent?.acceptedAt || null);
+          }
+        } catch {}
+      } catch {}
+    })();
+  }, []);
+
   // Upload foto - IDENTICO a incontri-veloci
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -19,10 +59,9 @@ export default function VerificaFotoPage() {
 
     Array.from(files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setPhotos(prev => [...prev, event.target.result as string]);
-        }
+      reader.onload = () => {
+        const result = reader.result as string | null;
+        if (result) setPhotos(prev => [...prev, result]);
       };
       reader.readAsDataURL(file);
     });
@@ -31,10 +70,9 @@ export default function VerificaFotoPage() {
   const handleFilesUpload = (files: FileList) => {
     Array.from(files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setPhotos(prev => [...prev, event.target.result as string]);
-        }
+      reader.onload = () => {
+        const result = reader.result as string | null;
+        if (result) setPhotos(prev => [...prev, result]);
       };
       reader.readAsDataURL(file);
     });
@@ -141,8 +179,8 @@ export default function VerificaFotoPage() {
             className="hidden"
             id="photo-upload"
           />
-          <label htmlFor="photo-upload">
-            <Button as="span" variant="secondary">Seleziona foto</Button>
+          <label htmlFor="photo-upload" className="inline-block">
+            <Button variant="secondary" type="button">Seleziona foto</Button>
           </label>
         </div>
       </div>
@@ -185,6 +223,143 @@ export default function VerificaFotoPage() {
           </div>
         </div>
       )}
+
+      {/* Sezione Documenti di Identità (ripristino) */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="font-semibold text-lg text-white">Documenti di Identità</div>
+            <div className="text-sm text-gray-400">Carica i tuoi documenti per la verifica dell'identità</div>
+          </div>
+          {docs.some(d => d.status === 'approvato') ? (
+            <div className="text-xs px-3 py-1 rounded-full bg-green-600 text-green-100">Documento approvato ✓</div>
+          ) : (
+            <div className="text-xs text-gray-400 bg-gray-700/50 px-3 py-1 rounded-full">Obbligatorio per la verifica</div>
+          )}
+        </div>
+
+        {/* Linee guida documenti */}
+        {!docs.some(d => d.status === 'approvato') && (
+          <div className="bg-red-50/5 border border-red-600/40 rounded-lg p-4 mb-4">
+            <div className="font-semibold text-red-200 mb-2">⚠️ DOCUMENTO D'IDENTITÀ OBBLIGATORIO</div>
+            <ul className="text-sm text-red-200/90 list-disc pl-5 space-y-1">
+              <li><strong>Carta d'identità fronte e retro</strong> (obbligatorio). In alternativa, passaporto o patente.</li>
+              <li><strong>Selfie con documento</strong> vicino al volto (consigliato per velocizzare l'approvazione).</li>
+              <li>Formato: JPG o PNG. <strong>Massimo 5MB</strong> per file. Immagini nitide e leggibili.</li>
+              <li>Nessun filtro o watermark invasivo. Tutti i dati devono essere visibili.</li>
+            </ul>
+          </div>
+        )}
+
+        {/* Upload documenti */}
+        <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${docs.some(d => d.status==='approvato') ? 'border-green-700 bg-green-900/20' : 'border-gray-600 hover:border-blue-500/60'}`}>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <select
+                className="bg-gray-700 border border-gray-600 text-white rounded px-2 py-1"
+                value={docType}
+                onChange={(e)=>setDocType(e.target.value as any)}
+              >
+                <option value="ID_CARD_FRONT">Carta d'identità - Fronte</option>
+                <option value="ID_CARD_BACK">Carta d'identità - Retro</option>
+                <option value="SELFIE_WITH_ID">Selfie con documento</option>
+              </select>
+              <span className="text-xs text-gray-400">Formato: JPG/PNG, max 5MB</span>
+            </div>
+            <input 
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              id="document-upload"
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                const token = localStorage.getItem('auth-token') || '';
+                for (const file of Array.from(files)) {
+                  if (!file.type.startsWith('image/')) { alert(`File "${file.name}" non è un'immagine valida`); continue; }
+                  if (file.size > 5*1024*1024) { alert(`File "${file.name}" troppo grande (max 5MB)`); continue; }
+                  const fd = new FormData();
+                  fd.append('file', file);
+                  fd.append('type', docType);
+                  try {
+                    const res = await fetch('/api/escort/documents/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined, body: fd });
+                    const j = await res.json().catch(()=>({}));
+                    if (!res.ok) { alert(j?.error || 'Errore caricamento documento'); continue; }
+                    // Append nuovo doc in stato in_review
+                    setDocs(prev => [...prev, { id: String(j?.document?.id || Date.now()), type: docType, url: j?.document?.url || '', status: 'in_review' }]);
+                  } catch (err) { console.error('Upload documento errore:', err); alert('Errore rete durante upload documento'); }
+                }
+                e.currentTarget.value = '';
+              }}
+            />
+            <label htmlFor="document-upload" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg cursor-pointer transition-colors font-medium">
+              Seleziona Documenti
+            </label>
+          </div>
+        </div>
+
+        {/* Lista documenti */}
+        {docs.length > 0 && (
+          <div className="mt-4">
+            <div className="font-medium mb-3 text-white">Documenti Caricati ({docs.length})</div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {docs.map((doc) => (
+                <div key={doc.id} className="border rounded-lg p-3 bg-gray-700/50 border-gray-600">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={doc.url?.startsWith('/uploads/') ? ('/api'+doc.url) : doc.url} alt={doc.type} className="w-20 h-14 object-cover rounded-md border border-gray-600" onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }} />
+                      <div>
+                        <div className="font-medium text-sm text-white">{doc.type}</div>
+                        <div className="text-xs text-gray-400">Documento di identità</div>
+                      </div>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${doc.status === 'approvato' ? 'bg-green-100 text-green-700' : doc.status === 'rifiutato' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {doc.status === 'approvato' ? 'Approvato' : doc.status === 'rifiutato' ? 'Rifiutato' : 'In Revisione'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Consenso legale (ripristino) */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Consenso legale all'utilizzo di immagini e video</div>
+        <p className="text-sm text-gray-300 mb-2">Leggi attentamente il documento di liberatoria prima di procedere:</p>
+        <div className="flex flex-col gap-1">
+          <a href="/docs/Liberatoria.pdf" target="_blank" className="inline-block text-blue-400 underline text-sm" rel="noopener noreferrer">Apri il documento di consenso (PDF)</a>
+          <a href="/consenso-legale" target="_blank" className="inline-block text-gray-400 underline text-xs" rel="noopener noreferrer">Oppure leggi la versione online</a>
+        </div>
+        <div className="flex items-center gap-3 mt-3">
+          <label className="flex items-center gap-2 text-sm text-white">
+            <input type="checkbox" checked={!!consentAcceptedAt || consentTick} onChange={(e)=>setConsentTick(e.target.checked)} disabled={!!consentAcceptedAt} />
+            <span>Ho letto e accetto quanto sopra</span>
+          </label>
+          {!consentAcceptedAt && (
+            <Button disabled={!consentTick || consentSaving} onClick={async()=>{
+              if (!consentTick) return;
+              try {
+                setConsentSaving(true);
+                const token = localStorage.getItem('auth-token') || '';
+                const res = await fetch('/api/escort/consent', { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } });
+                if (res.ok) {
+                  const data = await res.json().catch(()=>({}));
+                  setConsentAcceptedAt(data?.consentAcceptedAt || new Date().toISOString());
+                  alert('Consenso registrato con successo');
+                } else {
+                  const err = await res.json().catch(()=>({ error: 'Errore' }));
+                  alert(err?.error || 'Errore registrazione consenso');
+                }
+              } finally { setConsentSaving(false); }
+            }}>{consentSaving ? 'Salvataggio…' : 'Conferma consenso'}</Button>
+          )}
+          {consentAcceptedAt && <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full">Consenso registrato</span>}
+        </div>
+      </div>
 
       {/* Submit */}
       <div className="flex justify-end">

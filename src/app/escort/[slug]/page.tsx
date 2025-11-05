@@ -654,7 +654,12 @@ export default function EscortDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <aside className="bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
+        <aside className="relative bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
+          {typeof (data as any)?.views === 'number' && (
+            <div className="absolute top-3 right-3 text-xs font-semibold bg-black/60 text-white px-2 py-1 rounded-full border border-gray-600">
+              👁️ {(data as any).views}
+            </div>
+          )}
           <div className="text-2xl font-bold text-white">€ {escort.prezzo}</div>
           <div className="mt-2 text-xs text-gray-400">Tariffa indicativa</div>
           {/* Contatti */}

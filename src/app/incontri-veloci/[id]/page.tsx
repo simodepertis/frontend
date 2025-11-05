@@ -148,7 +148,12 @@ export default function IncontroVeloceDetailPage() {
         {/* Contenuto principale */}
         <div className="lg:col-span-2">
           {/* Header */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mb-6">
+          <div className="relative bg-gray-800 rounded-lg border border-gray-700 p-6 mb-6">
+            {typeof meeting.views === 'number' && (
+              <div className="absolute top-3 right-3 text-xs font-semibold bg-black/60 text-white px-2 py-1 rounded-full border border-gray-600">
+                👁️ {meeting.views}
+              </div>
+            )}
             <div className="flex items-center gap-3 mb-4">
               <span className={`px-3 py-1 text-sm font-bold text-white rounded-full ${category?.color}`}>
                 {category?.icon} {category?.label}
