@@ -60,6 +60,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('❌ Upload foto (JSON): URL base64 non valido')
         return res.status(400).json({ error: 'URL base64 (data:) richiesto' })
       }
+      // Limite esplicito per Vercel/serverless: ~3.5MB sul base64
+      const MAX_BASE64_BYTES = 3.5 * 1024 * 1024
+      if (url.length > MAX_BASE64_BYTES) {
+        const sizeMB = (url.length / 1024 / 1024).toFixed(2)
+        console.log(`❌ Upload foto (JSON): dimensione ${sizeMB}MB supera limite ${(MAX_BASE64_BYTES/1024/1024).toFixed(1)}MB`)
+        return res.status(413).json({ error: `Immagine troppo grande (${sizeMB}MB). Comprimi o riduci risoluzione.` })
+      }
       const photo = await createPhoto(url, name, size)
       console.log('✅ Foto creata (JSON):', { id: photo.id })
       return res.status(200).json({ photo })

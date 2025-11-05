@@ -139,26 +139,74 @@ export default function VerificaFotoPage() {
         return new Blob([u8arr], { type: mime });
       };
 
-      // 1) Carica foto UNA PER UNA (multipart con file reale -> /upload) -> DRAFT
+      const compressDataUrl = (srcDataUrl: string, maxW = 1200, quality = 0.7): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const ratio = img.width > maxW ? maxW / img.width : 1;
+            const w = Math.round(img.width * ratio);
+            const h = Math.round(img.height * ratio);
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject(new Error('Canvas non supportato'));
+            ctx.drawImage(img, 0, 0, w, h);
+            const out = canvas.toDataURL('image/jpeg', quality);
+            resolve(out);
+          };
+          img.onerror = () => reject(new Error('Impossibile caricare immagine per compressione'));
+          img.src = srcDataUrl;
+        });
+      };
+
+      // 1) Carica foto UNA PER UNA (prima JSON base64 compresso -> /upload, su prod SOLO JSON) -> DRAFT
       const created: Array<{ id: number; idx: number }> = [];
       for (let idx = 0; idx < photos.length; idx++) {
-        const url = photos[idx];
+        let url = photos[idx];
         try {
-          // Converte dataURL in Blob e invia come 'file'
-          const blob = dataURLtoBlob(url);
-          const fd = new FormData();
-          fd.append('file', blob, `foto-${idx + 1}.jpg`);
-          const up = await fetch('/api/escort/photos/upload', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: fd
-          });
-          const uj = await up.json().catch(()=>({}));
-          if (!up.ok || !uj?.photo?.id) {
-            console.error('Upload multipart (file) error', up.status, uj);
-            throw new Error(`${uj?.error || 'Upload fallito'} (status ${up.status})`);
+          // Comprimi per stare sotto i limiti delle serverless (Vercel ~4.5MB body)
+          const isProd = typeof window !== 'undefined' && /vercel\.app$/.test(window.location.hostname);
+          const targetW = isProd ? 800 : 1200;
+          const targetQ = isProd ? 0.55 : 0.7;
+          try { url = await compressDataUrl(url, targetW, targetQ); } catch (e) { console.warn('Compressione fallita', e); }
+
+          // Pre-check dimensione (evita 500 su Vercel se troppo grande)
+          const estimatedMB = (url.length / 1024 / 1024).toFixed(2);
+          console.log(`Foto ${idx+1}: ~${estimatedMB}MB`);
+          if (url.length > 3.8 * 1024 * 1024) {
+            throw new Error(`Foto troppo grande (~${estimatedMB}MB). Riduci qualità o risoluzione e riprova.`);
           }
-          created.push({ id: Number(uj.photo.id), idx });
+
+          // Primo tentativo: JSON base64 (più compatibile su Vercel)
+          const upJson = await fetch('/api/escort/photos/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ url, name: `foto-${idx + 1}.jpg`, size: url.length })
+          });
+          const uj = await upJson.json().catch(()=>({}));
+          if (upJson.ok && uj?.photo?.id) {
+            created.push({ id: Number(uj.photo.id), idx });
+          } else {
+            // Fallback: multipart con file (solo in locale; su prod evitiamo)
+            if (isProd) {
+              console.error('Upload JSON fallito su prod', upJson.status, uj);
+              throw new Error(`Errore upload: ${uj?.error || 'Errore server'} (status ${upJson.status})`);
+            }
+            const blob = dataURLtoBlob(url);
+            const fd = new FormData();
+            fd.append('file', blob, `foto-${idx + 1}.jpg`);
+            const up = await fetch('/api/escort/photos/upload', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: fd
+            });
+            const uj2 = await up.json().catch(()=>({}));
+            if (!up.ok || !uj2?.photo?.id) {
+              console.error('Upload fallback multipart error', up.status, uj2);
+              throw new Error(`${uj?.error || uj2?.error || 'Upload fallito'} (status ${upJson.status}/${up.status})`);
+            }
+            created.push({ id: Number(uj2.photo.id), idx });
+          }
         } catch (e: any) {
           console.error('Upload foto fallito (idx='+idx+')', e);
           alert(`Errore upload foto ${idx+1}: ${e?.message || e}`);
