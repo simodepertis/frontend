@@ -44,8 +44,9 @@ export default function VerificaFotoPage() {
         try {
           const cr = await fetch('/api/escort/consent', { headers: { 'Authorization': `Bearer ${token}` } });
           if (cr.ok) {
-            const { consent } = await cr.json();
-            setConsentAcceptedAt(consent?.acceptedAt || null);
+            const j = await cr.json();
+            // API restituisce { consentAcceptedAt }
+            setConsentAcceptedAt(j?.consentAcceptedAt || null);
           }
         } catch {}
       } catch {}
