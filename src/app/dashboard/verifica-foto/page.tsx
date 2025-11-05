@@ -184,29 +184,11 @@ export default function VerificaFotoPage() {
             body: JSON.stringify({ url, name: `foto-${idx + 1}.jpg`, size: url.length })
           });
           const uj = await upJson.json().catch(()=>({}));
-          if (upJson.ok && uj?.photo?.id) {
-            created.push({ id: Number(uj.photo.id), idx });
-          } else {
-            // Fallback: multipart con file (solo in locale; su prod evitiamo)
-            if (isProd) {
-              console.error('Upload JSON fallito su prod', upJson.status, uj);
-              throw new Error(`Errore upload: ${uj?.error || 'Errore server'} (status ${upJson.status})`);
-            }
-            const blob = dataURLtoBlob(url);
-            const fd = new FormData();
-            fd.append('file', blob, `foto-${idx + 1}.jpg`);
-            const up = await fetch('/api/escort/photos/upload', {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}` },
-              body: fd
-            });
-            const uj2 = await up.json().catch(()=>({}));
-            if (!up.ok || !uj2?.photo?.id) {
-              console.error('Upload fallback multipart error', up.status, uj2);
-              throw new Error(`${uj?.error || uj2?.error || 'Upload fallito'} (status ${upJson.status}/${up.status})`);
-            }
-            created.push({ id: Number(uj2.photo.id), idx });
+          if (!upJson.ok || !uj?.photo?.id) {
+            console.error('Upload JSON error', upJson.status, uj);
+            throw new Error(`Errore upload: ${uj?.error || 'Errore server'} (status ${upJson.status})`);
           }
+          created.push({ id: Number(uj.photo.id), idx });
         } catch (e: any) {
           console.error('Upload foto fallito (idx='+idx+')', e);
           alert(`Errore upload foto ${idx+1}: ${e?.message || e}`);
