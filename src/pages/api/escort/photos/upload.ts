@@ -5,7 +5,7 @@ import { verifyToken } from '@/lib/auth'
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '50mb',
+      sizeLimit: '4.5mb', // Limite Vercel serverless
     },
   },
 }
@@ -19,8 +19,11 @@ function getUserId(req: NextApiRequest): number | null {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('🚀 Upload foto handler START', { method: req.method })
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' })
+
   const userId = getUserId(req)
+  console.log('👤 getUserId result:', userId)
   if (!userId) {
     console.log('❌ Upload foto: utente non autenticato')
     return res.status(401).json({ error: 'Non autenticato' })
@@ -44,10 +47,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (ct.includes('application/json') || ct.includes('text/')) {
       console.log('➡️ Branch: JSON')
+      console.log('📦 req.body type:', typeof req.body, 'keys:', Object.keys(req.body || {}))
       const { url, name, size } = req.body || {}
+      console.log('🔍 Extracted:', { hasUrl: !!url, urlType: typeof url, urlStart: url?.slice(0, 20), name, size })
       if (!url || typeof url !== 'string' || !url.startsWith('data:')) {
-        console.log('❌ Upload foto (JSON): URL base64 non valido')
-        return res.status(400).json({ error: 'URL base64 (data:) richiesto' })
+        console.log('❌ Upload foto (JSON): URL base64 non valido', { url: url?.slice(0, 50) })
+        return res.status(400).json({ error: 'URL base64 (data:) richiesto', debug: { hasUrl: !!url, type: typeof url, starts: url?.slice(0, 20) } })
       }
       // Limite esplicito per Vercel/serverless: ~3.5MB sul base64
       const MAX_BASE64_BYTES = 3.5 * 1024 * 1024
