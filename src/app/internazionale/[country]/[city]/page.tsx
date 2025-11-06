@@ -7,6 +7,7 @@ import { COUNTRIES_CITIES } from "@/lib/internationalCities";
 
 // Mappa slug -> dati paese
 const COUNTRY_SLUG_MAP: Record<string, { name: string; code: string; cities: string[] }> = {
+  it: { name: "Italia", code: "IT", cities: COUNTRIES_CITIES.IT.cities },
   fr: { name: "Francia", code: "FR", cities: COUNTRIES_CITIES.FR.cities },
   de: { name: "Germania", code: "DE", cities: COUNTRIES_CITIES.DE.cities },
   es: { name: "Spagna", code: "ES", cities: COUNTRIES_CITIES.ES.cities },
@@ -26,6 +27,20 @@ const COUNTRY_SLUG_MAP: Record<string, { name: string; code: string; cities: str
   no: { name: "Norvegia", code: "NO", cities: COUNTRIES_CITIES.NO.cities },
   dk: { name: "Danimarca", code: "DK", cities: COUNTRIES_CITIES.DK.cities },
   fi: { name: "Finlandia", code: "FI", cities: COUNTRIES_CITIES.FI.cities },
+  hr: { name: "Croazia", code: "HR", cities: COUNTRIES_CITIES.HR.cities },
+  rs: { name: "Serbia", code: "RS", cities: COUNTRIES_CITIES.RS.cities },
+  bg: { name: "Bulgaria", code: "BG", cities: COUNTRIES_CITIES.BG.cities },
+  sk: { name: "Slovacchia", code: "SK", cities: COUNTRIES_CITIES.SK.cities },
+  si: { name: "Slovenia", code: "SI", cities: COUNTRIES_CITIES.SI.cities },
+  lu: { name: "Lussemburgo", code: "LU", cities: COUNTRIES_CITIES.LU.cities },
+  li: { name: "Liechtenstein", code: "LI", cities: COUNTRIES_CITIES.LI.cities },
+  lt: { name: "Lituania", code: "LT", cities: COUNTRIES_CITIES.LT.cities },
+  mg: { name: "Madagascar", code: "MG", cities: COUNTRIES_CITIES.MG.cities },
+  my: { name: "Malaysia", code: "MY", cities: COUNTRIES_CITIES.MY.cities },
+  mt: { name: "Malta", code: "MT", cities: COUNTRIES_CITIES.MT.cities },
+  mc: { name: "Monaco", code: "MC", cities: COUNTRIES_CITIES.MC.cities },
+  mn: { name: "Mongolia", code: "MN", cities: COUNTRIES_CITIES.MN.cities },
+  me: { name: "Montenegro", code: "ME", cities: COUNTRIES_CITIES.ME.cities },
 };
 
 export default function CountryCityPage({ params }: { params: { country: string; city: string } }) {

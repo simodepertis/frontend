@@ -3,16 +3,43 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import EscortCard from "@/components/EscortCard";
+import { COUNTRIES_CITIES } from "@/lib/internationalCities";
 
 const COUNTRIES: Record<string, { name: string; code: string; cities: string[] }> = {
-  fr: { name: "Francia", code: "FR", cities: ["Paris","Marseille","Lyon","Toulouse","Nice","Bordeaux"] },
-  de: { name: "Germania", code: "DE", cities: ["Berlin","Munich","Hamburg","Cologne","Frankfurt","Stuttgart"] },
-  es: { name: "Spagna", code: "ES", cities: ["Madrid","Barcelona","Valencia","Sevilla","Bilbao","Malaga"] },
-  uk: { name: "Regno Unito", code: "UK", cities: ["London","Manchester","Birmingham","Leeds","Liverpool","Glasgow"] },
-  ch: { name: "Svizzera", code: "CH", cities: ["Zurich","Geneva","Basel","Lausanne","Lugano","Bern"] },
-  nl: { name: "Olanda", code: "NL", cities: ["Amsterdam","Rotterdam","The Hague","Utrecht","Eindhoven"] },
-  be: { name: "Belgio", code: "BE", cities: ["Brussels","Antwerp","Ghent","Liège"] },
-  it: { name: "Italia", code: "IT", cities: ["Roma","Milano","Napoli","Torino","Bologna","Firenze"] },
+  it: { name: "Italia", code: "IT", cities: COUNTRIES_CITIES.IT.cities },
+  fr: { name: "Francia", code: "FR", cities: COUNTRIES_CITIES.FR.cities },
+  de: { name: "Germania", code: "DE", cities: COUNTRIES_CITIES.DE.cities },
+  es: { name: "Spagna", code: "ES", cities: COUNTRIES_CITIES.ES.cities },
+  uk: { name: "Regno Unito", code: "UK", cities: COUNTRIES_CITIES.UK.cities },
+  ch: { name: "Svizzera", code: "CH", cities: COUNTRIES_CITIES.CH.cities },
+  nl: { name: "Olanda", code: "NL", cities: COUNTRIES_CITIES.NL.cities },
+  be: { name: "Belgio", code: "BE", cities: COUNTRIES_CITIES.BE.cities },
+  at: { name: "Austria", code: "AT", cities: COUNTRIES_CITIES.AT.cities },
+  pt: { name: "Portogallo", code: "PT", cities: COUNTRIES_CITIES.PT.cities },
+  pl: { name: "Polonia", code: "PL", cities: COUNTRIES_CITIES.PL.cities },
+  cz: { name: "Repubblica Ceca", code: "CZ", cities: COUNTRIES_CITIES.CZ.cities },
+  hu: { name: "Ungheria", code: "HU", cities: COUNTRIES_CITIES.HU.cities },
+  ro: { name: "Romania", code: "RO", cities: COUNTRIES_CITIES.RO.cities },
+  gr: { name: "Grecia", code: "GR", cities: COUNTRIES_CITIES.GR.cities },
+  ie: { name: "Irlanda", code: "IE", cities: COUNTRIES_CITIES.IE.cities },
+  se: { name: "Svezia", code: "SE", cities: COUNTRIES_CITIES.SE.cities },
+  no: { name: "Norvegia", code: "NO", cities: COUNTRIES_CITIES.NO.cities },
+  dk: { name: "Danimarca", code: "DK", cities: COUNTRIES_CITIES.DK.cities },
+  fi: { name: "Finlandia", code: "FI", cities: COUNTRIES_CITIES.FI.cities },
+  hr: { name: "Croazia", code: "HR", cities: COUNTRIES_CITIES.HR.cities },
+  rs: { name: "Serbia", code: "RS", cities: COUNTRIES_CITIES.RS.cities },
+  bg: { name: "Bulgaria", code: "BG", cities: COUNTRIES_CITIES.BG.cities },
+  sk: { name: "Slovacchia", code: "SK", cities: COUNTRIES_CITIES.SK.cities },
+  si: { name: "Slovenia", code: "SI", cities: COUNTRIES_CITIES.SI.cities },
+  lu: { name: "Lussemburgo", code: "LU", cities: COUNTRIES_CITIES.LU.cities },
+  li: { name: "Liechtenstein", code: "LI", cities: COUNTRIES_CITIES.LI.cities },
+  lt: { name: "Lituania", code: "LT", cities: COUNTRIES_CITIES.LT.cities },
+  mg: { name: "Madagascar", code: "MG", cities: COUNTRIES_CITIES.MG.cities },
+  my: { name: "Malaysia", code: "MY", cities: COUNTRIES_CITIES.MY.cities },
+  mt: { name: "Malta", code: "MT", cities: COUNTRIES_CITIES.MT.cities },
+  mc: { name: "Monaco", code: "MC", cities: COUNTRIES_CITIES.MC.cities },
+  mn: { name: "Mongolia", code: "MN", cities: COUNTRIES_CITIES.MN.cities },
+  me: { name: "Montenegro", code: "ME", cities: COUNTRIES_CITIES.ME.cities },
 };
 
 export default function CountryPage({ params }: { params: { country: string } }) {
