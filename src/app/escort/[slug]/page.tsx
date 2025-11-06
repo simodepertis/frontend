@@ -105,6 +105,20 @@ export default function EscortDetailPage() {
         if (res.ok) {
           const json = await res.json();
           setData(json);
+          
+          // Traccia visitatore unico
+          if (json?.userId) {
+            let sessionId = localStorage.getItem('visitor-session-id');
+            if (!sessionId) {
+              sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+              localStorage.setItem('visitor-session-id', sessionId);
+            }
+            fetch('/api/track-visitor', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ type: 'escortProfile', targetId: json.userId, sessionId })
+            }).catch(() => {});
+          }
         }
         // fetch current user for owner-only actions
         try {
@@ -655,9 +669,9 @@ export default function EscortDetailPage() {
 
         {/* Sidebar */}
         <aside className="relative bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
-          {typeof (data as any)?.views === 'number' && (
+          {typeof (data as any)?.profileViews === 'number' && (data as any).profileViews > 0 && (
             <div className="absolute top-3 right-3 text-xs font-semibold bg-black/60 text-white px-2 py-1 rounded-full border border-gray-600">
-              👁️ {(data as any).views}
+              👁️ {(data as any).profileViews}
             </div>
           )}
           <div className="text-2xl font-bold text-white">€ {escort.prezzo}</div>

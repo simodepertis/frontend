@@ -388,6 +388,7 @@ model User {
   password String
   ruolo    String
   suspended Boolean @default(false)
+  profileViews Int @default(0)
   createdAt DateTime @default(now())
 
   // Relation: one user can have one escort profile
@@ -568,5 +569,16 @@ model Favorite {
   @@unique([userId, targetUserId])
   @@index([userId])
   @@index([targetUserId])
+}
+
+model Visitor {
+  id        Int      @id @default(autoincrement())
+  sessionId String
+  targetType String  // 'quickMeeting' | 'escortProfile'
+  targetId  String
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, targetType, targetId])
+  @@index([targetType, targetId])
 }
 

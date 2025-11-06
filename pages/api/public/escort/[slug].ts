@@ -29,7 +29,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const user = userIdFromSlug
       ? await prisma.user.findUnique({
           where: { id: userIdFromSlug },
-          include: {
+          select: {
+            id: true,
+            nome: true,
+            slug: true,
+            profileViews: true,
             escortProfile: {
               select: {
                 tier: true,
@@ -50,7 +54,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       : await prisma.user.findFirst({
           where: { OR: [ { slug: slug }, { nome: guessName } ] },
-          include: {
+          select: {
+            id: true,
+            nome: true,
+            slug: true,
+            profileViews: true,
             escortProfile: {
               select: {
                 tier: true,
@@ -108,6 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prices: (user as any).bookingSettings.prices,
         schedule: (user as any).bookingSettings.schedule,
       } : null,
+      profileViews: user.profileViews || 0,
       coverUrl,
     })
   } catch (e) {

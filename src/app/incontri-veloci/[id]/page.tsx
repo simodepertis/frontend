@@ -62,8 +62,17 @@ export default function IncontroVeloceDetailPage() {
         const data = await res.json();
         setMeeting(data.meeting);
         
-        // Incrementa visualizzazioni
-        fetch(`/api/quick-meetings/${id}/view`, { method: 'POST' }).catch(() => {});
+        // Traccia visitatore unico
+        let sessionId = localStorage.getItem('visitor-session-id');
+        if (!sessionId) {
+          sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem('visitor-session-id', sessionId);
+        }
+        fetch('/api/track-visitor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'quickMeeting', targetId: id, sessionId })
+        }).catch(() => {});
       } else if (res.status === 404) {
         router.push('/incontri-veloci');
       }
