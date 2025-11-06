@@ -669,7 +669,7 @@ export default function EscortDetailPage() {
 
         {/* Sidebar */}
         <aside className="relative bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
-          {typeof (data as any)?.profileViews === 'number' && (data as any).profileViews > 0 && (
+          {typeof (data as any)?.profileViews === 'number' && (
             <div className="absolute top-3 right-3 text-xs font-semibold bg-black/60 text-white px-2 py-1 rounded-full border border-gray-600">
               👁️ {(data as any).profileViews}
             </div>
