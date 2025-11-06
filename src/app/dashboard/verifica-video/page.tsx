@@ -114,9 +114,19 @@ export default function VerificaVideoPage() {
   const onSelectVideoFiles = async (files: FileList | null) => {
     if (!files) return;
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('video/')) continue;
-      if (file.size > 200 * 1024 * 1024) { alert(`${file.name}: file troppo grande (max 200MB)`); continue; }
+      if (!file.type.startsWith('video/')) {
+        alert(`${file.name}: formato non supportato. Usa MP4, WebM, MOV, AVI.`);
+        continue;
+      }
+      // Limite 15MB per Vercel (base64 è ~33% più grande)
+      const MAX_SIZE = 15 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        alert(`${file.name}: video troppo grande (${sizeMB}MB). Massimo 15MB.\n\nSuggerimenti:\n- Comprimi il video con HandBrake o simili\n- Riduci risoluzione (es. 720p)\n- Usa link esterno (YouTube/Vimeo)`);
+        continue;
+      }
       if (videos.length >= MAX_VIDEOS) { alert(`Limite massimo di ${MAX_VIDEOS} video raggiunto`); break; }
+      
       // Anteprima locale
       const tempUrl = URL.createObjectURL(file);
       const tempId = `temp-${file.name}-${file.size}-${Date.now()}`;
@@ -128,19 +138,31 @@ export default function VerificaVideoPage() {
         duration: '',
         status: 'bozza',
       };
-      // Inserisci subito il temporaneo nello state
       setVideos((prev) => [temp, ...prev]);
-      // Upload reale
+      
+      // Converti in base64
       try {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('title', file.name);
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        
         const token = localStorage.getItem('auth-token') || '';
         const res = await fetch('/api/escort/videos/upload-file', {
           method: 'POST',
-          headers: token ? { 'Authorization': `Bearer ${token}` } as any : undefined,
-          body: fd,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            url: base64,
+            title: file.name,
+            size: file.size
+          }),
         });
+        
         if (res.ok) {
           const { video } = await res.json();
           setVideos((prev) => prev.map(v => v.id === tempId ? {
@@ -152,10 +174,13 @@ export default function VerificaVideoPage() {
             status: 'bozza',
           } : v));
         } else {
-          // rimuovi temp in caso di errore
+          const err = await res.json().catch(() => ({}));
+          alert(err?.error || 'Errore upload video');
           setVideos((prev) => prev.filter(v => v.id !== tempId));
         }
-      } catch {
+      } catch (e: any) {
+        console.error('Errore upload video:', e);
+        alert('Errore durante il caricamento del video');
         setVideos((prev) => prev.filter(v => v.id !== tempId));
       }
     }
