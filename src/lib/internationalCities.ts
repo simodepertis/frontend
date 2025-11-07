@@ -564,6 +564,11 @@ export const COUNTRIES_CITIES: Record<string, { name: string; code: string; citi
     name: 'Senegal',
     code: 'SN',
     cities: ['Dakar', 'Saint-Louis']
+  },
+  SM: {
+    name: 'San Marino',
+    code: 'SM',
+    cities: ['Città di San Marino', 'Serravalle', 'Borgo Maggiore', 'Domagnano', 'Fiorentino', 'Acquaviva', 'Faetano', 'Montegiardino', 'Chiesanuova']
   }
 };
 
