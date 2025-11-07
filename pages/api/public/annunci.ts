@@ -111,11 +111,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const fourthCity = (obj as any).fourthCity
         for (const c of [baseCity, secondCity, thirdCity, fourthCity]) { if (c) aggCities.push(String(c)) }
         if (Array.isArray(raw)) aggCities.push(...raw.map((x:any)=> String(x)))
+        
+        // NUOVO: Aggiungi città internazionali salvate in formato "City, CODE"
+        if (Array.isArray((obj as any).internationalCities)) {
+          for (const cityStr of (obj as any).internationalCities) {
+            if (typeof cityStr === 'string' && cityStr.includes(', ')) {
+              const [cityName] = cityStr.split(', ')
+              if (cityName) aggCities.push(cityName)
+            }
+          }
+        }
+        
         const cities = Array.from(new Set(aggCities.filter(Boolean)))
 
-        const explicitCountries = Array.isArray((obj as any).countries)
-          ? (obj as any).countries.map((c:any)=> String(c).toUpperCase())
-          : (Array.isArray((p as any).countries) ? (p as any).countries.map((c:any)=> String(c).toUpperCase()) : [])
+        // Estrai paesi sia dal campo countries che da internationalCities
+        const aggCountries: string[] = []
+        if (Array.isArray((obj as any).countries)) {
+          aggCountries.push(...(obj as any).countries.map((c:any)=> String(c).toUpperCase()))
+        } else if (Array.isArray((p as any).countries)) {
+          aggCountries.push(...(p as any).countries.map((c:any)=> String(c).toUpperCase()))
+        }
+        
+        // NUOVO: Estrai codici paese da internationalCities (es. "Paris, FR" -> "FR")
+        if (Array.isArray((obj as any).internationalCities)) {
+          for (const cityStr of (obj as any).internationalCities) {
+            if (typeof cityStr === 'string' && cityStr.includes(', ')) {
+              const [, countryCode] = cityStr.split(', ')
+              if (countryCode) aggCountries.push(countryCode.trim().toUpperCase())
+            }
+          }
+        }
+        
+        const explicitCountries = Array.from(new Set(aggCountries))
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
