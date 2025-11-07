@@ -408,7 +408,7 @@ export default function CittaDiLavoroPage() {
                     className="inp w-full"
                   >
                     <option value="">Seleziona nazione</option>
-                    {COUNTRY_LIST.map(c => (
+                    {COUNTRY_LIST.filter(c => c.code !== 'IT').map(c => (
                       <option key={c.code} value={c.code}>{c.name}</option>
                     ))}
                   </select>
