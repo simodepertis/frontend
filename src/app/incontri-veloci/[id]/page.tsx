@@ -47,12 +47,31 @@ export default function IncontroVeloceDetailPage() {
   const [meeting, setMeeting] = useState<QuickMeeting | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     if (params?.id) {
       loadMeeting(params.id as string);
     }
   }, [params]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!lightboxOpen) return;
+      
+      if (e.key === 'Escape') {
+        closeLightbox();
+      } else if (e.key === 'ArrowLeft') {
+        prevPhoto();
+      } else if (e.key === 'ArrowRight') {
+        nextPhoto();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxOpen, lightboxIndex]);
 
   const loadMeeting = async (id: string) => {
     setLoading(true);
@@ -115,6 +134,27 @@ export default function IncontroVeloceDetailPage() {
         {badge.label}
       </span>
     );
+  };
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
+  const closeLightbox = () => {
+    setLightboxOpen(false);
+  };
+
+  const nextPhoto = () => {
+    if (meeting && lightboxIndex < meeting.photos.length - 1) {
+      setLightboxIndex(lightboxIndex + 1);
+    }
+  };
+
+  const prevPhoto = () => {
+    if (lightboxIndex > 0) {
+      setLightboxIndex(lightboxIndex - 1);
+    }
   };
 
   if (loading) {
@@ -213,15 +253,23 @@ export default function IncontroVeloceDetailPage() {
               
               {/* Foto principale */}
               <div className="mb-4">
-                <div className="aspect-video bg-gray-700 rounded-lg overflow-hidden">
+                <div 
+                  className="aspect-video bg-gray-700 rounded-lg overflow-hidden cursor-pointer relative group"
+                  onClick={() => openLightbox(selectedPhoto)}
+                >
                   <img
                     src={meeting.photos[selectedPhoto]}
                     alt={`${meeting.title} - Foto ${selectedPhoto + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <div className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
+                      🔍
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -231,19 +279,27 @@ export default function IncontroVeloceDetailPage() {
                   {meeting.photos.map((photo, index) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedPhoto(index)}
-                      className={`aspect-square bg-gray-700 rounded-lg overflow-hidden border-2 transition-colors ${
+                      onClick={() => {
+                        setSelectedPhoto(index);
+                        openLightbox(index);
+                      }}
+                      className={`aspect-square bg-gray-700 rounded-lg overflow-hidden border-2 transition-colors cursor-pointer group relative ${
                         selectedPhoto === index ? 'border-blue-500' : 'border-transparent hover:border-gray-500'
                       }`}
                     >
                       <img
                         src={photo}
                         alt={`Miniatura ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/placeholder.svg';
                         }}
                       />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                        <div className="text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                          🔍
+                        </div>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -373,6 +429,58 @@ export default function IncontroVeloceDetailPage() {
           </Link>
         </div>
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+          onClick={closeLightbox}
+        >
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 transition-colors z-10"
+          >
+            ×
+          </button>
+
+          {/* Freccia Sinistra */}
+          {lightboxIndex > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+              className="absolute left-4 text-white text-5xl hover:text-gray-300 transition-colors z-10"
+            >
+              ‹
+            </button>
+          )}
+
+          {/* Immagine */}
+          <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={meeting.photos[lightboxIndex]}
+              alt={`${meeting.title} - Foto ${lightboxIndex + 1}`}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }}
+            />
+          </div>
+
+          {/* Freccia Destra */}
+          {lightboxIndex < meeting.photos.length - 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+              className="absolute right-4 text-white text-5xl hover:text-gray-300 transition-colors z-10"
+            >
+              ›
+            </button>
+          )}
+
+          {/* Contatore foto */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full">
+            {lightboxIndex + 1} / {meeting.photos.length}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -23,6 +23,7 @@ export default function EditQuickMeeting() {
   });
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -111,6 +112,47 @@ export default function EditQuickMeeting() {
   const removePhoto = (index: number) => {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
     setPhotoFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handlePhotoDragStart = (e: React.DragEvent, index: number) => {
+    setDraggingIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handlePhotoDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handlePhotoDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === dropIndex) {
+      setDraggingIndex(null);
+      return;
+    }
+
+    const newPreviews = [...photoPreviews];
+    const [draggedItem] = newPreviews.splice(draggingIndex, 1);
+    newPreviews.splice(dropIndex, 0, draggedItem);
+    setPhotoPreviews(newPreviews);
+
+    const newFiles = [...photoFiles];
+    if (draggingIndex < form.photos.length && dropIndex < form.photos.length) {
+      // Entrambi sono foto esistenti
+      const updatedPhotos = [...form.photos];
+      const [draggedPhoto] = updatedPhotos.splice(draggingIndex, 1);
+      updatedPhotos.splice(dropIndex, 0, draggedPhoto);
+      setForm((s: any) => ({ ...s, photos: updatedPhotos }));
+    } else if (draggingIndex >= form.photos.length && dropIndex >= form.photos.length) {
+      // Entrambi sono nuovi file
+      const dragFileIndex = draggingIndex - form.photos.length;
+      const dropFileIndex = dropIndex - form.photos.length;
+      const [draggedFile] = newFiles.splice(dragFileIndex, 1);
+      newFiles.splice(dropFileIndex, 0, draggedFile);
+      setPhotoFiles(newFiles);
+    }
+
+    setDraggingIndex(null);
   };
 
   const onSubmit = async (e: any) => {
@@ -248,19 +290,39 @@ export default function EditQuickMeeting() {
           </div>
           
           {photoPreviews.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {photoPreviews.map((preview, i) => (
-                <div key={i} className="relative group">
-                  <img src={preview} alt={`Foto ${i + 1}`} className="w-full h-32 object-cover rounded border border-gray-700" />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(i)}
-                    className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            <div>
+              <div className="text-xs text-gray-400 mb-2">
+                ⭐ La prima foto è l'anteprima principale - Trascina per riordinare
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {photoPreviews.map((preview, i) => (
+                  <div 
+                    key={i} 
+                    draggable
+                    onDragStart={(e) => handlePhotoDragStart(e, i)}
+                    onDragOver={(e) => handlePhotoDragOver(e, i)}
+                    onDrop={(e) => handlePhotoDrop(e, i)}
+                    className={`relative group cursor-move ${draggingIndex === i ? 'opacity-50' : ''}`}
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    {i === 0 && (
+                      <div className="absolute -top-2 -left-2 bg-yellow-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center z-10">
+                        ⭐
+                      </div>
+                    )}
+                    <img src={preview} alt={`Foto ${i + 1}`} className="w-full h-32 object-cover rounded border-2 border-gray-700 hover:border-blue-500 transition-colors" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                    <div className="absolute bottom-1 left-1 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
+                      {i + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
