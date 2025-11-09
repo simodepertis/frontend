@@ -14,6 +14,17 @@ interface ImportedReview {
   sourceUrl?: string;
 }
 
+interface Review {
+  id: number;
+  title: string;
+  rating: number;
+  reviewText: string;
+  createdAt: string;
+  user: {
+    nome: string;
+  };
+}
+
 interface QuickMeeting {
   id: number;
   title: string;
@@ -49,6 +60,11 @@ export default function IncontroVeloceDetailPage() {
   const [selectedPhoto, setSelectedPhoto] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewForm, setReviewForm] = useState({ title: '', rating: 5, reviewText: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     if (params?.id) {
@@ -92,6 +108,9 @@ export default function IncontroVeloceDetailPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'quickMeeting', targetId: id, sessionId })
         }).catch(() => {});
+
+        // Carica recensioni
+        loadReviews(id);
       } else if (res.status === 404) {
         router.push('/incontri-veloci');
       }
@@ -99,6 +118,65 @@ export default function IncontroVeloceDetailPage() {
       console.error('Errore caricamento incontro:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReviews = async (id: string) => {
+    try {
+      const res = await fetch(`/api/quick-meetings/${id}/reviews`);
+      if (res.ok) {
+        const data = await res.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (error) {
+      console.error('Errore caricamento recensioni:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Verifica autenticazione
+    const token = localStorage.getItem('auth-token');
+    setIsAuthenticated(!!token);
+  }, []);
+
+  const submitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!meeting) return;
+
+    const token = localStorage.getItem('auth-token');
+    if (!token) {
+      setReviewMessage('Devi essere autenticato per lasciare una recensione');
+      return;
+    }
+
+    setSubmittingReview(true);
+    setReviewMessage('');
+
+    try {
+      const res = await fetch(`/api/quick-meetings/${meeting.id}/reviews`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(reviewForm)
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setReviewMessage(data.message || 'Recensione inviata con successo!');
+        setReviewForm({ title: '', rating: 5, reviewText: '' });
+        // Ricarica recensioni dopo 2 secondi
+        setTimeout(() => loadReviews(meeting.id.toString()), 2000);
+      } else {
+        setReviewMessage(data.error || 'Errore durante l\'invio della recensione');
+      }
+    } catch (error) {
+      console.error('Errore invio recensione:', error);
+      setReviewMessage('Errore durante l\'invio della recensione');
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -416,6 +494,130 @@ export default function IncontroVeloceDetailPage() {
                 IncontriEscort non è responsabile per gli incontri organizzati tramite questi annunci.
               </div>
             </div>
+          </div>
+
+          {/* Sezione Recensioni */}
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mt-6">
+            <h2 className="text-xl font-bold text-white mb-4">⭐ Recensioni</h2>
+
+            {/* Form Nuova Recensione */}
+            {isAuthenticated ? (
+              <form onSubmit={submitReview} className="mb-6 p-4 bg-gray-700 rounded-lg">
+                <h3 className="text-white font-medium mb-3">Scrivi una recensione</h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Titolo</label>
+                    <input
+                      type="text"
+                      value={reviewForm.title}
+                      onChange={(e) => setReviewForm({ ...reviewForm, title: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                      placeholder="Es: Bellissima esperienza!"
+                      required
+                      minLength={3}
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Valutazione</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewForm({ ...reviewForm, rating: star })}
+                          className={`text-3xl transition-colors ${
+                            star <= reviewForm.rating ? 'text-yellow-400' : 'text-gray-500'
+                          }`}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">La tua recensione</label>
+                    <textarea
+                      value={reviewForm.reviewText}
+                      onChange={(e) => setReviewForm({ ...reviewForm, reviewText: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm h-24 resize-none"
+                      placeholder="Racconta la tua esperienza..."
+                      required
+                      minLength={10}
+                      maxLength={1000}
+                    />
+                    <div className="text-xs text-gray-400 mt-1">
+                      {reviewForm.reviewText.length}/1000 caratteri
+                    </div>
+                  </div>
+
+                  {reviewMessage && (
+                    <div className={`text-sm p-2 rounded ${
+                      reviewMessage.includes('successo') 
+                        ? 'bg-green-900/30 text-green-300 border border-green-600/30' 
+                        : 'bg-red-900/30 text-red-300 border border-red-600/30'
+                    }`}>
+                      {reviewMessage}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={submittingReview}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded font-medium transition-colors"
+                  >
+                    {submittingReview ? 'Invio...' : '📝 Invia Recensione'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="mb-6 p-4 bg-gray-700 rounded-lg text-center">
+                <p className="text-gray-300 mb-3">Devi essere autenticato per lasciare una recensione</p>
+                <Link href="/autenticazione" className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium">
+                  Accedi o Registrati
+                </Link>
+              </div>
+            )}
+
+            {/* Lista Recensioni */}
+            {reviews.length > 0 ? (
+              <div className="space-y-3">
+                {reviews.map((review) => (
+                  <div key={review.id} className="p-4 bg-gray-700 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-white">{review.title}</span>
+                          <div className="flex items-center">
+                            {[...Array(5)].map((_, i) => (
+                              <span key={i} className={i < review.rating ? 'text-yellow-400' : 'text-gray-500'}>
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          di <span className="font-medium">{review.user.nome}</span>
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {new Date(review.createdAt).toLocaleDateString('it-IT')}
+                      </span>
+                    </div>
+                    <p className="text-gray-300 text-sm mt-2">{review.reviewText}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <div className="text-4xl mb-2">💬</div>
+                <div className="text-sm">Nessuna recensione ancora</div>
+                <div className="text-xs mt-1">Sii il primo a lasciare una recensione!</div>
+              </div>
+            )}
           </div>
         </div>
       </div>

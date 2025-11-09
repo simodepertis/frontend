@@ -4,9 +4,7 @@ import { verifyToken } from '@/lib/auth'
 
 export const config = {
   api: {
-    bodyParser: {
-      sizeLimit: '4.5mb', // Limite Vercel serverless
-    },
+    bodyParser: false, // Leggiamo manualmente per evitare limiti Vercel
   },
 }
 
@@ -47,8 +45,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (ct.includes('application/json') || ct.includes('text/')) {
       console.log('➡️ Branch: JSON')
-      console.log('📦 req.body type:', typeof req.body, 'keys:', Object.keys(req.body || {}))
-      const { url, name, size } = req.body || {}
+      // Leggi body manualmente
+      const chunks: Buffer[] = []
+      const MAX_SIZE = 4 * 1024 * 1024 // 4MB max
+      let totalSize = 0
+      
+      try {
+        await new Promise<void>((resolve, reject) => {
+          req.on('data', (chunk: Buffer) => {
+            totalSize += chunk.length
+            if (totalSize > MAX_SIZE) {
+              reject(new Error('Payload troppo grande'))
+              return
+            }
+            chunks.push(chunk)
+          })
+          req.on('end', () => resolve())
+          req.on('error', reject)
+        })
+      } catch (e: any) {
+        console.log('❌ Errore lettura body:', e.message)
+        return res.status(413).json({ error: 'Payload troppo grande (max 4MB)' })
+      }
+      
+      const raw = Buffer.concat(chunks).toString('utf8')
+      console.log('📦 Body letto, lunghezza:', raw.length)
+      
+      let parsed: any = {}
+      try {
+        parsed = JSON.parse(raw || '{}')
+      } catch (e) {
+        console.log('❌ JSON parse error')
+        return res.status(400).json({ error: 'JSON non valido' })
+      }
+      
+      const { url, name, size } = parsed || {}
       console.log('🔍 Extracted:', { hasUrl: !!url, urlType: typeof url, urlStart: url?.slice(0, 20), name, size })
       if (!url || typeof url !== 'string' || !url.startsWith('data:')) {
         console.log('❌ Upload foto (JSON): URL base64 non valido', { url: url?.slice(0, 50) })

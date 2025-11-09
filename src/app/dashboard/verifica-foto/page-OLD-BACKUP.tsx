@@ -1,0 +1,675 @@
+"use client";
+
+import SectionHeader from "@/components/SectionHeader";
+import EscortPicker from "@/components/EscortPicker";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+
+export default function VerificaFotoPage() {
+  type PhotoItem = { id: string; name: string; url: string; size: number; status: "bozza" | "in_review" | "approvata" | "rifiutata"; isFace?: boolean };
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  type DocItem = { id: string; type: 'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'; url: string; status: 'in_review' | 'approvato' | 'rifiutato' };
+  const [docs, setDocs] = useState<DocItem[]>([]);
+  const [docUrl, setDocUrl] = useState("");
+  const [docType, setDocType] = useState<'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'>('ID_CARD_FRONT');
+  const [consentAcceptedAt, setConsentAcceptedAt] = useState<string | null>(null);
+  const [consentTick, setConsentTick] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
+  const [userRole, setUserRole] = useState<string>('');
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Carica/salva bozza in localStorage
+  useEffect(() => {
+    // Pulisci localStorage vecchio per evitare conflitti
+    try {
+      localStorage.removeItem("escort-verify-photos");
+    } catch {}
+    
+    // Carica da API
+    (async () => {
+      try {
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch('/api/escort/photos', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
+        if (res.ok) {
+          const { photos } = await res.json();
+          if (Array.isArray(photos)) {
+            // NON caricare foto DRAFT dal DB - solo IN_REVIEW e APPROVED
+            const mapped: PhotoItem[] = photos
+              .filter((p: any) => p.status !== 'DRAFT') // Escludi DRAFT
+              .map((p: any) => ({
+                id: String(p.id),
+                name: p.name,
+                url: p.url,
+                size: p.size,
+                status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : 'in_review',
+                isFace: !!p.isFace,
+              }));
+            setPhotos(mapped);
+          }
+        }
+        // 3) Carica documenti
+        const dr = await fetch('/api/escort/documents', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (dr.ok) {
+          const { documents } = await dr.json();
+          const mapped = documents.map((d: any) => ({
+            id: String(d.id),
+            type: d.type,
+            url: d.url,
+            status: d.status === 'APPROVED' ? 'approvato' : d.status === 'REJECTED' ? 'rifiutato' : 'in_review',
+          }));
+          setDocs(mapped);
+        }
+        // 4) Leggi user role e consenso
+        const ur = await fetch('/api/user/me', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (ur.ok) {
+          const { user } = await ur.json();
+          setUserRole(user?.role || '');
+        }
+        // 5) Carica consenso
+        const cr = await fetch('/api/escort/consent', { headers: { 'Authorization': `Bearer ${token}` } });
+        if (cr.ok) {
+          const { consent } = await cr.json();
+          setConsentAcceptedAt(consent?.acceptedAt || null);
+        }
+      } catch {}
+    })();
+  }, []);
+  // Rimosso salvataggio localStorage per evitare conflitti con API
+
+  // Funzione per ricaricare foto dall'API
+  const reloadPhotosFromAPI = async () => {
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/escort/photos', { 
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+        cache: 'no-store'
+      });
+      if (res.ok) {
+        const { photos } = await res.json();
+        if (Array.isArray(photos)) {
+          // NON caricare foto DRAFT - solo IN_REVIEW e APPROVED
+          const mapped: PhotoItem[] = photos
+            .filter((p: any) => p.status !== 'DRAFT')
+            .map((p: any) => ({
+              id: String(p.id),
+              name: p.name,
+              url: p.url,
+              size: p.size,
+              status: p.status === 'APPROVED' ? 'approvata' : p.status === 'REJECTED' ? 'rifiutata' : 'in_review',
+              isFace: !!p.isFace,
+            }));
+          setPhotos(mapped); // Sostituisci tutto con foto dal DB (non DRAFT)
+          console.log('🔄 Foto ricaricate dall\'API:', mapped);
+        }
+      }
+    } catch (e) {
+      console.error('\u274c Errore reload foto:', e);
+    }
+  };
+
+  // Drag & Drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      onSelectFiles(files);
+    }
+  };
+
+
+  const onSelectFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const newItems: PhotoItem[] = [];
+    
+    // Leggi tutti i file PRIMA di aggiungerli
+    const filePromises = Array.from(files).map(file => {
+      if (!file.type.startsWith("image/")) return null;
+      return new Promise<PhotoItem>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target?.result as string;
+          const tempId = `${file.name}-${file.size}-${Date.now()}-${Math.random()}`;
+          resolve({
+            id: tempId,
+            name: file.name,
+            url: base64,
+            size: file.size,
+            status: "bozza",
+            isFace: false
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    
+    const items = await Promise.all(filePromises);
+    const validItems = items.filter(i => i !== null) as PhotoItem[];
+    if (validItems.length) setPhotos((prev) => [...prev, ...validItems]);
+  };
+
+  const removePhoto = (id: string) => {
+    setPhotos((prev) => prev.filter(p => p.id !== id));
+  };
+
+  const sendForReview = async () => {
+    // IMPORTANTE: calcola bozze PRIMA di setSubmitting per evitare re-render che svuota array
+    const bozze = photos.filter(p => p.status === 'bozza');
+    console.log('📝 Foto da inviare:', bozze.length, bozze);
+    
+    if (bozze.length < 3) { 
+      alert('Seleziona almeno 3 foto'); 
+      return; 
+    }
+    if (!bozze.some(p => p.isFace)) { 
+      alert('Segna almeno 1 foto come volto'); 
+      return; 
+    }
+    
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      
+      // Invia foto UNA PER UNA per evitare body troppo grande
+      let successCount = 0;
+      for (const foto of bozze) {
+        try {
+          const res = await fetch('/api/escort/photos/upload', { 
+            method: 'POST', 
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ 
+              url: foto.url, 
+              name: foto.name, 
+              size: foto.size 
+            })
+          });
+          
+          if (res.ok) {
+            const { photo } = await res.json();
+            // Se questa foto era marcata come volto, aggiorna subito
+            if (foto.isFace && photo?.id) {
+              await fetch('/api/escort/photos', { 
+                method: 'PATCH', 
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}` 
+                }, 
+                body: JSON.stringify({ id: photo.id, isFace: true }) 
+              });
+            }
+            successCount++;
+          } else {
+            const err = await res.json().catch(() => ({ error: 'Errore' }));
+            console.error('❌ Upload foto fallito:', foto.name, err);
+          }
+        } catch (e) {
+          console.error('❌ Errore upload foto:', foto.name, e);
+        }
+      }
+      
+      if (successCount === 0) {
+        alert('Nessuna foto è stata caricata. Riprova.');
+        return;
+      }
+      
+      // Ora invia tutte le foto DRAFT a IN_REVIEW
+      const submitRes = await fetch('/api/escort/photos/submit', { 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ skipValidation: true })
+      });
+      
+      const submitData = await submitRes.json().catch(()=>({}));
+      if (!submitRes.ok) { 
+        alert(submitData?.error || 'Errore invio a verifica'); 
+        return; 
+      }
+      
+      // Svuota bozze e ricarica dall'API
+      setPhotos([]);
+      await reloadPhotosFromAPI();
+      alert('✅ Foto inviate in revisione con successo!');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Tutte le foto 'bozza' sono nuove locali (DRAFT dal DB sono escluse)
+  const newPhotos = useMemo(() => photos.filter(p => p.status === 'bozza'), [photos]);
+  const totalBozzaCount = useMemo(() => newPhotos.length, [newPhotos]);
+  const faceCount = useMemo(() => newPhotos.filter(p => !!p.isFace).length, [newPhotos]);
+  const hasFace = faceCount >= 1;
+  const hasAnyDoc = docs.length > 0;
+  const hasApprovedDoc = docs.some(d => d.status === 'approvato');
+  const hasConsent = !!consentAcceptedAt;
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader title="Verifica Foto al 100%" subtitle="Carica e verifica le tue foto per aumentare la fiducia" />
+      {/* Selezione Escort (solo per Agenzia) */}
+      {userRole === 'agenzia' && (
+        <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+          <div className="grid md:grid-cols-[1fr,auto] gap-3 items-end">
+            <EscortPicker onChange={(uid)=>{ if (uid) window.location.href = `/dashboard/agenzia/escort/compila/galleria-foto?escortUserId=${uid}`; }} />
+            <a className="text-sm text-blue-400 hover:underline" href="/dashboard/agenzia/escort">Gestione Escort Agenzia »</a>
+          </div>
+        </div>
+      )}
+
+      {/* Linee guida */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Linee Guida</div>
+        <ul className="text-sm text-gray-300 list-disc pl-5 space-y-1">
+          <li>Carica immagini nitide, senza watermark invadenti, in cui tu sia presente.</li>
+          <li>Formati supportati: JPG/PNG, fino a 5MB per immagine.</li>
+          <li>Evita collage, testo eccessivo e foto duplicate.</li>
+          <li><strong>Obbligatorio</strong>: almeno 3 foto totali e <strong>minimo 1 foto del volto</strong>.</li>
+        </ul>
+      </div>
+
+      {/* (Spostata in fondo) Consenso legale - renderizzato più in basso */}
+
+      {/* Uploader */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-semibold">Carica Foto</div>
+          <div className="text-xs text-gray-400">👆 Trascina le immagini qui o usa il bottone</div>
+        </div>
+        <div 
+          className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+            isDragging 
+              ? 'border-blue-500 bg-blue-500/10' 
+              : 'border-gray-600 hover:border-blue-500/50'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <div className="text-4xl">{isDragging ? '📸' : '🖼️'}</div>
+            <div className="text-center">
+              <div className="font-medium text-white mb-1">
+                {isDragging ? 'Rilascia qui le immagini' : 'Trascina le foto qui'}
+              </div>
+              <div className="text-sm text-gray-400">oppure</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => onSelectFiles(e.target.files)} />
+              <Button onClick={() => inputRef.current?.click()}>Seleziona immagini</Button>
+              <Button variant="secondary" onClick={() => setPhotos([])}>Svuota bozza</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista foto */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-3 flex items-center justify-between">
+          <span>Le tue foto ({photos.length})</span>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-2 py-1 rounded-full ${hasFace ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>Volto: {faceCount}/1</span>
+          </div>
+        </div>
+        {photos.length === 0 ? (
+          <div className="text-sm text-gray-400">Nessuna foto caricata. Aggiungi immagini per inviarle in verifica.</div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {photos.map((p) => (
+              <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-700">
+                <div className="relative w-full h-56 bg-black">
+                  <Image src={p.url} alt={p.name} fill className="object-contain" />
+                  {p.isFace && (
+                    <div className="absolute top-2 left-2 text-[10px] font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</div>
+                  )}
+                </div>
+                <div className="p-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium truncate max-w-[180px]" title={p.name}>{p.name}</div>
+                    <div className="text-xs text-neutral-500">{Math.round(p.size / 1024)} KB</div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-xs px-2 py-1 rounded-full ${p.status === 'approvata' ? 'bg-green-100 text-green-700' : p.status === 'rifiutata' ? 'bg-red-100 text-red-700' : p.status === 'in_review' ? 'bg-amber-100 text-amber-700' : 'bg-neutral-100 text-neutral-700'}`}>
+                      {p.status === 'bozza' ? 'Bozza' : p.status === 'in_review' ? 'In revisione' : p.status === 'approvata' ? 'Approvata' : 'Rifiutata'}
+                    </span>
+                    {p.status === 'bozza' && (
+                      <>
+                        <Button variant="secondary" className="px-2 py-1 h-7 text-xs whitespace-nowrap" onClick={() => removePhoto(p.id)}>Rimuovi</Button>
+                        <Button 
+                          variant="secondary"
+                          className={`${p.isFace ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''} px-2 py-1 h-7 text-xs whitespace-nowrap`}
+                          onClick={() => {
+                            // Se già c'è un volto, rimuovi il flag da quello e mettilo su questo
+                            if (p.isFace) {
+                              setPhotos((prev) => prev.map(ph => ph.id === p.id ? { ...ph, isFace: false } : ph));
+                            } else {
+                              setPhotos((prev) => prev.map(ph => ({ ...ph, isFace: ph.id === p.id })));
+                            }
+                          }}
+                        >{p.isFace ? 'Rimuovi volto' : 'Segna come volto'}</Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sezione Documenti di Identità */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="font-semibold text-lg">Documenti di Identità</div>
+            <div className="text-sm text-neutral-600">Carica i tuoi documenti per la verifica dell'identità</div>
+          </div>
+          {hasApprovedDoc ? (
+            <div className="text-xs px-3 py-1 rounded-full bg-green-600 text-green-100">Documento approvato ✓</div>
+          ) : (
+            <div className="text-xs text-neutral-500 bg-neutral-50 px-3 py-1 rounded-full">Obbligatorio per la verifica</div>
+          )}
+        </div>
+
+        {/* Linee guida documenti */}
+        {!hasApprovedDoc && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <div className="font-medium text-red-900 mb-2 flex items-center gap-2">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            CARTA D'IDENTITÀ OBBLIGATORIA
+          </div>
+          <div className="bg-red-900 border border-red-600 rounded p-3 mb-3">
+            <p className="text-red-200 font-semibold text-sm mb-2">⚠️ DOCUMENTO RICHIESTO</p>
+            <p className="text-red-300 text-xs">
+              È OBBLIGATORIO caricare la carta d'identità (fronte e retro) per poter utilizzare il sito.
+              Senza questo documento non potrai pubblicare annunci o accedere alle funzionalità avanzate.
+            </p>
+          </div>
+          <ul className="text-sm text-red-800 list-disc pl-5 space-y-1">
+            <li><strong>CARTA D'IDENTITÀ (fronte e retro) - OBBLIGATORIO</strong></li>
+            <li>Patente di guida (fronte e retro) - opzionale</li>
+            <li>Passaporto (pagina con foto) - opzionale</li>
+            <li>Formato: JPG/PNG, massimo 5MB per file</li>
+            <li>Immagini nitide e leggibili, senza riflessi</li>
+            <li>Tutti i dati devono essere chiaramente visibili</li>
+          </ul>
+        </div>
+        )}
+
+        {/* Upload documenti */}
+        <div className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${hasApprovedDoc ? 'border-green-700 bg-green-900/20' : 'border-neutral-300 hover:border-red-400'}`}>
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <div>
+              <div className="font-medium text-neutral-900">{hasApprovedDoc ? 'Documento approvato' : 'Carica i tuoi documenti'}</div>
+              <div className="text-sm text-neutral-600">{hasApprovedDoc ? 'Puoi caricare documenti aggiuntivi, ma ora puoi procedere a caricare le FOTO.' : 'Clicca per selezionare i file o trascinali qui'}</div>
+            </div>
+            <input 
+              type="file" 
+              accept="image/*" 
+              multiple 
+              className="hidden" 
+              id="document-upload"
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                
+                for (const file of Array.from(files)) {
+                  // Validazione lato client
+                  if (!file.type.startsWith("image/")) {
+                    alert(`File "${file.name}" non è un'immagine valida. Solo JPG e PNG sono accettati.`);
+                    continue;
+                  }
+                  
+                  if (file.size > 5 * 1024 * 1024) {
+                    alert(`File "${file.name}" è troppo grande. Massimo 5MB.`);
+                    continue;
+                  }
+                  
+                  if (file.size < 10 * 1024) {
+                    alert(`File "${file.name}" è troppo piccolo. Minimo 10KB.`);
+                    continue;
+                  }
+                  
+                  // Mostra preview temporaneo
+                  const tempUrl = URL.createObjectURL(file);
+                  const tempDoc: DocItem = {
+                    id: `temp-${Date.now()}`,
+                    type: 'ID_CARD_FRONT', // Tipo temporaneo
+                    url: tempUrl,
+                    status: 'in_review'
+                  };
+                  setDocs(prev => [...prev, tempDoc]);
+                  
+                  try {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    // Usa il tipo selezionato (default ID_CARD_FRONT)
+                    fd.append('type', docType);
+                    
+                    const token = localStorage.getItem('auth-token') || '';
+                    const res = await fetch('/api/escort/documents/upload', { 
+                      method: 'POST', 
+                      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+                      body: fd 
+                    });
+                    
+                    const data = await res.json().catch(()=>({ error: 'Errore sconosciuto' }));
+                    
+                    if (res.ok) {
+                      // Sostituisci il documento temporaneo con quello reale
+                      setDocs(prev => prev.map(doc => 
+                        doc.id === tempDoc.id ? {
+                          id: String(data.document.id),
+                          type: (docType as any),
+                          url: data.document.url,
+                          status: 'in_review' as const
+                        } : doc
+                      ));
+                    } else {
+                      // Rimuovi il documento temporaneo e mostra errore
+                      setDocs(prev => prev.filter(doc => doc.id !== tempDoc.id));
+                      alert(`Errore caricamento "${file.name}": ${data.error || 'Errore sconosciuto'}`);
+                    }
+                  } catch (error) {
+                    // Rimuovi il documento temporaneo e mostra errore
+                    setDocs(prev => prev.filter(doc => doc.id !== tempDoc.id));
+                    console.error('Errore upload documento:', error);
+                    alert(`Errore di rete durante il caricamento di "${file.name}"`);
+                  }
+                }
+                
+                // Reset input
+                e.target.value = '';
+              }}
+            />
+            <label 
+              htmlFor="document-upload" 
+              className={`${hasApprovedDoc ? 'bg-green-700 hover:bg-green-800' : 'bg-red-600 hover:bg-red-700'} text-white px-6 py-2 rounded-lg cursor-pointer transition-colors font-medium`}
+            >
+              {hasApprovedDoc ? 'Carica altro documento (opzionale)' : 'Seleziona Documenti'}
+            </label>
+          </div>
+        </div>
+
+        {/* Lista documenti caricati */}
+        {docs.length > 0 && (
+          <div className="mt-4">
+            <div className="font-medium mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Documenti Caricati ({docs.length})
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {docs.map((doc) => (
+                <div key={doc.id} className="border rounded-lg p-3 bg-neutral-50">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      {(() => { const u = doc.url?.startsWith('/uploads/') ? ('/api' + doc.url) : doc.url; return (
+                      <a href={u} target="_blank" rel="noopener noreferrer" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={u}
+                          alt={doc.type}
+                          className="w-20 h-14 object-cover rounded-md border border-gray-300"
+                          onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
+                        />
+                      </a>
+                      ) })()}
+                      <div>
+                        <div className="font-medium text-sm">{doc.type}</div>
+                        <div className="text-xs text-neutral-600">Documento di identità</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        doc.status === 'approvato' ? 'bg-green-100 text-green-700' : 
+                        doc.status === 'rifiutato' ? 'bg-red-100 text-red-700' : 
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {doc.status === 'approvato' ? 'Approvato' : doc.status === 'rifiutato' ? 'Rifiutato' : 'In Revisione'}
+                      </span>
+                      {(() => { const u = doc.url?.startsWith('/uploads/') ? ('/api' + doc.url) : doc.url; return (
+                      <a href={u} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800" title="Apri documento">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                      ) })()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Messaggio se nessun documento */}
+        {docs.length === 0 && (
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-800">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">Documenti richiesti</span>
+            </div>
+            <p className="text-sm text-amber-700 mt-1">
+              Devi caricare almeno un documento di identità per poter inviare le foto a verifica.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Consenso legale (obbligatorio) - in fondo */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-2 text-white">Consenso legale all'utilizzo di immagini e video</div>
+        <p className="text-sm text-gray-300 mb-2">
+          Leggi attentamente il documento di liberatoria prima di procedere:
+        </p>
+        <div className="flex flex-col gap-1">
+          <a href="/docs/Liberatoria.pdf" target="_blank" className="inline-block text-blue-600 underline text-sm" rel="noopener noreferrer">
+            Apri il documento di consenso (PDF)
+          </a>
+          <a href="/consenso-legale" target="_blank" className="inline-block text-neutral-600 underline text-xs" rel="noopener noreferrer">
+            Oppure leggi la versione online
+          </a>
+        </div>
+        <div className="flex items-center gap-3 mt-3">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={hasConsent || consentTick} onChange={(e)=>setConsentTick(e.target.checked)} disabled={hasConsent} />
+            <span>Ho letto e accetto quanto sopra</span>
+          </label>
+          {!hasConsent && (
+            <Button disabled={!consentTick || consentSaving} onClick={async()=>{
+              if (!consentTick) return;
+              try {
+                setConsentSaving(true);
+                const token = localStorage.getItem('auth-token');
+                const res = await fetch('/api/escort/consent', { 
+                  method: 'PATCH',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  }
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  console.log('✅ Consenso registrato:', data);
+                  setConsentAcceptedAt(data?.consentAcceptedAt || new Date().toISOString());
+                  alert('Consenso registrato con successo! Il tuo profilo è ora in attesa di approvazione.');
+                } else {
+                  const errorData = await res.json().catch(() => ({ error: 'Errore sconosciuto' }));
+                  console.error('❌ Errore consenso:', res.status, errorData);
+                  alert(`Errore: ${errorData.error || 'Non è stato possibile registrare il consenso'}. Controlla la console per dettagli.`);
+                }
+              } finally {
+                setConsentSaving(false);
+              }
+            }}>{consentSaving ? 'Salvataggio…' : 'Conferma consenso'}</Button>
+          )}
+          {hasConsent && <span className="text-xs text-green-700 bg-green-100 px-2 py-1 rounded-full">Consenso registrato</span>}
+        </div>
+      </div>
+
+      {/* Invio per verifica */}
+      <div className="flex items-center justify-end gap-3">
+        <div className="mr-auto text-xs text-gray-400">
+          Requisiti: almeno 3 foto · almeno 1 con volto — {totalBozzaCount >= 3 ? '3+ foto ✓' : `${Math.max(0, 3 - totalBozzaCount)} mancanti`} · {hasFace ? 'volto ✓' : 'volto mancante'}
+        </div>
+        <Button
+          variant="secondary"
+          onClick={async () => {
+            const inReview = photos.filter(p => p.status === 'in_review');
+            await Promise.all(inReview.map(async (p) => {
+              const idNum = Number(p.id);
+              if (Number.isNaN(idNum)) return;
+              try {
+                const token = localStorage.getItem('auth-token') || '';
+            await fetch('/api/escort/photos/status', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ id: idNum, action: 'draft' }) });
+              } catch {}
+            }));
+            setPhotos((prev) => prev.map(p => p.status === 'in_review' ? { ...p, status: 'bozza' } : p));
+          }}
+        >
+          Ritira dalla revisione
+        </Button>
+        <Button 
+          onClick={sendForReview}
+          disabled={submitting || !hasAnyDoc || totalBozzaCount < 3 || !hasFace}
+          title={!hasAnyDoc ? 'Carica almeno un documento prima di inviare' : (totalBozzaCount < 3 ? 'Servono almeno 3 foto' : (!hasFace ? 'Segna almeno una foto come volto' : ''))}
+        >
+          {submitting ? 'Invio…' : 'Invia a verifica'}
+        </Button>
+      </div>
+    </div>
+  );
+}

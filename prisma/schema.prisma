@@ -297,6 +297,7 @@ model QuickMeeting {
   // Relazioni
   bumpLogs        BumpLog[]
   importedReviews ImportedReview[]
+  reviews         QuickMeetingReview[]
 
   @@index([category])
   @@index([city])
@@ -341,6 +342,26 @@ model BumpLog {
 
   @@index([quickMeetingId])
   @@index([bumpedAt(sort: Desc)])
+}
+
+model QuickMeetingReview {
+  id             Int          @id @default(autoincrement())
+  quickMeetingId Int
+  userId         Int
+  title          String
+  rating         Int          // 1-5 stelle
+  reviewText     String
+  createdAt      DateTime     @default(now())
+  isApproved     Boolean      @default(false)
+  isVisible      Boolean      @default(true)
+
+  quickMeeting QuickMeeting @relation(fields: [quickMeetingId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([quickMeetingId])
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@index([isApproved])
 }
 
 model ProfileEvent {
@@ -439,7 +460,8 @@ model User {
   forumPostsAuthored   ForumPost[]   @relation("ForumPostsAuthored")
 
   // Incontri Veloci
-  quickMeetings QuickMeeting[]
+  quickMeetings        QuickMeeting[]
+  quickMeetingReviews  QuickMeetingReview[]
 }
 
 model EscortProfile {
