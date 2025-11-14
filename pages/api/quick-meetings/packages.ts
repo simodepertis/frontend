@@ -24,6 +24,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // pacchetto speciale per risalita immediata (10 crediti)
+    const immediate = {
+      code: 'IMMEDIATE',
+      label: 'Risalita immediata',
+      type: 'DAY' as const,
+      quantityPerWindow: 1,
+      durationDays: 1,
+      creditsCost: 10,
+    }
+    await prisma.quickMeetingProduct.upsert({
+      where: { code: immediate.code },
+      create: { ...immediate, active: true },
+      update: { active: true, creditsCost: immediate.creditsCost },
+    })
+
     const items = await prisma.quickMeetingProduct.findMany({
       where: { active: true },
       orderBy: [{ type: 'asc' }, { durationDays: 'asc' }],
