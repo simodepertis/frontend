@@ -48,7 +48,16 @@ export default function IncontriVelociDashboard() {
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<QuickMeetingProduct | null>(null);
-  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  const [activePurchase, setActivePurchase] = useState<{
+    id: number;
+    productCode: string;
+    productLabel: string;
+    type: string;
+    expiresAt: string;
+    durationDays: number;
+    startedAt: string;
+  } | null>(null);
+  const [daySlots, setDaySlots] = useState<{ date: string; slots: number[] }[]>([]);
   const [scheduleSummary, setScheduleSummary] = useState<{ runAt: string; window: string }[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
 
@@ -76,7 +85,8 @@ export default function IncontriVelociDashboard() {
     setPromoSuccess(null);
     setLoadingPackages(true);
     setSelectedPackage(null);
-    setSelectedSlots([]);
+    setActivePurchase(null);
+    setDaySlots([]);
     setScheduleSummary([]);
     setLoadingSchedule(true);
     try {
@@ -91,13 +101,53 @@ export default function IncontriVelociDashboard() {
             });
             if (!r.ok) return null;
             const d = await r.json();
-            if (!d || !Array.isArray(d.schedules)) return null;
+            if (!d) return null;
+
+            if (d.purchase) {
+              setActivePurchase({
+                id: d.purchase.id,
+                productCode: d.purchase.productCode,
+                productLabel: d.purchase.productLabel,
+                type: d.purchase.type,
+                expiresAt: d.purchase.expiresAt,
+                durationDays: d.purchase.durationDays,
+                startedAt: d.purchase.startedAt,
+              });
+            } else {
+              setActivePurchase(null);
+            }
+
+            const schedules = Array.isArray(d.schedules) ? d.schedules : [];
             setScheduleSummary(
-              d.schedules.map((s: any) => ({
-                runAt: s.runAt,
-                window: s.window
-              }))
+              schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
             );
+
+            // prepara la struttura daySlots solo se abbiamo un pacchetto attivo
+            if (d.purchase && d.purchase.startedAt && d.purchase.durationDays) {
+              const start = new Date(d.purchase.startedAt);
+              const daysArr: { date: string; slots: number[] }[] = [];
+              for (let i = 0; i < d.purchase.durationDays; i++) {
+                const dayDate = new Date(start.getTime());
+                dayDate.setDate(dayDate.getDate() + i);
+                const iso = dayDate.toISOString().slice(0, 10);
+
+                // ricava eventuali slot già programmati per quel giorno
+                const daySlotsFromSchedule = schedules
+                  .filter((s: any) => {
+                    const dt = new Date(s.runAt);
+                    return dt.toISOString().slice(0, 10) === iso;
+                  })
+                  .map((s: any) => new Date(s.runAt).getHours());
+
+                const uniqueHours = Array.from<number>(new Set<number>(daySlotsFromSchedule)).sort(
+                  (a: number, b: number) => a - b
+                );
+                daysArr.push({ date: iso, slots: uniqueHours });
+              }
+              setDaySlots(daysArr);
+            } else {
+              setDaySlots([]);
+            }
           } catch {
             return null;
           }
@@ -130,20 +180,31 @@ export default function IncontriVelociDashboard() {
     setPurchaseLoadingCode(null);
     setBumpLoading(false);
     setSelectedPackage(null);
-    setSelectedSlots([]);
+    setActivePurchase(null);
+    setDaySlots([]);
     setScheduleSummary([]);
   };
 
-  const toggleSlot = (hour: number) => {
-    setSelectedSlots((prev) => {
+  const toggleDaySlot = (date: string, hour: number) => {
+    setDaySlots((prev) => {
+      const copy = [...prev];
+      const idx = copy.findIndex((d) => d.date === date);
+      if (idx === -1) {
+        return prev;
+      }
+      const day = copy[idx];
+      let slots = day.slots || [];
       if (selectedPackage?.type === 'DAY') {
-        // per i pacchetti DAY permetti una sola fascia: selezione esclusiva
-        return prev.includes(hour) ? [] : [hour];
+        // un solo slot per giorno
+        slots = slots.includes(hour) ? [] : [hour];
+      } else {
+        // NIGHT: multi-selezione
+        slots = slots.includes(hour)
+          ? slots.filter((h) => h !== hour)
+          : [...slots, hour];
       }
-      if (prev.includes(hour)) {
-        return prev.filter((h) => h !== hour);
-      }
-      return [...prev, hour];
+      copy[idx] = { ...day, slots };
+      return copy;
     });
   };
 
@@ -158,7 +219,7 @@ export default function IncontriVelociDashboard() {
     setPromoSuccess(null);
     setPurchaseLoadingCode(code);
     // se non è ancora stato fissato il pacchetto selezionato, impostalo ora
-    const pkg = packages.find(p => p.code === code) || null;
+    const pkg = packages.find((p) => p.code === code) || null;
     if (!selectedPackage && pkg) {
       setSelectedPackage(pkg);
     }
@@ -169,7 +230,8 @@ export default function IncontriVelociDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ meetingId: promoMeeting.id, code, slots: selectedSlots })
+        // per l'acquisto iniziale non passiamo più slot dettagliati; verranno gestiti dalla schermata di aggiornamento
+        body: JSON.stringify({ meetingId: promoMeeting.id, code, slots: [] })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -251,7 +313,10 @@ export default function IncontriVelociDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ meetingId: promoMeeting.id, slots: selectedSlots })
+        body: JSON.stringify({
+          meetingId: promoMeeting.id,
+          days: daySlots,
+        })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -266,10 +331,32 @@ export default function IncontriVelociDashboard() {
       });
       if (resSchedule.ok) {
         const d = await resSchedule.json();
-        if (d && Array.isArray(d.schedules)) {
+        if (d) {
+          const schedules = Array.isArray(d.schedules) ? d.schedules : [];
           setScheduleSummary(
-            d.schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
+            schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
           );
+
+          if (d.purchase && d.purchase.startedAt && d.purchase.durationDays) {
+            const start = new Date(d.purchase.startedAt);
+            const daysArr: { date: string; slots: number[] }[] = [];
+            for (let i = 0; i < d.purchase.durationDays; i++) {
+              const dayDate = new Date(start.getTime());
+              dayDate.setDate(dayDate.getDate() + i);
+              const iso = dayDate.toISOString().slice(0, 10);
+
+              const daySlotsFromSchedule = schedules
+                .filter((s: any) => {
+                  const dt = new Date(s.runAt);
+                  return dt.toISOString().slice(0, 10) === iso;
+                })
+                .map((s: any) => new Date(s.runAt).getHours());
+
+              const uniqueHours = Array.from(new Set(daySlotsFromSchedule)).sort((a, b) => a - b);
+              daysArr.push({ date: iso, slots: uniqueHours });
+            }
+            setDaySlots(daysArr);
+          }
         }
       }
     } catch (e) {
@@ -525,6 +612,22 @@ export default function IncontriVelociDashboard() {
               </button>
             </div>
 
+            {activePurchase && (
+              <div className="mb-3 text-sm text-gray-200 bg-gray-800/80 border border-gray-700 rounded px-3 py-2">
+                <div className="font-semibold text-pink-300 mb-1">Pacchetto attivo</div>
+                <div className="text-xs text-gray-200">
+                  <div>{activePurchase.productLabel}</div>
+                  <div>
+                    Tipo: {activePurchase.type === 'DAY' ? 'Giorno' : 'Notte'} · Durata: {activePurchase.durationDays}{' '}
+                    {activePurchase.durationDays === 1 ? 'giorno' : 'giorni'}
+                  </div>
+                  <div>
+                    Scadenza: {new Date(activePurchase.expiresAt).toLocaleString('it-IT')}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {promoError && (
               <div className="mb-3 text-sm text-red-400 bg-red-900/30 border border-red-700 rounded px-3 py-2">
                 {promoError}
@@ -551,7 +654,6 @@ export default function IncontriVelociDashboard() {
                         type="button"
                         onClick={() => {
                           setSelectedPackage(p);
-                          setSelectedSlots([]);
                         }}
                         className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
                           p.type === 'DAY'
@@ -589,59 +691,72 @@ export default function IncontriVelociDashboard() {
                 </div>
 
                 {/* Fasce orarie */}
-                {selectedPackage && (
+                {selectedPackage && daySlots.length > 0 && (
                   <div className="mb-4 border-t border-gray-700 pt-4">
-                    <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie</h3>
+                    <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie per giorno</h3>
                     <p className="text-xs text-gray-400 mb-3">
                       {selectedPackage.type === 'DAY'
-                        ? 'Seleziona una fascia oraria giornaliera (08:00 - 22:00) in cui verrà eseguita la risalita ogni giorno del pacchetto.'
-                        : 'Seleziona una o più fasce orarie notturne (22:00 - 08:00). Le risalite verranno distribuite tra gli orari scelti.'}
+                        ? 'Per ogni giorno del pacchetto seleziona una fascia oraria (08:00 - 22:00) in cui avverrà la risalita.'
+                        : 'Per ogni notte del pacchetto seleziona una o più fasce orarie notturne (22:00 - 08:00). Le risalite verranno distribuite tra gli orari scelti.'}
                     </p>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
-                      {Array.from({ length: 24 }).map((_, h) => {
-                        const labelStart = h.toString().padStart(2, '0') + ':00';
-                        const labelEnd = ((h + 1) % 24).toString().padStart(2, '0') + ':00';
 
-                        const isDaySlot = h >= 8 && h <= 21;
-                        const isNightSlot = h >= 22 || h <= 7;
-
-                        const enabled = selectedPackage.type === 'DAY' ? isDaySlot : isNightSlot;
-                        const checked = selectedSlots.includes(h);
-
-                        if (!enabled) {
-                          return (
-                            <div
-                              key={h}
-                              className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800/60 text-gray-600 cursor-not-allowed border border-gray-700/60"
-                            >
-                              <input type="checkbox" disabled className="opacity-40" />
-                              <span>
-                                {labelStart} - {labelEnd}
-                              </span>
-                            </div>
-                          );
-                        }
-
+                    <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                      {daySlots.map((day) => {
+                        const dateLabel = new Date(day.date + 'T00:00:00').toLocaleDateString('it-IT');
                         return (
-                          <button
-                            type="button"
-                            key={h}
-                            onClick={() => toggleSlot(h)}
-                            className={`flex items-center gap-1 px-2 py-1 rounded border text-left transition-colors ${
-                              checked
-                                ? 'bg-pink-600/80 border-pink-400 text-white'
-                                : 'bg-gray-800/80 border-gray-600 text-gray-100 hover:border-pink-400'
-                            }`}
-                          >
-                            <span
-                              className={`w-3 h-3 rounded border ${
-                                checked ? 'bg-white border-white' : 'border-gray-400'
-                              }`}
-                            />
-                            <span>
-                              {labelStart} - {labelEnd}
-                            </span>
-                          </button>
+                          <div key={day.date} className="border border-gray-700/70 rounded-lg p-3 bg-black/20">
+                            <div className="text-xs font-semibold text-gray-200 mb-2">
+                              Giorno: {dateLabel}
+                            </div>
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
+                              {Array.from({ length: 24 }).map((_, h) => {
+                                const labelStart = h.toString().padStart(2, '0') + ':00';
+                                const labelEnd = ((h + 1) % 24).toString().padStart(2, '0') + ':00';
+
+                                const isDaySlot = h >= 8 && h <= 21;
+                                const isNightSlot = h >= 22 || h <= 7;
+
+                                const enabled = selectedPackage.type === 'DAY' ? isDaySlot : isNightSlot;
+                                const checked = day.slots.includes(h);
+
+                                if (!enabled) {
+                                  return (
+                                    <div
+                                      key={h}
+                                      className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800/60 text-gray-600 cursor-not-allowed border border-gray-700/60"
+                                    >
+                                      <input type="checkbox" disabled className="opacity-40" />
+                                      <span>
+                                        {labelStart} - {labelEnd}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <button
+                                    type="button"
+                                    key={h}
+                                    onClick={() => toggleDaySlot(day.date, h)}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded border text-left transition-colors ${
+                                      checked
+                                        ? 'bg-pink-600/80 border-pink-400 text-white'
+                                        : 'bg-gray-800/80 border-gray-600 text-gray-100 hover:border-pink-400'
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-3 h-3 rounded border ${
+                                        checked ? 'bg-white border-white' : 'border-gray-400'
+                                      }`}
+                                    />
+                                    <span>
+                                      {labelStart} - {labelEnd}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
@@ -700,7 +815,7 @@ export default function IncontriVelociDashboard() {
                 </button>
                 <button
                   onClick={handleUpdateSchedule}
-                  disabled={selectedSlots.length === 0 || loadingSchedule}
+                  disabled={daySlots.length === 0 || loadingSchedule}
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
                 >
                   Aggiorna fasce orarie

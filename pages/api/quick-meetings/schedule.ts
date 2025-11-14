@@ -43,7 +43,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         productCode: purchase.product.code,
         productLabel: purchase.product.label,
         type: purchase.product.type,
-        expiresAt: purchase.expiresAt
+        expiresAt: purchase.expiresAt,
+        durationDays: purchase.product.durationDays,
+        startedAt: purchase.startedAt
       },
       schedules: purchase.schedules.map((s) => ({
         id: s.id,
