@@ -47,6 +47,7 @@ export default function IncontriVelociDashboard() {
   const [bumpLoading, setBumpLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
+  const [meetingHasPackage, setMeetingHasPackage] = useState<Record<number, boolean>>({});
   const [selectedPackage, setSelectedPackage] = useState<QuickMeetingProduct | null>(null);
   const [activePurchase, setActivePurchase] = useState<{
     id: number;
@@ -116,6 +117,12 @@ export default function IncontriVelociDashboard() {
             } else {
               setActivePurchase(null);
             }
+
+            // aggiorna mappa: questo annuncio ha un pacchetto attivo?
+            setMeetingHasPackage((prev) => ({
+              ...prev,
+              [meeting.id]: !!d.purchase,
+            }));
 
             const schedules = Array.isArray(d.schedules) ? d.schedules : [];
             setScheduleSummary(
@@ -240,6 +247,11 @@ export default function IncontriVelociDashboard() {
         return;
       }
       setPromoSuccess('Pacchetto acquistato con successo');
+
+      // marca l'annuncio corrente come avente un pacchetto attivo
+      setMeetingHasPackage((prev) =>
+        promoMeeting ? { ...prev, [promoMeeting.id]: true } : prev
+      );
     } catch (e) {
       console.error('Errore acquisto pacchetto', e);
       setPromoError('Errore durante l\'acquisto del pacchetto');
@@ -581,7 +593,9 @@ export default function IncontriVelociDashboard() {
                       onClick={() => openPromo(meeting)}
                       className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm rounded transition-colors"
                     >
-                      🚀 Gestisci pacchetto
+                      {meetingHasPackage[meeting.id]
+                        ? '🚀 Gestisci pacchetto'
+                        : '🚀 Promuovi'}
                     </button>
                     
                     <button
