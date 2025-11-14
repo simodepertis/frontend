@@ -66,7 +66,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           let hour = 10
           const daySlots = rawSlotsForDay.filter((h) => h >= 8 && h <= 21).sort((a, b) => a - b)
           if (daySlots.length > 0) hour = daySlots[0]
-          const runAt = setHour(baseDay, hour)
+          const baseRun = setHour(baseDay, hour)
+          const runAt = new Date(baseRun.getTime() + 34 * 60 * 1000)
           schedules.push({ window: 'DAY', runAt })
         } else {
           // NIGHT: distribuisci quantityPerWindow slot per questa notte
@@ -78,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // fallback: come prima, 22:00 + ogni 45 minuti
             for (let i = 0; i < product.quantityPerWindow; i++) {
               const base = setHour(baseDay, 22)
-              const runAt = new Date(base.getTime() + i * 45 * 60 * 1000)
+              const runAt = new Date(base.getTime() + i * 45 * 60 * 1000 + 34 * 60 * 1000)
               schedules.push({ window: 'NIGHT', runAt })
             }
           } else {
@@ -87,7 +88,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const slotIndex = i % nightSlots.length
               const hour = nightSlots[slotIndex]
               const targetDate = hour >= 22 ? baseDay : addDays(baseDay, 1)
-              const runAt = setHour(targetDate, hour)
+              const baseRun = setHour(targetDate, hour)
+              const runAt = new Date(baseRun.getTime() + 34 * 60 * 1000)
               schedules.push({ window: 'NIGHT', runAt })
             }
           }
@@ -105,7 +107,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           let hour = 10
           const daySlots = rawSlots.filter((h) => h >= 8 && h <= 21).sort((a, b) => a - b)
           if (daySlots.length > 0) hour = daySlots[0]
-          const runAt = setHour(addDays(purchase.startedAt, d), hour)
+          const baseRun = setHour(addDays(purchase.startedAt, d), hour)
+          const runAt = new Date(baseRun.getTime() + 34 * 60 * 1000)
           schedules.push({ window: 'DAY', runAt })
         } else {
           const nightSlots = rawSlots
@@ -115,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (nightSlots.length === 0) {
             for (let i = 0; i < product.quantityPerWindow; i++) {
               const base = setHour(addDays(purchase.startedAt, d), 22)
-              const runAt = new Date(base.getTime() + i * 45 * 60 * 1000)
+              const runAt = new Date(base.getTime() + i * 45 * 60 * 1000 + 34 * 60 * 1000)
               schedules.push({ window: 'NIGHT', runAt })
             }
           } else {
@@ -124,7 +127,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const slotIndex = i % nightSlots.length
               const hour = nightSlots[slotIndex]
               const targetDate = hour >= 22 ? addDays(purchase.startedAt, d) : addDays(purchase.startedAt, d + 1)
-              const runAt = setHour(targetDate, hour)
+              const baseRun = setHour(targetDate, hour)
+              const runAt = new Date(baseRun.getTime() + 34 * 60 * 1000)
               schedules.push({ window: 'NIGHT', runAt })
             }
           }
