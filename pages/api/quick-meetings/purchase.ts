@@ -22,6 +22,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (meeting.userId && meeting.userId !== payload.userId) return res.status(403).json({ error: 'Non autorizzato' })
 
     let product = await prisma.quickMeetingProduct.findFirst({ where: { code: String(code), active: true } })
+
+    // Se il prodotto non esiste ed è il pacchetto di risalita immediata, crealo al volo
+    if (!product && String(code) === 'IMMEDIATE') {
+      product = await prisma.quickMeetingProduct.create({
+        data: {
+          code: 'IMMEDIATE',
+          label: 'Risalita immediata (1 bump)',
+          type: 'DAY',
+          quantityPerWindow: 1,
+          durationDays: 1,
+          creditsCost: 10,
+          active: true
+        }
+      })
+    }
+
     if (!product) return res.status(400).json({ error: 'Prodotto non valido' })
 
     // Ensure wallet
@@ -48,35 +64,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ? slots.map((s: any) => Number(s)).filter((n) => Number.isFinite(n) && n >= 0 && n <= 23)
         : []
 
-      for (let d = 0; d < product!.durationDays; d++) {
-        if (product!.type === 'DAY') {
-          // DAY: 1 risalita al giorno. Se l'utente ha scelto una fascia valida (08-21) usiamo quella, altrimenti fallback 10:00
-          let hour = 10
-          const daySlots = rawSlots.filter(h => h >= 8 && h <= 21).sort((a, b) => a - b)
-          if (daySlots.length > 0) hour = daySlots[0]
-          const runAt = setHour(addDays(now, d), hour)
-          schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
-        } else {
-          // NIGHT: fino a quantityPerWindow risalite per "notte" su fascia 22:00-08:00
-          const nightSlots = rawSlots.filter(h => (h >= 22 && h <= 23) || (h >= 0 && h <= 7)).sort((a, b) => a - b)
-
-          if (nightSlots.length === 0) {
-            // Fallback: mantieni distribuzione automatica come prima (22:00 -> ogni 45 minuti)
-            for (let i = 0; i < product!.quantityPerWindow; i++) {
-              const base = setHour(addDays(now, d), 22)
-              const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000))
-              schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
-            }
+      if (product.code === 'IMMEDIATE') {
+        // Pacchetto speciale: una sola risalita immediata
+        const runAt = now
+        schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
+      } else {
+        for (let d = 0; d < product!.durationDays; d++) {
+          if (product!.type === 'DAY') {
+            // DAY: 1 risalita al giorno. Se l'utente ha scelto una fascia valida (08-21) usiamo quella, altrimenti fallback 10:00
+            let hour = 10
+            const daySlots = rawSlots.filter(h => h >= 8 && h <= 21).sort((a, b) => a - b)
+            if (daySlots.length > 0) hour = daySlots[0]
+            const runAt = setHour(addDays(now, d), hour)
+            schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
           } else {
-            // Distribuisci le risalite sulle fasce selezionate, ripetendo il ciclo se servono più slot
-            const maxPerNight = product!.quantityPerWindow
-            for (let i = 0; i < maxPerNight; i++) {
-              const slotIndex = i % nightSlots.length
-              const hour = nightSlots[slotIndex]
-              // Per ore 22-23 usiamo il giorno corrente, per 0-7 il giorno successivo (stessa "notte")
-              const targetDate = hour >= 22 ? addDays(now, d) : addDays(now, d + 1)
-              const runAt = setHour(targetDate, hour)
-              schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+            // NIGHT: fino a quantityPerWindow risalite per "notte" su fascia 22:00-08:00
+            const nightSlots = rawSlots.filter(h => (h >= 22 && h <= 23) || (h >= 0 && h <= 7)).sort((a, b) => a - b)
+
+            if (nightSlots.length === 0) {
+              // Fallback: mantieni distribuzione automatica come prima (22:00 -> ogni 45 minuti)
+              for (let i = 0; i < product!.quantityPerWindow; i++) {
+                const base = setHour(addDays(now, d), 22)
+                const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000))
+                schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+              }
+            } else {
+              // Distribuisci le risalite sulle fasce selezionate, ripetendo il ciclo se servono più slot
+              const maxPerNight = product!.quantityPerWindow
+              for (let i = 0; i < maxPerNight; i++) {
+                const slotIndex = i % nightSlots.length
+                const hour = nightSlots[slotIndex]
+                // Per ore 22-23 usiamo il giorno corrente, per 0-7 il giorno successivo (stessa "notte")
+                const targetDate = hour >= 22 ? addDays(now, d) : addDays(now, d + 1)
+                const runAt = setHour(targetDate, hour)
+                schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+              }
             }
           }
         }

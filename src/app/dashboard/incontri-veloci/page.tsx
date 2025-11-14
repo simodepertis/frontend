@@ -196,6 +196,22 @@ export default function IncontriVelociDashboard() {
     setPromoSuccess(null);
     setBumpLoading(true);
     try {
+      // 1) Acquista il pacchetto speciale di risalita immediata (IMMEDIATE, 10 crediti)
+      const purchaseRes = await fetch('/api/quick-meetings/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ meetingId: promoMeeting.id, code: 'IMMEDIATE', slots: [] })
+      });
+      const purchaseData = await purchaseRes.json().catch(() => ({}));
+      if (!purchaseRes.ok) {
+        setPromoError(purchaseData.error || 'Impossibile acquistare la risalita immediata');
+        return;
+      }
+
+      // 2) Esegui subito la risalita utilizzando lo schedule appena creato
       const res = await fetch('/api/quick-meetings/bump-now', {
         method: 'POST',
         headers: {
@@ -206,10 +222,10 @@ export default function IncontriVelociDashboard() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setPromoError(data.error || 'Nessuna risalita disponibile');
+        setPromoError(data.error || 'Risalita immediata non disponibile');
         return;
       }
-      setPromoSuccess('Risalita eseguita con successo');
+      setPromoSuccess('Risalita immediata acquistata ed eseguita con successo');
     } catch (e) {
       console.error('Errore bump-now', e);
       setPromoError('Errore durante la risalita');
@@ -477,7 +493,7 @@ export default function IncontriVelociDashboard() {
                       onClick={() => openPromo(meeting)}
                       className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm rounded transition-colors"
                     >
-                      🚀 Promuovi
+                      🚀 Gestisci pacchetto
                     </button>
                     
                     <button
@@ -631,6 +647,41 @@ export default function IncontriVelociDashboard() {
                     </div>
                   </div>
                 )}
+
+                {/* Programmazione risalite */}
+                <div className="mt-4 border-t border-gray-700 pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-white">Programmazione risalite</h3>
+                    {loadingSchedule && (
+                      <span className="text-xs text-gray-400">Aggiornamento...</span>
+                    )}
+                  </div>
+                  {scheduleSummary.length === 0 ? (
+                    <p className="text-xs text-gray-500">
+                      Nessuna risalita futura programmata al momento. Acquista un pacchetto o aggiorna le fasce orarie per generare la programmazione.
+                    </p>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto rounded border border-gray-700/60 bg-black/20 p-2 text-xs text-gray-200">
+                      {Object.entries(
+                        scheduleSummary.reduce((acc: Record<string, string[]>, s) => {
+                          const d = new Date(s.runAt);
+                          const dateKey = d.toLocaleDateString('it-IT');
+                          const time = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                          if (!acc[dateKey]) acc[dateKey] = [];
+                          acc[dateKey].push(time);
+                          return acc;
+                        }, {})
+                      ).map(([day, times]) => (
+                        <div key={day} className="mb-1">
+                          <div className="font-semibold text-gray-100">{day}</div>
+                          <div className="text-gray-300">
+                            {times.sort().join(', ')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </>
             )}
 
@@ -646,6 +697,13 @@ export default function IncontriVelociDashboard() {
                     : purchaseLoadingCode
                       ? 'Acquisto in corso...'
                       : 'Acquista pacchetto'}
+                </button>
+                <button
+                  onClick={handleUpdateSchedule}
+                  disabled={selectedSlots.length === 0 || loadingSchedule}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                >
+                  Aggiorna fasce orarie
                 </button>
                 <button
                   onClick={handleBumpNow}
