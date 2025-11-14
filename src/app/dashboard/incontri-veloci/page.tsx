@@ -16,6 +16,16 @@ interface QuickMeeting {
   isActive: boolean;
 }
 
+interface QuickMeetingProduct {
+  id: number;
+  code: string;
+  label: string;
+  type: "DAY" | "NIGHT" | string;
+  quantityPerWindow: number;
+  durationDays: number;
+  creditsCost: number;
+}
+
 const CATEGORIES = {
   DONNA_CERCA_UOMO: "Donna cerca Uomo",
   TRANS: "Trans",
@@ -30,6 +40,13 @@ export default function IncontriVelociDashboard() {
   const [cat, setCat] = useState<string>('DONNA_CERCA_UOMO');
   const [city, setCity] = useState<string>('Milano');
   const [limit, setLimit] = useState<number>(20);
+  const [promoMeeting, setPromoMeeting] = useState<QuickMeeting | null>(null);
+  const [packages, setPackages] = useState<QuickMeetingProduct[]>([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [purchaseLoadingCode, setPurchaseLoadingCode] = useState<string | null>(null);
+  const [bumpLoading, setBumpLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     loadMeetings();
@@ -46,6 +63,104 @@ export default function IncontriVelociDashboard() {
       console.error('Errore caricamento:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openPromo = async (meeting: QuickMeeting) => {
+    setPromoMeeting(meeting);
+    setPromoError(null);
+    setPromoSuccess(null);
+    setLoadingPackages(true);
+    try {
+      const res = await fetch('/api/quick-meetings/packages');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setPromoError(data.error || 'Impossibile caricare i pacchetti');
+        setPackages([]);
+        return;
+      }
+      const data = await res.json();
+      setPackages(data.items || []);
+    } catch (e) {
+      console.error('Errore caricamento pacchetti', e);
+      setPromoError('Errore durante il caricamento dei pacchetti');
+    } finally {
+      setLoadingPackages(false);
+    }
+  };
+
+  const closePromo = () => {
+    setPromoMeeting(null);
+    setPackages([]);
+    setPromoError(null);
+    setPromoSuccess(null);
+    setPurchaseLoadingCode(null);
+    setBumpLoading(false);
+  };
+
+  const handlePurchase = async (code: string) => {
+    if (!promoMeeting) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+    if (!token) {
+      alert('Devi effettuare il login per acquistare un pacchetto');
+      return;
+    }
+    setPromoError(null);
+    setPromoSuccess(null);
+    setPurchaseLoadingCode(code);
+    try {
+      const res = await fetch('/api/quick-meetings/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ meetingId: promoMeeting.id, code })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPromoError(data.error || 'Impossibile completare l\'acquisto');
+        return;
+      }
+      setPromoSuccess('Pacchetto acquistato con successo');
+    } catch (e) {
+      console.error('Errore acquisto pacchetto', e);
+      setPromoError('Errore durante l\'acquisto del pacchetto');
+    } finally {
+      setPurchaseLoadingCode(null);
+    }
+  };
+
+  const handleBumpNow = async () => {
+    if (!promoMeeting) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+    if (!token) {
+      alert('Devi effettuare il login per utilizzare la risalita');
+      return;
+    }
+    setPromoError(null);
+    setPromoSuccess(null);
+    setBumpLoading(true);
+    try {
+      const res = await fetch('/api/quick-meetings/bump-now', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ meetingId: promoMeeting.id })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPromoError(data.error || 'Nessuna risalita disponibile');
+        return;
+      }
+      setPromoSuccess('Risalita eseguita con successo');
+    } catch (e) {
+      console.error('Errore bump-now', e);
+      setPromoError('Errore durante la risalita');
+    } finally {
+      setBumpLoading(false);
     }
   };
 
@@ -259,6 +374,13 @@ export default function IncontriVelociDashboard() {
                     </button>
                     
                     <button
+                      onClick={() => openPromo(meeting)}
+                      className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm rounded transition-colors"
+                    >
+                      🚀 Promuovi
+                    </button>
+                    
+                    <button
                       onClick={() => handleDelete(meeting.id)}
                       className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors ml-auto"
                     >
@@ -269,6 +391,95 @@ export default function IncontriVelociDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {promoMeeting && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-3xl w-full mx-4 p-6 shadow-2xl">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">Promuovi Incontro Veloce</h2>
+                <p className="text-gray-400 text-sm">Annuncio: <span className="text-pink-400 font-semibold">{promoMeeting.title}</span></p>
+              </div>
+              <button
+                onClick={closePromo}
+                className="text-gray-400 hover:text-gray-200 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            {promoError && (
+              <div className="mb-3 text-sm text-red-400 bg-red-900/30 border border-red-700 rounded px-3 py-2">
+                {promoError}
+              </div>
+            )}
+            {promoSuccess && (
+              <div className="mb-3 text-sm text-emerald-300 bg-emerald-900/30 border border-emerald-700 rounded px-3 py-2">
+                {promoSuccess}
+              </div>
+            )}
+
+            {loadingPackages ? (
+              <div className="py-10 text-center text-gray-400">Caricamento pacchetti...</div>
+            ) : packages.length === 0 ? (
+              <div className="py-10 text-center text-gray-400">Nessun pacchetto disponibile al momento.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {packages.map((p) => (
+                  <div
+                    key={p.id}
+                    className={`rounded-xl border ${p.type === 'DAY' ? 'border-amber-500/60 bg-amber-900/20' : 'border-indigo-500/60 bg-indigo-900/20'} p-4 flex flex-col justify-between`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-white">{p.label}</h3>
+                        <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
+                          {p.type === 'DAY' ? 'Giorno' : 'Notte'}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-300 mb-2">
+                        {p.type === 'DAY' ? (
+                          <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
+                        ) : (
+                          <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 06:00'}
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="text-lg font-bold text-pink-300">{p.creditsCost} crediti</div>
+                      <button
+                        onClick={() => handlePurchase(p.code)}
+                        disabled={purchaseLoadingCode === p.code}
+                        className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                      >
+                        {purchaseLoadingCode === p.code ? 'Acquisto in corso...' : 'Acquista'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-2">
+              <button
+                onClick={handleBumpNow}
+                disabled={bumpLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+              >
+                {bumpLoading ? 'Risalita in corso...' : 'Risalita immediata adesso'}
+              </button>
+              <button
+                onClick={closePromo}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+              >
+                Chiudi
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
