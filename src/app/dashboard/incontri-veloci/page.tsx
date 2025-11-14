@@ -275,7 +275,26 @@ export default function IncontriVelociDashboard() {
         setPromoError(data.error || 'Impossibile completare l\'acquisto');
         return;
       }
-      setPromoSuccess('Pacchetto acquistato con successo');
+
+      // Se il pacchetto è quello di risalita immediata, esegui subito la risalita
+      if (code === 'IMMEDIATE') {
+        const bumpRes = await fetch('/api/quick-meetings/bump-now', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ meetingId: promoMeeting.id })
+        });
+        const bumpData = await bumpRes.json().catch(() => ({}));
+        if (!bumpRes.ok) {
+          setPromoError(bumpData.error || 'Risalita immediata non disponibile');
+          return;
+        }
+        setPromoSuccess('Risalita immediata acquistata ed eseguita con successo');
+      } else {
+        setPromoSuccess('Pacchetto acquistato con successo');
+      }
 
       // marca l'annuncio corrente come avente un pacchetto attivo
       setMeetingHasPackage((prev) =>
@@ -289,54 +308,7 @@ export default function IncontriVelociDashboard() {
     }
   };
 
-  const handleBumpNow = async () => {
-    if (!promoMeeting) return;
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
-    if (!token) {
-      alert('Devi effettuare il login per utilizzare la risalita');
-      return;
-    }
-    setPromoError(null);
-    setPromoSuccess(null);
-    setBumpLoading(true);
-    try {
-      // 1) Acquista il pacchetto speciale di risalita immediata (IMMEDIATE, 10 crediti)
-      const purchaseRes = await fetch('/api/quick-meetings/purchase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ meetingId: promoMeeting.id, code: 'IMMEDIATE', slots: [] })
-      });
-      const purchaseData = await purchaseRes.json().catch(() => ({}));
-      if (!purchaseRes.ok) {
-        setPromoError(purchaseData.error || 'Impossibile acquistare la risalita immediata');
-        return;
-      }
-
-      // 2) Esegui subito la risalita utilizzando lo schedule appena creato
-      const res = await fetch('/api/quick-meetings/bump-now', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ meetingId: promoMeeting.id })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setPromoError(data.error || 'Risalita immediata non disponibile');
-        return;
-      }
-      setPromoSuccess('Risalita immediata acquistata ed eseguita con successo');
-    } catch (e) {
-      console.error('Errore bump-now', e);
-      setPromoError('Errore durante la risalita');
-    } finally {
-      setBumpLoading(false);
-    }
-  };
+  // la risalita immediata ora viene gestita tramite il pacchetto IMMEDIATE in handlePurchase
 
   const handleUpdateSchedule = async () => {
     if (!promoMeeting) return;
@@ -710,19 +682,27 @@ export default function IncontriVelociDashboard() {
                             <div className="flex items-center justify-between mb-2">
                               <h3 className="text-lg font-semibold text-white">{p.label}</h3>
                               <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
-                                {p.type === 'DAY' ? 'Giorno' : 'Notte'}
+                                {p.code === 'IMMEDIATE'
+                                  ? 'Risalita immediata'
+                                  : p.type === 'DAY'
+                                    ? 'Giorno'
+                                    : 'Notte'}
                               </span>
                             </div>
                             <div className="text-sm text-gray-300 mb-2">
-                              {p.type === 'DAY' ? (
+                              {p.code === 'IMMEDIATE' ? (
+                                <span>Esegui una risalita immediata utilizzando 10 crediti.</span>
+                              ) : p.type === 'DAY' ? (
                                 <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
                               ) : (
                                 <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
                               )}
                             </div>
-                            <div className="text-sm text-gray-400">
-                              Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}
-                            </div>
+                            {p.code !== 'IMMEDIATE' && (
+                              <div className="text-sm text-gray-400">
+                                Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}
+                              </div>
+                            )}
                           </div>
                           <div className="mt-4 flex items-center justify-between">
                             <div className="text-lg font-bold text-pink-300">{p.creditsCost} crediti</div>
@@ -868,13 +848,6 @@ export default function IncontriVelociDashboard() {
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
                 >
                   Aggiorna fasce orarie
-                </button>
-                <button
-                  onClick={handleBumpNow}
-                  disabled={bumpLoading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
-                >
-                  {bumpLoading ? 'Risalita in corso...' : 'Risalita immediata adesso'}
                 </button>
               </div>
               <button
