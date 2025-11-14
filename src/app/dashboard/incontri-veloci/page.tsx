@@ -49,6 +49,8 @@ export default function IncontriVelociDashboard() {
   const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<QuickMeetingProduct | null>(null);
   const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
+  const [scheduleSummary, setScheduleSummary] = useState<{ runAt: string; window: string }[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
 
   useEffect(() => {
     loadMeetings();
@@ -75,21 +77,48 @@ export default function IncontriVelociDashboard() {
     setLoadingPackages(true);
     setSelectedPackage(null);
     setSelectedSlots([]);
+    setScheduleSummary([]);
+    setLoadingSchedule(true);
     try {
-      const res = await fetch('/api/quick-meetings/packages');
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+      const [resPackages, resSchedule] = await Promise.all([
+        fetch('/api/quick-meetings/packages'),
+        (async () => {
+          const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+          if (!token) return null;
+          try {
+            const r = await fetch(`/api/quick-meetings/schedule?meetingId=${meeting.id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!r.ok) return null;
+            const d = await r.json();
+            if (!d || !Array.isArray(d.schedules)) return null;
+            setScheduleSummary(
+              d.schedules.map((s: any) => ({
+                runAt: s.runAt,
+                window: s.window
+              }))
+            );
+          } catch {
+            return null;
+          }
+          return null;
+        })()
+      ]);
+
+      if (!resPackages.ok) {
+        const data = await resPackages.json().catch(() => ({}));
         setPromoError(data.error || 'Impossibile caricare i pacchetti');
         setPackages([]);
         return;
       }
-      const data = await res.json();
+      const data = await resPackages.json();
       setPackages(data.items || []);
     } catch (e) {
       console.error('Errore caricamento pacchetti', e);
       setPromoError('Errore durante il caricamento dei pacchetti');
     } finally {
       setLoadingPackages(false);
+      setLoadingSchedule(false);
     }
   };
 
@@ -102,6 +131,7 @@ export default function IncontriVelociDashboard() {
     setBumpLoading(false);
     setSelectedPackage(null);
     setSelectedSlots([]);
+    setScheduleSummary([]);
   };
 
   const toggleSlot = (hour: number) => {
@@ -185,6 +215,52 @@ export default function IncontriVelociDashboard() {
       setPromoError('Errore durante la risalita');
     } finally {
       setBumpLoading(false);
+    }
+  };
+
+  const handleUpdateSchedule = async () => {
+    if (!promoMeeting) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+    if (!token) {
+      alert('Devi effettuare il login per modificare le fasce orarie');
+      return;
+    }
+    setPromoError(null);
+    setPromoSuccess(null);
+    setLoadingSchedule(true);
+    try {
+      const res = await fetch('/api/quick-meetings/update-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ meetingId: promoMeeting.id, slots: selectedSlots })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPromoError(data.error || 'Impossibile aggiornare la programmazione');
+        return;
+      }
+      setPromoSuccess('Programmazione aggiornata con successo');
+
+      // ricarica il riepilogo
+      const resSchedule = await fetch(`/api/quick-meetings/schedule?meetingId=${promoMeeting.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resSchedule.ok) {
+        const d = await resSchedule.json();
+        if (d && Array.isArray(d.schedules)) {
+          setScheduleSummary(
+            d.schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
+          );
+        }
+      }
+    } catch (e) {
+      console.error('Errore update schedule', e);
+      setPromoError('Errore durante l\'aggiornamento delle fasce orarie');
+    } finally {
+      setLoadingSchedule(false);
     }
   };
 
