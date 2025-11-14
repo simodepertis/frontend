@@ -510,8 +510,8 @@ export default function IncontriVelociDashboard() {
         </div>
       )}
       {promoMeeting && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-3xl w-full mx-4 p-6 shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 overflow-y-auto">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-3xl w-full mx-4 mt-10 mb-10 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1">Promuovi Incontro Veloce</h2>
