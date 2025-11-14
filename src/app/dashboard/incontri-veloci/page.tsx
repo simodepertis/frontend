@@ -558,14 +558,27 @@ export default function IncontriVelociDashboard() {
               </>
             )}
 
-            <div className="flex items-center justify-between mt-2">
-              <button
-                onClick={handleBumpNow}
-                disabled={bumpLoading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
-              >
-                {bumpLoading ? 'Risalita in corso...' : 'Risalita immediata adesso'}
-              </button>
+            <div className="flex items-center justify-between mt-2 gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => selectedPackage && handlePurchase(selectedPackage.code)}
+                  disabled={!selectedPackage || purchaseLoadingCode !== null}
+                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                >
+                  {!selectedPackage
+                    ? 'Seleziona un pacchetto'
+                    : purchaseLoadingCode
+                      ? 'Acquisto in corso...'
+                      : 'Acquista pacchetto'}
+                </button>
+                <button
+                  onClick={handleBumpNow}
+                  disabled={bumpLoading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                >
+                  {bumpLoading ? 'Risalita in corso...' : 'Risalita immediata adesso'}
+                </button>
+              </div>
               <button
                 onClick={closePromo}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors"
