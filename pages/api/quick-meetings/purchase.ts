@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const payload = verifyToken(token)
     if (!payload) return res.status(401).json({ error: 'Token non valido' })
 
-    const { meetingId, code } = req.body || {}
+    const { meetingId, code, slots } = req.body || {}
     const mid = Number(meetingId)
     if (!mid || !code) return res.status(400).json({ error: 'Parametri mancanti' })
 
@@ -40,18 +40,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Create purchase
       const purchase = await tx.quickMeetingPurchase.create({ data: { userId: payload.userId, meetingId: mid, productId: product!.id, status: 'ACTIVE', startedAt: now, expiresAt: expires } })
 
-      // Create schedules (simple distribution)
+      // Create schedules distribuite sulle fasce orarie selezionate (se presenti)
       const schedules: any[] = []
+
+      // normalizza slots: array di ore intere 0-23
+      const rawSlots: number[] = Array.isArray(slots)
+        ? slots.map((s: any) => Number(s)).filter((n) => Number.isFinite(n) && n >= 0 && n <= 23)
+        : []
+
       for (let d = 0; d < product!.durationDays; d++) {
         if (product!.type === 'DAY') {
-          const runAt = setHour(addDays(now, d), 10) // 10:00
+          // DAY: 1 risalita al giorno. Se l'utente ha scelto una fascia valida (08-21) usiamo quella, altrimenti fallback 10:00
+          let hour = 10
+          const daySlots = rawSlots.filter(h => h >= 8 && h <= 21).sort((a, b) => a - b)
+          if (daySlots.length > 0) hour = daySlots[0]
+          const runAt = setHour(addDays(now, d), hour)
           schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
         } else {
-          // NIGHT: 10 risalite a notte distribuite tra 22:00 e 05:00
-          for (let i = 0; i < product!.quantityPerWindow; i++) {
-            const base = setHour(addDays(now, d), 22)
-            const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000)) // ogni 45 minuti
-            schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+          // NIGHT: fino a quantityPerWindow risalite per "notte" su fascia 22:00-08:00
+          const nightSlots = rawSlots.filter(h => (h >= 22 && h <= 23) || (h >= 0 && h <= 7)).sort((a, b) => a - b)
+
+          if (nightSlots.length === 0) {
+            // Fallback: mantieni distribuzione automatica come prima (22:00 -> ogni 45 minuti)
+            for (let i = 0; i < product!.quantityPerWindow; i++) {
+              const base = setHour(addDays(now, d), 22)
+              const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000))
+              schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+            }
+          } else {
+            // Distribuisci le risalite sulle fasce selezionate, ripetendo il ciclo se servono più slot
+            const maxPerNight = product!.quantityPerWindow
+            for (let i = 0; i < maxPerNight; i++) {
+              const slotIndex = i % nightSlots.length
+              const hour = nightSlots[slotIndex]
+              // Per ore 22-23 usiamo il giorno corrente, per 0-7 il giorno successivo (stessa "notte")
+              const targetDate = hour >= 22 ? addDays(now, d) : addDays(now, d + 1)
+              const runAt = setHour(targetDate, hour)
+              schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+            }
           }
         }
       }

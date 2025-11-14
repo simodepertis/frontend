@@ -47,6 +47,8 @@ export default function IncontriVelociDashboard() {
   const [bumpLoading, setBumpLoading] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<QuickMeetingProduct | null>(null);
+  const [selectedSlots, setSelectedSlots] = useState<number[]>([]);
 
   useEffect(() => {
     loadMeetings();
@@ -71,6 +73,8 @@ export default function IncontriVelociDashboard() {
     setPromoError(null);
     setPromoSuccess(null);
     setLoadingPackages(true);
+    setSelectedPackage(null);
+    setSelectedSlots([]);
     try {
       const res = await fetch('/api/quick-meetings/packages');
       if (!res.ok) {
@@ -96,6 +100,21 @@ export default function IncontriVelociDashboard() {
     setPromoSuccess(null);
     setPurchaseLoadingCode(null);
     setBumpLoading(false);
+    setSelectedPackage(null);
+    setSelectedSlots([]);
+  };
+
+  const toggleSlot = (hour: number) => {
+    setSelectedSlots((prev) => {
+      if (selectedPackage?.type === 'DAY') {
+        // per i pacchetti DAY permetti una sola fascia: selezione esclusiva
+        return prev.includes(hour) ? [] : [hour];
+      }
+      if (prev.includes(hour)) {
+        return prev.filter((h) => h !== hour);
+      }
+      return [...prev, hour];
+    });
   };
 
   const handlePurchase = async (code: string) => {
@@ -108,6 +127,11 @@ export default function IncontriVelociDashboard() {
     setPromoError(null);
     setPromoSuccess(null);
     setPurchaseLoadingCode(code);
+    // se non è ancora stato fissato il pacchetto selezionato, impostalo ora
+    const pkg = packages.find(p => p.code === code) || null;
+    if (!selectedPackage && pkg) {
+      setSelectedPackage(pkg);
+    }
     try {
       const res = await fetch('/api/quick-meetings/purchase', {
         method: 'POST',
@@ -115,7 +139,7 @@ export default function IncontriVelociDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ meetingId: promoMeeting.id, code })
+        body: JSON.stringify({ meetingId: promoMeeting.id, code, slots: selectedSlots })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -425,43 +449,113 @@ export default function IncontriVelociDashboard() {
             ) : packages.length === 0 ? (
               <div className="py-10 text-center text-gray-400">Nessun pacchetto disponibile al momento.</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                {packages.map((p) => (
-                  <div
-                    key={p.id}
-                    className={`rounded-xl border ${p.type === 'DAY' ? 'border-amber-500/60 bg-amber-900/20' : 'border-indigo-500/60 bg-indigo-900/20'} p-4 flex flex-col justify-between`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold text-white">{p.label}</h3>
-                        <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
-                          {p.type === 'DAY' ? 'Giorno' : 'Notte'}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-300 mb-2">
-                        {p.type === 'DAY' ? (
-                          <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
-                        ) : (
-                          <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 06:00'}
-                      </div>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="text-lg font-bold text-pink-300">{p.creditsCost} crediti</div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {packages.map((p) => {
+                    const isSelected = selectedPackage?.code === p.code;
+                    return (
                       <button
-                        onClick={() => handlePurchase(p.code)}
-                        disabled={purchaseLoadingCode === p.code}
-                        className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPackage(p);
+                          setSelectedSlots([]);
+                        }}
+                        className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
+                          p.type === 'DAY'
+                            ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
+                            : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
+                        } ${isSelected ? 'ring-2 ring-pink-400' : ''}`}
                       >
-                        {purchaseLoadingCode === p.code ? 'Acquisto in corso...' : 'Acquista'}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-lg font-semibold text-white">{p.label}</h3>
+                            <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
+                              {p.type === 'DAY' ? 'Giorno' : 'Notte'}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-300 mb-2">
+                            {p.type === 'DAY' ? (
+                              <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
+                            ) : (
+                              <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-400">
+                            Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between">
+                          <div className="text-lg font-bold text-pink-300">{p.creditsCost} crediti</div>
+                          <span className="text-xs text-gray-300">
+                            {isSelected ? 'Selezionato' : 'Clicca per selezionare'}
+                          </span>
+                        </div>
                       </button>
+                    );
+                  })}
+                </div>
+
+                {/* Fasce orarie */}
+                {selectedPackage && (
+                  <div className="mb-4 border-t border-gray-700 pt-4">
+                    <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie</h3>
+                    <p className="text-xs text-gray-400 mb-3">
+                      {selectedPackage.type === 'DAY'
+                        ? 'Seleziona una fascia oraria giornaliera (08:00 - 22:00) in cui verrà eseguita la risalita ogni giorno del pacchetto.'
+                        : 'Seleziona una o più fasce orarie notturne (22:00 - 08:00). Le risalite verranno distribuite tra gli orari scelti.'}
+                    </p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
+                      {Array.from({ length: 24 }).map((_, h) => {
+                        const labelStart = h.toString().padStart(2, '0') + ':00';
+                        const labelEnd = ((h + 1) % 24).toString().padStart(2, '0') + ':00';
+
+                        const isDaySlot = h >= 8 && h <= 21;
+                        const isNightSlot = h >= 22 || h <= 7;
+
+                        const enabled = selectedPackage.type === 'DAY' ? isDaySlot : isNightSlot;
+                        const checked = selectedSlots.includes(h);
+
+                        if (!enabled) {
+                          return (
+                            <div
+                              key={h}
+                              className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800/60 text-gray-600 cursor-not-allowed border border-gray-700/60"
+                            >
+                              <input type="checkbox" disabled className="opacity-40" />
+                              <span>
+                                {labelStart} - {labelEnd}
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <button
+                            type="button"
+                            key={h}
+                            onClick={() => toggleSlot(h)}
+                            className={`flex items-center gap-1 px-2 py-1 rounded border text-left transition-colors ${
+                              checked
+                                ? 'bg-pink-600/80 border-pink-400 text-white'
+                                : 'bg-gray-800/80 border-gray-600 text-gray-100 hover:border-pink-400'
+                            }`}
+                          >
+                            <span
+                              className={`w-3 h-3 rounded border ${
+                                checked ? 'bg-white border-white' : 'border-gray-400'
+                              }`}
+                            />
+                            <span>
+                              {labelStart} - {labelEnd}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
 
             <div className="flex items-center justify-between mt-2">
