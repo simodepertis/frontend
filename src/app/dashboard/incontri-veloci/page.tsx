@@ -72,6 +72,35 @@ export default function IncontriVelociDashboard() {
       if (res.ok) {
         const data = await res.json();
         setMeetings(data.meetings);
+
+        // dopo aver caricato gli annunci, inizializza la mappa dei pacchetti attivi
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+        if (token && Array.isArray(data.meetings) && data.meetings.length > 0) {
+          try {
+            const entries = await Promise.all(
+              data.meetings.map(async (m: QuickMeeting) => {
+                try {
+                  const r = await fetch(`/api/quick-meetings/schedule?meetingId=${m.id}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!r.ok) return [m.id, false] as const;
+                  const d = await r.json();
+                  return [m.id, !!d?.purchase] as const;
+                } catch {
+                  return [m.id, false] as const;
+                }
+              })
+            );
+
+            const map: Record<number, boolean> = {};
+            for (const [id, has] of entries) {
+              map[id] = has;
+            }
+            setMeetingHasPackage(map);
+          } catch {
+            // in caso di errore, lascia la mappa vuota
+          }
+        }
       }
     } catch (error) {
       console.error('Errore caricamento:', error);
