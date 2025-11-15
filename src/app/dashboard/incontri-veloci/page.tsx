@@ -198,7 +198,7 @@ export default function IncontriVelociDashboard() {
                     const dt = new Date(s.runAt);
                     return dt.toISOString().slice(0, 10) === iso;
                   })
-                  .map((s: any) => new Date(s.runAt).getHours());
+                  .map((s: any) => new Date(s.runAt).getUTCHours());
 
                 const uniqueHours = Array.from<number>(new Set<number>(daySlotsFromSchedule)).sort(
                   (a: number, b: number) => a - b
@@ -389,7 +389,7 @@ export default function IncontriVelociDashboard() {
                   const dt = new Date(s.runAt);
                   return dt.toISOString().slice(0, 10) === iso;
                 })
-                .map((s: any) => new Date(s.runAt).getHours());
+                .map((s: any) => new Date(s.runAt).getUTCHours());
 
               const uniqueHours = Array.from(new Set(daySlotsFromSchedule)).sort((a, b) => a - b);
               daysArr.push({ date: iso, slots: uniqueHours });
