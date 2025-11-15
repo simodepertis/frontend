@@ -63,9 +63,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const rawSlotsForDay = dayMap.get(key) || []
 
         if (product.type === 'DAY') {
-          // un solo slot valido per giorno nella finestra 08-22, default 10:00 se non specificato
+          // un solo slot valido per giorno nella finestra 08-24 (ore 8-23), default 10:00 se non specificato
           let hour = 10
-          const daySlots = rawSlotsForDay.filter((h) => h >= 8 && h <= 21).sort((a, b) => a - b)
+          const daySlots = rawSlotsForDay.filter((h) => h >= 8 && h <= 23).sort((a, b) => a - b)
           if (daySlots.length > 0) hour = daySlots[0]
           const baseRun = setHour(baseDay, hour)
           const runAt = new Date(baseRun.getTime() + randomMinuteOffset())
@@ -106,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       for (let d = 0; d < product.durationDays; d++) {
         if (product.type === 'DAY') {
           let hour = 10
-          const daySlots = rawSlots.filter((h) => h >= 8 && h <= 21).sort((a, b) => a - b)
+          const daySlots = rawSlots.filter((h) => h >= 8 && h <= 23).sort((a, b) => a - b)
           if (daySlots.length > 0) hour = daySlots[0]
           const baseRun = setHour(addDays(purchase.startedAt, d), hour)
           const runAt = new Date(baseRun.getTime() + randomMinuteOffset())

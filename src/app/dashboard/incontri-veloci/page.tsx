@@ -753,7 +753,7 @@ export default function IncontriVelociDashboard() {
                     <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie per giorno</h3>
                     <p className="text-xs text-gray-400 mb-3">
                       {(activePurchase?.type || selectedPackage?.type) === 'DAY'
-                        ? 'Per ogni giorno del pacchetto seleziona una fascia oraria (08:00 - 22:00) in cui avverrà la risalita.'
+                        ? 'Per ogni giorno del pacchetto seleziona una fascia oraria (08:00 - 24:00) in cui avverrà la risalita.'
                         : 'Per ogni notte del pacchetto seleziona una o più fasce orarie notturne (22:00 - 08:00). Le risalite verranno distribuite tra gli orari scelti.'}
                     </p>
 
@@ -770,7 +770,7 @@ export default function IncontriVelociDashboard() {
                                 const labelStart = h.toString().padStart(2, '0') + ':00';
                                 const labelEnd = ((h + 1) % 24).toString().padStart(2, '0') + ':00';
 
-                                const isDaySlot = h >= 8 && h <= 21;
+                                const isDaySlot = h >= 8 && h <= 23;
                                 const isNightSlot = h >= 22 || h <= 7;
 
                                 const type = activePurchase?.type || selectedPackage?.type;
