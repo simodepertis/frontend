@@ -24,6 +24,7 @@ export default function EditQuickMeeting() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [hasActivePackage, setHasActivePackage] = useState<boolean>(false);
 
   useEffect(() => {
     const load = async () => {
@@ -51,6 +52,21 @@ export default function EditQuickMeeting() {
           isActive: !!m.isActive
         });
         setPhotoPreviews(m.photos || []);
+
+        // verifica se esiste un pacchetto attivo per questo annuncio
+        if (token) {
+          try {
+            const schedRes = await fetch(`/api/quick-meetings/schedule?meetingId=${id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (schedRes.ok) {
+              const schedData = await schedRes.json();
+              setHasActivePackage(!!schedData?.purchase);
+            }
+          } catch {
+            // in caso di errore, lascia hasActivePackage a false
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -70,11 +86,21 @@ export default function EditQuickMeeting() {
   };
 
   const handleFilesUpload = async (files: File[]) => {
-    setPhotoFiles(prev => [...prev, ...files]);
+    let allowedFiles = files;
+    if (!hasActivePackage) {
+      const remaining = Math.max(0, 1 - photoPreviews.length);
+      if (remaining <= 0) {
+        alert('Per gli annunci senza pacchetto attivo puoi avere solo 1 foto. Acquista un pacchetto per aggiungerne altre.');
+        return;
+      }
+      allowedFiles = files.slice(0, remaining);
+    }
+
+    setPhotoFiles(prev => [...prev, ...allowedFiles]);
 
     // Crea preview
     const newPreviews = await Promise.all(
-      files.map(file => {
+      allowedFiles.map(file => {
         return new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = (e) => resolve(e.target?.result as string);
@@ -266,6 +292,11 @@ export default function EditQuickMeeting() {
         {/* Gestione Foto */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Foto</label>
+          {!hasActivePackage && (
+            <p className="text-xs text-yellow-300 mb-2">
+              Per gli annunci senza pacchetto attivo puoi caricare solo 1 foto. Acquista un pacchetto Incontri Veloci per aggiungerne altre.
+            </p>
+          )}
           <div 
             className={`mb-4 border-2 border-dashed rounded-lg p-6 transition-colors ${
               isDragging 
