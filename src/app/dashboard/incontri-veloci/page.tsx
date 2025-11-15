@@ -109,6 +109,31 @@ export default function IncontriVelociDashboard() {
     }
   };
 
+  const handleClone = async (id: number) => {
+    if (!confirm('Vuoi clonare questo annuncio?')) return;
+
+    try {
+      const res = await fetch(`/api/dashboard/quick-meetings/${id}/clone`, {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert(`Errore durante la clonazione: ${e.error || res.statusText}`);
+        return;
+      }
+
+      const data = await res.json();
+      if (data && data.meeting) {
+        setMeetings((prev) => [data.meeting, ...prev]);
+        alert('Annuncio clonato con successo');
+      }
+    } catch (error) {
+      console.error('Errore clonazione:', error);
+      alert('Errore durante la clonazione dell\'annuncio');
+    }
+  };
+
   const openPromo = async (meeting: QuickMeeting) => {
     setPromoMeeting(meeting);
     setPromoError(null);
@@ -574,6 +599,12 @@ export default function IncontriVelociDashboard() {
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
                     >
                       ✏️ Modifica
+                    </button>
+                    <button
+                      onClick={() => handleClone(meeting.id)}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+                    >
+                      📄 Clona
                     </button>
                     
                     <button
