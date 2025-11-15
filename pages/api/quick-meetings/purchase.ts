@@ -46,7 +46,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (wallet.balance < product.creditsCost) return res.status(402).json({ error: 'Crediti insufficienti' })
 
     const now = new Date()
-    const expires = addDays(now, product.durationDays)
+    // Per i pacchetti normali (DAY/NIGHT) il primo giorno utile è il giorno successivo all'acquisto
+    const scheduleStart = product.code === 'IMMEDIATE' ? now : addDays(now, 1)
+    const expires = addDays(scheduleStart, product.durationDays)
 
     const result = await prisma.$transaction(async (tx) => {
       // Deduct credits
@@ -54,7 +56,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await tx.creditTransaction.create({ data: { userId: payload.userId, amount: -product!.creditsCost, type: 'SPEND', reference: `QM_${product!.code}` } })
 
       // Create purchase
-      const purchase = await tx.quickMeetingPurchase.create({ data: { userId: payload.userId, meetingId: mid, productId: product!.id, status: 'ACTIVE', startedAt: now, expiresAt: expires } })
+      const purchase = await tx.quickMeetingPurchase.create({
+        data: {
+          userId: payload.userId,
+          meetingId: mid,
+          productId: product!.id,
+          status: 'ACTIVE',
+          startedAt: scheduleStart,
+          expiresAt: expires
+        }
+      })
 
       // Create schedules distribuite sulle fasce orarie selezionate (se presenti)
       const schedules: any[] = []
@@ -71,11 +82,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else {
         for (let d = 0; d < product!.durationDays; d++) {
           if (product!.type === 'DAY') {
-            // DAY: 1 risalita al giorno. Se l'utente ha scelto una fascia valida (08-21) usiamo quella, altrimenti fallback 10:00
+            // DAY: 1 risalita al giorno a partire da scheduleStart+1 giorno. Se l'utente ha scelto una fascia valida (08-23) usiamo quella, altrimenti fallback 10:00
             let hour = 10
-            const daySlots = rawSlots.filter(h => h >= 8 && h <= 21).sort((a, b) => a - b)
+            const daySlots = rawSlots.filter(h => h >= 8 && h <= 23).sort((a, b) => a - b)
             if (daySlots.length > 0) hour = daySlots[0]
-            const runAt = setHour(addDays(now, d), hour)
+            const runAt = setHour(addDays(scheduleStart, d), hour)
             schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
           } else {
             // NIGHT: fino a quantityPerWindow risalite per "notte" su fascia 22:00-08:00
@@ -84,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             if (nightSlots.length === 0) {
               // Fallback: mantieni distribuzione automatica come prima (22:00 -> ogni 45 minuti)
               for (let i = 0; i < product!.quantityPerWindow; i++) {
-                const base = setHour(addDays(now, d), 22)
+                const base = setHour(addDays(scheduleStart, d), 22)
                 const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000))
                 schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
               }
@@ -95,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const slotIndex = i % nightSlots.length
                 const hour = nightSlots[slotIndex]
                 // Per ore 22-23 usiamo il giorno corrente, per 0-7 il giorno successivo (stessa "notte")
-                const targetDate = hour >= 22 ? addDays(now, d) : addDays(now, d + 1)
+                const targetDate = hour >= 22 ? addDays(scheduleStart, d) : addDays(scheduleStart, d + 1)
                 const runAt = setHour(targetDate, hour)
                 schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
               }
