@@ -760,16 +760,11 @@ export default function IncontriVelociDashboard() {
                           onClick={() => {
                             setSelectedPackage(p);
                             if (!activePurchase && p.code !== 'IMMEDIATE') {
+                              // Per l'acquisto si sceglie solo la fascia oraria di riferimento
                               const start = new Date();
-                              start.setDate(start.getDate() + 1);
-                              const daysArr: { date: string; slots: number[] }[] = [];
-                              for (let i = 0; i < p.durationDays; i++) {
-                                const dayDate = new Date(start.getTime());
-                                dayDate.setDate(dayDate.getDate() + i);
-                                const iso = dayDate.toISOString().slice(0, 10);
-                                daysArr.push({ date: iso, slots: [] });
-                              }
-                              setDaySlots(daysArr);
+                              start.setDate(start.getDate() + 1); // primo giorno di schedule (domani)
+                              const iso = start.toISOString().slice(0, 10);
+                              setDaySlots([{ date: iso, slots: [] }]);
                             }
                           }}
                           className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${

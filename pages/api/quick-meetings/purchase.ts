@@ -4,6 +4,8 @@ import { verifyToken } from '@/lib/auth'
 
 function addDays(date: Date, days: number) { const d = new Date(date); d.setDate(d.getDate()+days); return d }
 function setHour(date: Date, h: number) { const d = new Date(date); d.setHours(h,0,0,0); return d }
+// offset casuale di minuti all'interno dell'ora (0-59 minuti)
+function randomMinuteOffsetWithinHour() { return Math.floor(Math.random() * 60) * 60 * 1000 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -83,48 +85,61 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
       } else {
         if (hasDays) {
-          const dayMap = new Map<string, number[]>()
+          // days contiene la fascia scelta sull'unico giorno mostrato al momento dell'acquisto
+          // usiamo quella fascia come template per tutti i giorni del pacchetto
+          const allTemplateHours: number[] = []
           for (const entry of days as any[]) {
-            if (!entry || typeof entry.date !== 'string') continue
-            const key = entry.date
-            const raw: number[] = Array.isArray(entry.slots)
-              ? entry.slots
-                  .map((s: any) => Number(s))
-                  .filter((n: number) => Number.isFinite(n) && n >= 0 && n <= 23)
-              : []
-            dayMap.set(key, raw)
+            if (!entry) continue
+            if (!Array.isArray(entry.slots)) continue
+            for (const s of entry.slots) {
+              const n = Number(s)
+              if (Number.isFinite(n) && n >= 0 && n <= 23) allTemplateHours.push(n)
+            }
           }
 
-          for (let d = 0; d < product!.durationDays; d++) {
-            const baseDay = addDays(scheduleStart, d)
-            const key = baseDay.toISOString().slice(0, 10)
-            const rawSlotsForDay = dayMap.get(key) || []
-
+          if (allTemplateHours.length === 0) {
+            // se per qualche motivo non ci sono ore valide, fallback al comportamento precedente basato su slots
+          } else {
             if (product!.type === 'DAY') {
-              let hour = 10
-              const daySlots = rawSlotsForDay.filter((h) => h >= 8 && h <= 23).sort((a, b) => a - b)
-              if (daySlots.length > 0) hour = daySlots[0]
-              const runAt = setHour(baseDay, hour)
-              schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
+              // DAY: prendi una sola ora valida (08-23) come riferimento
+              let templateHour = 10
+              const dayTemplate = allTemplateHours
+                .filter((h) => h >= 8 && h <= 23)
+                .sort((a, b) => a - b)
+              if (dayTemplate.length > 0) templateHour = dayTemplate[0]
+
+              for (let d = 0; d < product!.durationDays; d++) {
+                const baseDay = addDays(scheduleStart, d)
+                const baseRun = setHour(baseDay, templateHour)
+                const runAt = new Date(baseRun.getTime() + randomMinuteOffsetWithinHour())
+                schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
+              }
             } else {
-              const nightSlots = rawSlotsForDay
+              // NIGHT: usa le ore notturne scelte come template per tutte le notti
+              const nightTemplate = allTemplateHours
                 .filter((h) => (h >= 22 && h <= 23) || (h >= 0 && h <= 7))
                 .sort((a, b) => a - b)
 
-              if (nightSlots.length === 0) {
-                for (let i = 0; i < product!.quantityPerWindow; i++) {
-                  const base = setHour(baseDay, 22)
-                  const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000))
-                  schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
-                }
-              } else {
-                const maxPerNight = product!.quantityPerWindow
-                for (let i = 0; i < maxPerNight; i++) {
-                  const slotIndex = i % nightSlots.length
-                  const hour = nightSlots[slotIndex]
-                  const targetDate = hour >= 22 ? baseDay : addDays(baseDay, 1)
-                  const runAt = setHour(targetDate, hour)
-                  schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+              for (let d = 0; d < product!.durationDays; d++) {
+                const baseDay = addDays(scheduleStart, d)
+
+                if (nightTemplate.length === 0) {
+                  // fallback: stessa logica automatica di prima
+                  for (let i = 0; i < product!.quantityPerWindow; i++) {
+                    const base = setHour(baseDay, 22)
+                    const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000) + randomMinuteOffsetWithinHour())
+                    schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+                  }
+                } else {
+                  const maxPerNight = product!.quantityPerWindow
+                  for (let i = 0; i < maxPerNight; i++) {
+                    const slotIndex = i % nightTemplate.length
+                    const hour = nightTemplate[slotIndex]
+                    const targetDate = hour >= 22 ? baseDay : addDays(baseDay, 1)
+                    const baseRun = setHour(targetDate, hour)
+                    const runAt = new Date(baseRun.getTime() + randomMinuteOffsetWithinHour())
+                    schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
+                  }
                 }
               }
             }
