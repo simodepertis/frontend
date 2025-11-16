@@ -183,32 +183,10 @@ export default function IncontriVelociDashboard() {
               schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
             );
 
-            // prepara la struttura daySlots solo se abbiamo un pacchetto attivo
-            if (d.purchase && d.purchase.startedAt && d.purchase.durationDays) {
-              const start = new Date(d.purchase.startedAt);
-              const daysArr: { date: string; slots: number[] }[] = [];
-              for (let i = 0; i < d.purchase.durationDays; i++) {
-                const dayDate = new Date(start.getTime());
-                dayDate.setDate(dayDate.getDate() + i);
-                const iso = dayDate.toISOString().slice(0, 10);
-
-                // ricava eventuali slot già programmati per quel giorno
-                const daySlotsFromSchedule = schedules
-                  .filter((s: any) => {
-                    const dt = new Date(s.runAt);
-                    return dt.toISOString().slice(0, 10) === iso;
-                  })
-                  .map((s: any) => new Date(s.runAt).getUTCHours());
-
-                const uniqueHours = Array.from<number>(new Set<number>(daySlotsFromSchedule)).sort(
-                  (a: number, b: number) => a - b
-                );
-                daysArr.push({ date: iso, slots: uniqueHours });
-              }
-              setDaySlots(daysArr);
-            } else {
-              setDaySlots([]);
-            }
+            // con pacchetto attivo, per la scelta fascia usiamo un solo giorno (oggi) come template
+            const today = new Date();
+            const todayIso = today.toISOString().slice(0, 10);
+            setDaySlots([{ date: todayIso, slots: [] }]);
           } catch {
             return null;
           }
@@ -432,27 +410,10 @@ export default function IncontriVelociDashboard() {
           setScheduleSummary(
             schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
           );
-
-          if (d.purchase && d.purchase.startedAt && d.purchase.durationDays) {
-            const start = new Date(d.purchase.startedAt);
-            const daysArr: { date: string; slots: number[] }[] = [];
-            for (let i = 0; i < d.purchase.durationDays; i++) {
-              const dayDate = new Date(start.getTime());
-              dayDate.setDate(dayDate.getDate() + i);
-              const iso = dayDate.toISOString().slice(0, 10);
-
-              const daySlotsFromSchedule = schedules
-                .filter((s: any) => {
-                  const dt = new Date(s.runAt);
-                  return dt.toISOString().slice(0, 10) === iso;
-                })
-                .map((s: any) => new Date(s.runAt).getUTCHours());
-
-              const uniqueHours = Array.from(new Set(daySlotsFromSchedule)).sort((a, b) => a - b);
-              daysArr.push({ date: iso, slots: uniqueHours });
-            }
-            setDaySlots(daysArr);
-          }
+          // dopo la conferma, mantieni un solo giorno template (oggi) per eventuali modifiche future
+          const today = new Date();
+          const todayIso = today.toISOString().slice(0, 10);
+          setDaySlots([{ date: todayIso, slots: [] }]);
         }
       }
     } catch (e) {
@@ -760,10 +721,9 @@ export default function IncontriVelociDashboard() {
                           onClick={() => {
                             setSelectedPackage(p);
                             if (!activePurchase && p.code !== 'IMMEDIATE') {
-                              // Per l'acquisto si sceglie solo la fascia oraria di riferimento
-                              const start = new Date();
-                              start.setDate(start.getDate() + 1); // primo giorno di schedule (domani)
-                              const iso = start.toISOString().slice(0, 10);
+                              // Per l'acquisto si sceglie solo la fascia oraria di riferimento sul giorno attuale
+                              const today = new Date();
+                              const iso = today.toISOString().slice(0, 10);
                               setDaySlots([{ date: iso, slots: [] }]);
                             }
                           }}
@@ -942,7 +902,7 @@ export default function IncontriVelociDashboard() {
                   disabled={!activePurchase || daySlots.length === 0 || loadingSchedule}
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
                 >
-                  Aggiorna fasce orarie
+                  Conferma fascia oraria
                 </button>
               </div>
               <button
