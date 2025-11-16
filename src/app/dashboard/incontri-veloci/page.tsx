@@ -325,6 +325,57 @@ export default function IncontriVelociDashboard() {
         setPromoSuccess('Risalita immediata acquistata ed eseguita con successo');
       } else {
         setPromoSuccess('Pacchetto acquistato con successo');
+
+        // dopo l'acquisto, ricarica i dettagli del pacchetto attivo e la programmazione
+        try {
+          const resSchedule = await fetch(`/api/quick-meetings/schedule?meetingId=${promoMeeting.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resSchedule.ok) {
+            const d = await resSchedule.json();
+            if (d && d.purchase) {
+              setActivePurchase({
+                id: d.purchase.id,
+                productCode: d.purchase.productCode,
+                productLabel: d.purchase.productLabel,
+                type: d.purchase.type,
+                expiresAt: d.purchase.expiresAt,
+                durationDays: d.purchase.durationDays,
+                startedAt: d.purchase.startedAt,
+              });
+
+              const schedules = Array.isArray(d.schedules) ? d.schedules : [];
+              setScheduleSummary(
+                schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
+              );
+
+              if (d.purchase.startedAt && d.purchase.durationDays) {
+                const start = new Date(d.purchase.startedAt);
+                const daysArr: { date: string; slots: number[] }[] = [];
+                for (let i = 0; i < d.purchase.durationDays; i++) {
+                  const dayDate = new Date(start.getTime());
+                  dayDate.setDate(dayDate.getDate() + i);
+                  const iso = dayDate.toISOString().slice(0, 10);
+
+                  const daySlotsFromSchedule = schedules
+                    .filter((s: any) => {
+                      const dt = new Date(s.runAt);
+                      return dt.toISOString().slice(0, 10) === iso;
+                    })
+                    .map((s: any) => new Date(s.runAt).getUTCHours());
+
+                  const uniqueHours = Array.from<number>(new Set<number>(daySlotsFromSchedule)).sort(
+                    (a: number, b: number) => a - b
+                  );
+                  daysArr.push({ date: iso, slots: uniqueHours });
+                }
+                setDaySlots(daysArr);
+              }
+            }
+          }
+        } catch {
+          // se fallisce, lasciamo comunque il pacchetto acquistato e la mappa aggiornata
+        }
       }
 
       // marca l'annuncio corrente come avente un pacchetto attivo
