@@ -293,7 +293,13 @@ export default function IncontriVelociDashboard() {
           'Authorization': `Bearer ${token}`
         },
         // per l'acquisto iniziale non passiamo più slot dettagliati; verranno gestiti dalla schermata di aggiornamento
-        body: JSON.stringify({ meetingId: promoMeeting.id, code, slots: [] })
+        body: JSON.stringify(
+          code === 'IMMEDIATE'
+            ? { meetingId: promoMeeting.id, code, slots: [] }
+            : daySlots.length > 0
+              ? { meetingId: promoMeeting.id, code, slots: [], days: daySlots }
+              : { meetingId: promoMeeting.id, code, slots: [] }
+        )
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -702,6 +708,18 @@ export default function IncontriVelociDashboard() {
                           type="button"
                           onClick={() => {
                             setSelectedPackage(p);
+                            if (!activePurchase && p.code !== 'IMMEDIATE') {
+                              const start = new Date();
+                              start.setDate(start.getDate() + 1);
+                              const daysArr: { date: string; slots: number[] }[] = [];
+                              for (let i = 0; i < p.durationDays; i++) {
+                                const dayDate = new Date(start.getTime());
+                                dayDate.setDate(dayDate.getDate() + i);
+                                const iso = dayDate.toISOString().slice(0, 10);
+                                daysArr.push({ date: iso, slots: [] });
+                              }
+                              setDaySlots(daysArr);
+                            }
                           }}
                           className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
                             p.type === 'DAY'
@@ -875,7 +893,7 @@ export default function IncontriVelociDashboard() {
                 )}
                 <button
                   onClick={handleUpdateSchedule}
-                  disabled={daySlots.length === 0 || loadingSchedule}
+                  disabled={!activePurchase || daySlots.length === 0 || loadingSchedule}
                   className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
                 >
                   Aggiorna fasce orarie
