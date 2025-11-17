@@ -716,8 +716,8 @@ export default function IncontriVelociDashboard() {
                           type="button"
                           onClick={() => {
                             setSelectedPackage(p);
-                            if (!activePurchase && p.code !== 'IMMEDIATE') {
-                              // Per l'acquisto si sceglie solo la fascia oraria di riferimento sul giorno attuale
+                            if (!activePurchase && p.code !== 'IMMEDIATE' && p.type === 'DAY') {
+                              // Per i pacchetti GIORNO, in fase di acquisto si sceglie la fascia oraria di riferimento sul giorno attuale
                               const today = new Date();
                               const iso = today.toISOString().slice(0, 10);
                               setDaySlots([{ date: iso, slots: [] }]);
@@ -767,8 +767,8 @@ export default function IncontriVelociDashboard() {
                   </div>
                 )}
 
-                {/* Fasce orarie: visibili sempre, ma modificabili solo prima dell'acquisto */}
-                {(activePurchase || selectedPackage) && daySlots.length > 0 && (
+                {/* Fasce orarie: solo per pacchetti GIORNO */}
+                {((activePurchase?.type || selectedPackage?.type) === 'DAY') && daySlots.length > 0 && (
                   <div className="mb-4 border-t border-gray-700 pt-4">
                     <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie per giorno</h3>
                     <p className="text-xs text-gray-400 mb-3">

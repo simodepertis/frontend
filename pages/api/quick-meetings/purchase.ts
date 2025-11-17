@@ -153,23 +153,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const runAt = setHour(addDays(scheduleStart, d), hour)
               schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
             } else {
-              const nightSlots = rawSlots.filter(h => (h >= 22 && h <= 23) || (h >= 0 && h <= 7)).sort((a, b) => a - b)
-
-              if (nightSlots.length === 0) {
-                for (let i = 0; i < product!.quantityPerWindow; i++) {
-                  const base = setHour(addDays(scheduleStart, d), 22)
-                  const runAt = new Date(base.getTime() + (i * 45 * 60 * 1000))
-                  schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
-                }
-              } else {
-                const maxPerNight = product!.quantityPerWindow
-                for (let i = 0; i < maxPerNight; i++) {
-                  const slotIndex = i % nightSlots.length
-                  const hour = nightSlots[slotIndex]
-                  const targetDate = hour >= 22 ? addDays(scheduleStart, d) : addDays(scheduleStart, d + 1)
-                  const runAt = setHour(targetDate, hour)
-                  schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
-                }
+              // NOTTE: ignora gli eventuali slots e genera risalite completamente casuali
+              // nella fascia 22:00-08:00 per ogni giorno del pacchetto
+              const baseNight = setHour(addDays(scheduleStart, d), 22) // 22:00 del giorno d
+              const nightWindowMs = 10 * 60 * 60 * 1000 // 10 ore fino alle 08:00
+              const maxPerNight = product!.quantityPerWindow
+              for (let i = 0; i < maxPerNight; i++) {
+                const offset = Math.floor(Math.random() * nightWindowMs)
+                const runAt = new Date(baseNight.getTime() + offset)
+                schedules.push({ purchaseId: purchase.id, window: 'NIGHT', runAt })
               }
             }
           }
