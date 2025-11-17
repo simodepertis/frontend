@@ -753,8 +753,8 @@ export default function IncontriVelociDashboard() {
                   </div>
                 )}
 
-                {/* Fasce orarie */}
-                {(activePurchase || selectedPackage) && daySlots.length > 0 && (
+                {/* Fasce orarie: visibili solo in fase di acquisto (nessun pacchetto attivo) */}
+                {!activePurchase && selectedPackage && daySlots.length > 0 && (
                   <div className="mb-4 border-t border-gray-700 pt-4">
                     <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie per giorno</h3>
                     <p className="text-xs text-gray-400 mb-3">
@@ -845,7 +845,9 @@ export default function IncontriVelociDashboard() {
                         scheduleSummary.reduce((acc: Record<string, string[]>, s) => {
                           const d = new Date(s.runAt);
                           const dateKey = d.toLocaleDateString('it-IT');
-                          const time = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                          const h = d.getUTCHours().toString().padStart(2, '0');
+                          const m = d.getUTCMinutes().toString().padStart(2, '0');
+                          const time = `${h}:${m}`;
                           if (!acc[dateKey]) acc[dateKey] = [];
                           acc[dateKey].push(time);
                           return acc;
@@ -879,13 +881,6 @@ export default function IncontriVelociDashboard() {
                         : 'Acquista pacchetto'}
                   </button>
                 )}
-                <button
-                  onClick={handleUpdateSchedule}
-                  disabled={!activePurchase || daySlots.length === 0 || loadingSchedule}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
-                >
-                  Conferma fascia oraria
-                </button>
               </div>
               <button
                 onClick={closePromo}
