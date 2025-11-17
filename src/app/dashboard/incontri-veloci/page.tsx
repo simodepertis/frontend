@@ -183,10 +183,17 @@ export default function IncontriVelociDashboard() {
               schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
             );
 
-            // con pacchetto attivo, per la scelta fascia usiamo un solo giorno (oggi) come template
+            // con pacchetto attivo, mostra un solo giorno (oggi) con la fascia template già selezionata
             const today = new Date();
             const todayIso = today.toISOString().slice(0, 10);
-            setDaySlots([{ date: todayIso, slots: [] }]);
+            let templateHour: number | null = null;
+            if (schedules.length > 0) {
+              const preferred = schedules.find((s: any) => s.window === 'DAY') || schedules[0];
+              const dt = new Date(preferred.runAt);
+              templateHour = dt.getUTCHours();
+            }
+            const slots = templateHour !== null ? [templateHour] : [];
+            setDaySlots([{ date: todayIso, slots }]);
           } catch {
             return null;
           }
@@ -327,10 +334,17 @@ export default function IncontriVelociDashboard() {
                 schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
               );
 
-              // dopo l'acquisto, usa un solo giorno template (oggi) per eventuali conferme future
+              // dopo l'acquisto, mostra un solo giorno (oggi) con la fascia template selezionata
               const today = new Date();
               const todayIso = today.toISOString().slice(0, 10);
-              setDaySlots([{ date: todayIso, slots: [] }]);
+              let templateHour: number | null = null;
+              if (schedules.length > 0) {
+                const preferred = schedules.find((s: any) => s.window === 'DAY') || schedules[0];
+                const dt = new Date(preferred.runAt);
+                templateHour = dt.getUTCHours();
+              }
+              const slots = templateHour !== null ? [templateHour] : [];
+              setDaySlots([{ date: todayIso, slots }]);
             }
           }
         } catch {
@@ -753,8 +767,8 @@ export default function IncontriVelociDashboard() {
                   </div>
                 )}
 
-                {/* Fasce orarie: visibili solo in fase di acquisto (nessun pacchetto attivo) */}
-                {!activePurchase && selectedPackage && daySlots.length > 0 && (
+                {/* Fasce orarie: visibili sempre, ma modificabili solo prima dell'acquisto */}
+                {(activePurchase || selectedPackage) && daySlots.length > 0 && (
                   <div className="mb-4 border-t border-gray-700 pt-4">
                     <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie per giorno</h3>
                     <p className="text-xs text-gray-400 mb-3">
@@ -780,16 +794,22 @@ export default function IncontriVelociDashboard() {
                                 const isNightSlot = h >= 22 || h <= 7;
 
                                 const type = activePurchase?.type || selectedPackage?.type;
-                                const enabled = type === 'DAY' ? isDaySlot : isNightSlot;
+                                const canEditSlots = !activePurchase; // si possono modificare solo prima dell'acquisto
+                                const enabled = canEditSlots && (type === 'DAY' ? isDaySlot : isNightSlot);
                                 const checked = day.slots.includes(h);
 
                                 if (!enabled) {
+                                  // stato non cliccabile (fuori fascia o pacchetto già attivo)
                                   return (
                                     <div
                                       key={h}
-                                      className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800/60 text-gray-600 cursor-not-allowed border border-gray-700/60"
+                                      className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800/60 text-gray-600 cursor-default border border-gray-700/60"
                                     >
-                                      <input type="checkbox" disabled className="opacity-40" />
+                                      <span
+                                        className={`w-3 h-3 rounded border ${
+                                          checked ? 'bg-white border-white' : 'border-gray-400'
+                                        }`}
+                                      />
                                       <span>
                                         {labelStart} - {labelEnd}
                                       </span>
