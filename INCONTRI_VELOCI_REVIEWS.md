@@ -261,3 +261,4 @@ Prima di andare in produzione:
 - [ ] Test frontend recensioni
 - [ ] Verifica immagini caricano correttamente
 - [ ] Setup cron per sync automatico
+                             
