@@ -281,7 +281,7 @@ export default function IncontriVelociDashboard() {
         body: JSON.stringify(
           code === 'IMMEDIATE'
             ? { meetingId: promoMeeting.id, code, slots: [] }
-            : daySlots.length > 0
+            : selectedPackage?.type === 'DAY' && daySlots.length > 0
               ? { meetingId: promoMeeting.id, code, slots: [], days: daySlots }
               : { meetingId: promoMeeting.id, code, slots: [] }
         )
@@ -721,6 +721,9 @@ export default function IncontriVelociDashboard() {
                               const today = new Date();
                               const iso = today.toISOString().slice(0, 10);
                               setDaySlots([{ date: iso, slots: [] }]);
+                            } else if (!activePurchase && p.type !== 'DAY') {
+                              // Per i pacchetti NOTTE (e altri non DAY) non devono esserci fasce selezionabili
+                              setDaySlots([]);
                             }
                           }}
                           className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
