@@ -154,9 +154,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
             } else {
               // NOTTE: ignora gli eventuali slots e genera risalite completamente casuali
-              // nella fascia 22:00-08:00 per ogni giorno del pacchetto
-              const baseNight = setHour(addDays(scheduleStart, d), 22) // 22:00 del giorno d
-              const nightWindowMs = 10 * 60 * 60 * 1000 // 10 ore fino alle 08:00
+              // nella fascia 00:00-07:59:59 per ogni notte del pacchetto
+              const baseNight = setHour(addDays(scheduleStart, d), 0) // mezzanotte del giorno d
+              const nightWindowMs = 8 * 60 * 60 * 1000 // 8 ore fino alle 08:00 escluse
               const maxPerNight = product!.quantityPerWindow
               for (let i = 0; i < maxPerNight; i++) {
                 const offset = Math.floor(Math.random() * nightWindowMs)
