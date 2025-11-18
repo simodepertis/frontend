@@ -868,13 +868,10 @@ export default function IncontriVelociDashboard() {
                         scheduleSummary.reduce((acc: Record<string, string[]>, s) => {
                           const d = new Date(s.runAt);
 
-                          // Per i pacchetti notte, le ore 00:00-07:59 vengono accorpate al giorno precedente,
-                          // così una "notte" mostra tutte le risalite sulla stessa data.
-                          const displayDate = new Date(d.getTime());
-                          const localHour = displayDate.getHours();
-                          if (localHour < 8) {
-                            displayDate.setDate(displayDate.getDate() - 1);
-                          }
+                          // Per i pacchetti NOTTE usiamo direttamente la data effettiva dell'orario
+                          // (le risalite sono già tutte tra 00:00 e 07:59), per i GIORNO non cambia nulla.
+                          const isNight = (activePurchase?.type || selectedPackage?.type) === 'NIGHT';
+                          const displayDate = isNight ? d : new Date(d.getTime());
 
                           const dateKey = displayDate.toLocaleDateString('it-IT');
                           const h = d.getUTCHours().toString().padStart(2, '0');
