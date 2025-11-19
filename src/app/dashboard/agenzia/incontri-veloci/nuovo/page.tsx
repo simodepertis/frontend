@@ -118,7 +118,7 @@ export default function NuovoIncontroVeloceAgenzia() {
         if (typeof window === 'undefined') return;
         const el = document.getElementById('quick-meeting-photos-agency');
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }

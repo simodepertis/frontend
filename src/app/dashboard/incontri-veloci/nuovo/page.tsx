@@ -162,7 +162,7 @@ export default function NuovoIncontroVeloce() {
         if (typeof window === 'undefined') return;
         const el = document.getElementById('quick-meeting-photos');
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
