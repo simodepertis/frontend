@@ -85,9 +85,27 @@ export default function NuovoIncontroVeloceAgenzia() {
       alert('Inserisci una descrizione (min 20 caratteri)');
       return false;
     }
-    if (!formData.phone || formData.phone.length < 9) {
-      alert('Inserisci un numero di telefono valido');
-      return false;
+
+    // Validazione contatti in base alla preferenza selezionata
+    if (formData.contactPreference === 'phone') {
+      if (!formData.phone || formData.phone.length < 9) {
+        alert('Inserisci un numero di telefono valido');
+        return false;
+      }
+    } else if (formData.contactPreference === 'email') {
+      if (!formData.email || !formData.email.includes('@')) {
+        alert('Inserisci un indirizzo email valido');
+        return false;
+      }
+    } else if (formData.contactPreference === 'email_phone') {
+      if (!formData.phone || formData.phone.length < 9) {
+        alert('Inserisci un numero di telefono valido');
+        return false;
+      }
+      if (!formData.email || !formData.email.includes('@')) {
+        alert('Inserisci un indirizzo email valido');
+        return false;
+      }
     }
     return true;
   };
@@ -383,39 +401,43 @@ export default function NuovoIncontroVeloceAgenzia() {
                 </div>
               </div>
 
-              {/* Email */}
-              <div>
-                <label className="block text-white font-medium mb-2">
-                  * 📧 Indirizzo email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => updateField('email', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-500 focus:outline-none"
-                  placeholder="email@example.com"
-                />
-                <div className="text-xs text-gray-400 mt-1">Non visibile online</div>
-              </div>
-
-              {/* Telefono */}
-              <div>
-                <label className="block text-white font-medium mb-2">
-                  * 📞 Numero di telefono
-                </label>
-                <div className="flex gap-2">
-                  <div className="w-20 px-4 py-3 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center text-white">
-                    🇮🇹 +39
-                  </div>
+              {/* Email (mostrata solo se la preferenza include l'email) */}
+              {formData.contactPreference !== 'phone' && (
+                <div>
+                  <label className="block text-white font-medium mb-2">
+                    📧 Indirizzo email
+                  </label>
                   <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => updateField('phone', e.target.value)}
-                    className="flex-1 px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-500 focus:outline-none"
-                    placeholder="312 345 6789"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => updateField('email', e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-500 focus:outline-none"
+                    placeholder="email@example.com"
                   />
+                  <div className="text-xs text-gray-400 mt-1">Non visibile online</div>
                 </div>
-              </div>
+              )}
+
+              {/* Telefono (mostrato solo se la preferenza include il telefono) */}
+              {formData.contactPreference !== 'email' && (
+                <div>
+                  <label className="block text-white font-medium mb-2">
+                    📞 Numero di telefono
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="w-20 px-4 py-3 bg-gray-700 rounded-lg border border-gray-600 flex items-center justify-center text-white">
+                      🇮🇹 +39
+                    </div>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => updateField('phone', e.target.value)}
+                      className="flex-1 px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-pink-500 focus:outline-none"
+                      placeholder="312 345 6789"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* WhatsApp */}
               <div className="flex items-center gap-3">
