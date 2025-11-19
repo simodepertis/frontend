@@ -716,8 +716,11 @@ export default function IncontriVelociDashboard() {
                           type="button"
                           onClick={() => {
                             setSelectedPackage(p);
-                            if (!activePurchase && p.code !== 'IMMEDIATE' && p.type === 'DAY') {
-                              // Per i pacchetti GIORNO, in fase di acquisto si sceglie la fascia oraria di riferimento sul giorno attuale
+                            if (!activePurchase && p.code === 'IMMEDIATE') {
+                              // Per la risalita immediata non devono mai esserci fasce orarie
+                              setDaySlots([]);
+                            } else if (!activePurchase && p.type === 'DAY') {
+                              // Per i pacchetti GIORNO (non immediati), in fase di acquisto si sceglie la fascia oraria di riferimento sul giorno attuale
                               const today = new Date();
                               const iso = today.toISOString().slice(0, 10);
                               setDaySlots([{ date: iso, slots: [] }]);
