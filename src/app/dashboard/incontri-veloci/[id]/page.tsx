@@ -181,6 +181,38 @@ export default function EditQuickMeeting() {
     setDraggingIndex(null);
   };
 
+  const setCoverPhoto = (index: number) => {
+    if (index === 0) return;
+
+    // Aggiorna le preview (sposta l'indice scelto in prima posizione)
+    setPhotoPreviews((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.unshift(item);
+      return next;
+    });
+
+    // Se è una foto già salvata nel DB (parte iniziale di form.photos)
+    if (index < form.photos.length) {
+      setForm((s: any) => {
+        const updated = [...s.photos];
+        const [p] = updated.splice(index, 1);
+        updated.unshift(p);
+        return { ...s, photos: updated };
+      });
+    } else {
+      // È una nuova foto caricata (in photoFiles)
+      const fileIndex = index - form.photos.length;
+      setPhotoFiles((prev) => {
+        if (fileIndex < 0 || fileIndex >= prev.length) return prev;
+        const next = [...prev];
+        const [f] = next.splice(fileIndex, 1);
+        next.unshift(f);
+        return next;
+      });
+    }
+  };
+
   const onSubmit = async (e: any) => {
     e.preventDefault();
     setSaving(true);
@@ -335,12 +367,27 @@ export default function EditQuickMeeting() {
                     onDrop={(e) => handlePhotoDrop(e, i)}
                     className={`relative group cursor-move ${draggingIndex === i ? 'opacity-50' : ''}`}
                   >
-                    {i === 0 && (
-                      <div className="absolute -top-2 -left-2 bg-yellow-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center z-10">
+                    <div className="absolute -top-2 -left-2 z-10">
+                      <button
+                        type="button"
+                        onClick={() => setCoverPhoto(i)}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${
+                          i === 0
+                            ? 'bg-yellow-400 border-yellow-300 text-black'
+                            : 'bg-gray-900/80 border-yellow-400 text-yellow-300 hover:bg-yellow-400 hover:text-black'
+                        }`}
+                        title={i === 0 ? 'Copertina' : 'Imposta come copertina'}
+                      >
                         ⭐
-                      </div>
-                    )}
-                    <img src={preview} alt={`Foto ${i + 1}`} className="w-full h-32 object-cover rounded border-2 border-gray-700 hover:border-blue-500 transition-colors" />
+                      </button>
+                    </div>
+                    <img
+                      src={preview}
+                      alt={`Foto ${i + 1}`}
+                      className={`w-full h-32 object-cover rounded border-2 transition-colors ${
+                        i === 0 ? 'border-yellow-400' : 'border-gray-700 hover:border-blue-500'
+                      }`}
+                    />
                     <button
                       type="button"
                       onClick={() => removePhoto(i)}
