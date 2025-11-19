@@ -157,6 +157,16 @@ export default function NuovoIncontroVeloce() {
   const handleNext = () => {
     if (validateStep1()) {
       setStep(2);
+      // porta in vista il riquadro delle foto quando si passa allo step 2
+      setTimeout(() => {
+        if (typeof window === 'undefined') return;
+        const el = document.getElementById('quick-meeting-photos');
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 0);
     }
   };
 
@@ -593,7 +603,7 @@ export default function NuovoIncontroVeloce() {
       {/* Step 2: Foto */}
       {step === 2 && (
         <div className="space-y-6">
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+          <div id="quick-meeting-photos" className="bg-gray-800 rounded-lg border border-gray-700 p-6">
             <h2 className="text-xl font-bold text-white mb-4">📸 Carica le foto</h2>
             
             {/* Upload */}
