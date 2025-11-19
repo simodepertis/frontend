@@ -63,20 +63,20 @@ export default function NuovoIncontroVeloce() {
     photos: []
   });
 
-  // Precompila l'email con quella salvata nel profilo (emailBooking)
+  // Precompila l'email con quella di registrazione dell'utente
   useEffect(() => {
     (async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
         if (!token) return;
-        const res = await fetch('/api/profile/contatti', {
+        const res = await fetch('/api/profile/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
         const data = await res.json().catch(() => ({}));
-        const emailFromProfile = data?.contacts?.emailBooking || '';
-        if (emailFromProfile) {
-          setFormData((prev) => ({ ...prev, email: emailFromProfile }));
+        const emailFromUser = data?.user?.email || '';
+        if (emailFromUser) {
+          setFormData((prev) => ({ ...prev, email: emailFromUser }));
         }
       } catch {
         // se fallisce, lascio l'email vuota
