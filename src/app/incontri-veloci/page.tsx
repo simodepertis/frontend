@@ -184,19 +184,64 @@ export default function IncontriVelociPage() {
         )}
       </div>
 
-      {/* Statistiche */}
-      <div className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Object.entries(CATEGORIES).map(([key, cat]) => {
-          const count = meetings.filter(m => m.category === key).length;
-          return (
-            <div key={key} className="p-4 bg-gray-800 rounded-lg border border-gray-700 text-center">
-              <div className="text-2xl mb-1">{cat.icon}</div>
-              <div className="text-xl font-bold text-white">{count}</div>
-              <div className="text-xs text-gray-400">{cat.label}</div>
-            </div>
-          );
-        })}
-      </div>
+      {/* Sezione SuperTop */}
+      {meetings.some(m => m.bumpPackage === 'SUPERTOP') && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+              <span className="text-yellow-300">💎</span>
+              Annunci SuperTop
+            </h2>
+            <p className="text-xs md:text-sm text-gray-400">Sempre in alto, visibilità massima</p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {meetings.filter(m => m.bumpPackage === 'SUPERTOP').map((meeting) => {
+              const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
+              return (
+                <Link
+                  key={`super-${meeting.id}`}
+                  href={`/incontri-veloci/${meeting.id}`}
+                  className="block group"
+                >
+                  <div className="bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors">
+                    {meeting.photos.length > 0 && (
+                      <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
+                        <img
+                          src={meeting.photos[0]}
+                          alt={meeting.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder.svg';
+                          }}
+                        />
+                        <div className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-semibold bg-black/70 text-yellow-300 flex items-center gap-1">
+                          💎 SuperTop
+                        </div>
+                      </div>
+                    )}
+                    <div className="p-3 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
+                          {category?.label}
+                        </span>
+                        <span className="text-[11px] text-gray-400">{formatTimeAgo(meeting.publishedAt)}</span>
+                      </div>
+                      <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-yellow-300">
+                        {meeting.title}
+                      </h3>
+                      <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
+                        <span>📍 {meeting.city}</span>
+                        {meeting.zone && <span>🏘️ {meeting.zone}</span>}
+                        {meeting.age && <span>🎂 {meeting.age} anni</span>}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Lista Annunci */}
       {loading ? (
@@ -210,7 +255,7 @@ export default function IncontriVelociPage() {
         </div>
       ) : (
         <div className="grid gap-6">
-          {meetings.map((meeting) => {
+          {meetings.filter(m => m.bumpPackage !== 'SUPERTOP').map((meeting) => {
             const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
             return (
               <Link
