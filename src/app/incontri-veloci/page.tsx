@@ -213,42 +213,17 @@ export default function IncontriVelociPage() {
           {meetings.map((meeting) => {
             const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
             return (
-              <div key={meeting.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-blue-600 transition-colors">
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-3 py-1 text-xs font-bold text-white rounded-full ${category?.color}`}>
-                          {category?.icon} {category?.label}
-                        </span>
-                        {getBumpBadge(meeting.bumpPackage)}
-                        <span className="text-xs text-gray-400">
-                          {formatTimeAgo(meeting.publishedAt)}
-                        </span>
-                      </div>
-                      
-                      <h3 className="text-xl font-bold text-white mb-2">
-                        {meeting.title}
-                      </h3>
-                      
-                      <div className="flex items-center gap-4 text-sm text-gray-300 mb-3">
-                        <span>📍 {meeting.city}</span>
-                        {meeting.zone && <span>🏘️ {meeting.zone}</span>}
-                        {meeting.age && <span>🎂 {meeting.age} anni</span>}
-                        {meeting.price && <span>💰 €{meeting.price}</span>}
-                      </div>
-                      
-                      {meeting.description && (
-                        <p className="text-gray-400 text-sm line-clamp-3">
-                          {meeting.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Foto */}
+              <Link
+                key={meeting.id}
+                href={`/incontri-veloci/${meeting.id}`}
+                className="block group"
+              >
+                <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-blue-600 hover:bg-gray-750 transition-colors">
+                  <div className="p-4 md:p-5 flex gap-4">
+                    {/* Foto a sinistra */}
                     {meeting.photos.length > 0 && (
-                      <div className="ml-4 flex-shrink-0">
-                        <div className="w-24 h-24 bg-gray-700 rounded-lg overflow-hidden">
+                      <div className="flex-shrink-0">
+                        <div className="w-24 h-24 md:w-28 md:h-28 bg-gray-700 rounded-lg overflow-hidden">
                           <img
                             src={meeting.photos[0]}
                             alt={meeting.title}
@@ -265,39 +240,39 @@ export default function IncontriVelociPage() {
                         )}
                       </div>
                     )}
-                  </div>
 
-                  {/* Azioni */}
-                  <div className="flex items-center gap-3 pt-4 border-t border-gray-700">
-                    {meeting.phone && (
-                      <a
-                        href={`tel:${meeting.phone}`}
-                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors"
-                      >
-                        📞 Chiama
-                      </a>
-                    )}
-                    
-                    {meeting.whatsapp && (
-                      <a
-                        href={meeting.whatsapp}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm font-medium transition-colors"
-                      >
-                        💬 WhatsApp
-                      </a>
-                    )}
-                    
-                    <Link
-                      href={`/incontri-veloci/${meeting.id}`}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
-                    >
-                      👁️ Dettagli
-                    </Link>
+                    {/* Contenuto a destra */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center flex-wrap gap-2 mb-2">
+                        <span className={`px-3 py-1 text-xs font-bold text-white rounded-full ${category?.color}`}>
+                          {category?.icon} {category?.label}
+                        </span>
+                        {getBumpBadge(meeting.bumpPackage)}
+                        <span className="text-xs text-gray-400">
+                          {formatTimeAgo(meeting.publishedAt)}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base md:text-lg font-bold text-white mb-1 line-clamp-1 group-hover:text-blue-300">
+                        {meeting.title}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-300 mb-2">
+                        <span>📍 {meeting.city}</span>
+                        {meeting.zone && <span>🏘️ {meeting.zone}</span>}
+                        {meeting.age && <span>🎂 {meeting.age} anni</span>}
+                        {meeting.price && <span>💰 €{meeting.price}</span>}
+                      </div>
+
+                      {meeting.description && (
+                        <p className="text-gray-400 text-xs md:text-sm line-clamp-2 md:line-clamp-3">
+                          {meeting.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
