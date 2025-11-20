@@ -279,7 +279,7 @@ export default function IncontriVelociDashboard() {
         },
         // per l'acquisto iniziale non passiamo più slot dettagliati; verranno gestiti dalla schermata di aggiornamento
         body: JSON.stringify(
-          code === 'IMMEDIATE'
+          code === 'IMMEDIATE' || code.startsWith('SUPERTOP_')
             ? { meetingId: promoMeeting.id, code, slots: [] }
             : selectedPackage?.type === 'DAY' && daySlots.length > 0
               ? { meetingId: promoMeeting.id, code, slots: [], days: daySlots }
@@ -716,8 +716,8 @@ export default function IncontriVelociDashboard() {
                           type="button"
                           onClick={() => {
                             setSelectedPackage(p);
-                            if (!activePurchase && p.code === 'IMMEDIATE') {
-                              // Per la risalita immediata non devono mai esserci fasce orarie
+                            if (!activePurchase && (p.code === 'IMMEDIATE' || p.code.startsWith('SUPERTOP_'))) {
+                              // Per la risalita immediata e per i pacchetti SuperTop non devono mai esserci fasce orarie
                               setDaySlots([]);
                             } else if (!activePurchase && p.type === 'DAY') {
                               // Per i pacchetti GIORNO (non immediati), in fase di acquisto si sceglie la fascia oraria di riferimento sul giorno attuale
@@ -741,21 +741,25 @@ export default function IncontriVelociDashboard() {
                               <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
                                 {p.code === 'IMMEDIATE'
                                   ? 'Risalita immediata'
-                                  : p.type === 'DAY'
-                                    ? 'Giorno'
-                                    : 'Notte'}
+                                  : p.code.startsWith('SUPERTOP_')
+                                    ? 'SuperTop'
+                                    : p.type === 'DAY'
+                                      ? 'Giorno'
+                                      : 'Notte'}
                               </span>
                             </div>
                             <div className="text-sm text-gray-300 mb-2">
                               {p.code === 'IMMEDIATE' ? (
                                 <span>Esegui una risalita immediata utilizzando 10 crediti.</span>
+                              ) : p.code.startsWith('SUPERTOP_') ? (
+                                <span>Metti il tuo annuncio in evidenza fissa in alto per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
                               ) : p.type === 'DAY' ? (
                                 <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
                               ) : (
                                 <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
                               )}
                             </div>
-                            {p.code !== 'IMMEDIATE' && (
+                            {p.code !== 'IMMEDIATE' && !p.code.startsWith('SUPERTOP_') && (
                               <div className="text-sm text-gray-400">
                                 Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}
                               </div>

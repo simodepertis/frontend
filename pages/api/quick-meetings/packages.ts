@@ -39,6 +39,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       update: { active: true, creditsCost: immediate.creditsCost },
     })
 
+    // pacchetti SuperTop (annuncio fissato in alto per N giorni)
+    const supertopDefaults = [
+      { code: 'SUPERTOP_1D', label: 'SuperTop · 1 giorno', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 1, creditsCost: 80 },
+      { code: 'SUPERTOP_3D', label: 'SuperTop · 3 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 3, creditsCost: 180 },
+      { code: 'SUPERTOP_7D', label: 'SuperTop · 7 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 7, creditsCost: 350 },
+    ]
+
+    for (const p of supertopDefaults) {
+      await prisma.quickMeetingProduct.upsert({
+        where: { code: p.code },
+        create: { ...p, active: true },
+        update: { active: true, creditsCost: p.creditsCost },
+      })
+    }
+
     const items = await prisma.quickMeetingProduct.findMany({
       where: { active: true },
       orderBy: [{ type: 'asc' }, { durationDays: 'asc' }],

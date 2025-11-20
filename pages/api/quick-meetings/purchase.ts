@@ -48,8 +48,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (wallet.balance < product.creditsCost) return res.status(402).json({ error: 'Crediti insufficienti' })
 
     const now = new Date()
+    const isSuperTop = String(product.code).startsWith('SUPERTOP_')
     // Per i pacchetti normali (DAY/NIGHT) il primo giorno utile è il giorno successivo all'acquisto
-    const scheduleStart = product.code === 'IMMEDIATE' ? now : addDays(now, 1)
+    const scheduleStart = product.code === 'IMMEDIATE' || isSuperTop ? now : addDays(now, 1)
     const expires = addDays(scheduleStart, product.durationDays)
 
     const result = await prisma.$transaction(async (tx) => {
@@ -83,6 +84,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Pacchetto speciale: una sola risalita immediata
         const runAt = now
         schedules.push({ purchaseId: purchase.id, window: 'DAY', runAt })
+      } else if (isSuperTop) {
+        // SuperTop: nessuna schedule, l'annuncio viene fissato in alto per la durata del pacchetto
+        await tx.quickMeeting.update({
+          where: { id: mid },
+          data: { bumpPackage: 'SUPERTOP' }
+        })
       } else {
         if (hasDays) {
           // days contiene la fascia scelta sull'unico giorno mostrato al momento dell'acquisto
