@@ -710,6 +710,7 @@ export default function IncontriVelociDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     {packages.map((p) => {
                       const isSelected = selectedPackage?.code === p.code;
+                      const isSuperTop = p.code.startsWith('SUPERTOP_');
                       return (
                         <button
                           key={p.id}
@@ -730,14 +731,19 @@ export default function IncontriVelociDashboard() {
                             }
                           }}
                           className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
-                            p.type === 'DAY'
-                              ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
-                              : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
+                            isSuperTop
+                              ? 'border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300'
+                              : p.type === 'DAY'
+                                ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
+                                : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
                           } ${isSelected ? 'ring-2 ring-pink-400' : ''}`}
                         >
                           <div>
                             <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-lg font-semibold text-white">{p.label}</h3>
+                              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                {isSuperTop && <span className="text-yellow-300">💎</span>}
+                                <span>{p.label}</span>
+                              </h3>
                               <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
                                 {p.code === 'IMMEDIATE'
                                   ? 'Risalita immediata'
@@ -777,8 +783,13 @@ export default function IncontriVelociDashboard() {
                   </div>
                 )}
 
-                {/* Fasce orarie: solo per pacchetti GIORNO */}
-                {((activePurchase?.type || selectedPackage?.type) === 'DAY') && daySlots.length > 0 && (
+                {/* Fasce orarie: solo per pacchetti GIORNO non SuperTop */}
+                {(() => {
+                  const currentType = activePurchase?.type || selectedPackage?.type;
+                  const currentCode = activePurchase?.productCode || selectedPackage?.code || '';
+                  const isSuperTopCurrent = currentCode.startsWith('SUPERTOP_');
+                  return currentType === 'DAY' && !isSuperTopCurrent && daySlots.length > 0;
+                })() && (
                   <div className="mb-4 border-t border-gray-700 pt-4">
                     <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie per giorno</h3>
                     <p className="text-xs text-gray-400 mb-3">
