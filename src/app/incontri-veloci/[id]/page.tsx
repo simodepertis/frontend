@@ -385,6 +385,38 @@ export default function IncontroVeloceDetailPage() {
             </div>
           )}
 
+          {/* Statistiche (solo per SuperTop) */}
+          {meeting.bumpPackage === 'SUPERTOP' && (
+            <div className="bg-gray-800 rounded-lg border border-yellow-500/60 p-6 mt-6">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="text-yellow-300">📊</span>
+                <span>Statistiche annuncio SuperTop</span>
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm text-gray-200">
+                <div className="bg-gray-900/60 rounded-lg p-3 border border-gray-700/80">
+                  <div className="text-2xl mb-1">👁️</div>
+                  <div className="text-lg font-bold">{meeting.views}</div>
+                  <div className="text-xs text-gray-400">Visualizzazioni</div>
+                </div>
+                <div className="bg-gray-900/60 rounded-lg p-3 border border-gray-700/80">
+                  <div className="text-2xl mb-1">⭐</div>
+                  <div className="text-lg font-bold">{reviews.length}</div>
+                  <div className="text-xs text-gray-400">Recensioni ricevute</div>
+                </div>
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-800">
+                  <div className="text-2xl mb-1">📞</div>
+                  <div className="text-lg font-bold">--</div>
+                  <div className="text-xs text-gray-500">Chiamate (prossimamente)</div>
+                </div>
+                <div className="bg-gray-900/40 rounded-lg p-3 border border-gray-800">
+                  <div className="text-2xl mb-1">💬</div>
+                  <div className="text-lg font-bold">--</div>
+                  <div className="text-xs text-gray-500">Contatti chat (prossimamente)</div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Sezione Recensioni */}
           {meeting.importedReviews && meeting.importedReviews.length > 0 && (
             <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mt-6">
