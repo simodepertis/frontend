@@ -752,7 +752,6 @@ export default function IncontriVelociDashboard() {
                               setSuperTopDays(selectedDays);
                               // per SuperTop non ci sono fasce orarie
                               setDaySlots([]);
-                              handlePurchase('SUPERTOP');
                             }}
                             className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300 ${
                               isSelected ? 'ring-2 ring-pink-400' : ''
