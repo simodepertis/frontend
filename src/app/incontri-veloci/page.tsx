@@ -292,7 +292,7 @@ export default function IncontriVelociPage() {
           <div className="text-sm text-gray-500">Prova a cambiare i filtri o torna più tardi</div>
         </div>
       ) : (
-        <div className="grid gap-6 max-w-5xl mx-auto">
+        <div className="grid gap-6 max-w-6xl mx-auto">
           {meetings.filter(m => m.bumpPackage !== 'SUPERTOP').map((meeting) => {
             const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
             return (
