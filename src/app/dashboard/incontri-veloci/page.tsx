@@ -62,6 +62,7 @@ export default function IncontriVelociDashboard() {
   const [daySlots, setDaySlots] = useState<{ date: string; slots: number[] }[]>([]);
   const [scheduleSummary, setScheduleSummary] = useState<{ runAt: string; window: string }[]>([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [superTopDays, setSuperTopDays] = useState<number>(3);
 
   useEffect(() => {
     loadMeetings();
@@ -265,9 +266,21 @@ export default function IncontriVelociDashboard() {
     }
     setPromoError(null);
     setPromoSuccess(null);
-    setPurchaseLoadingCode(code);
+    // gestisci codice effettivo per SuperTop (mappa su SUPERTOP_*)
+    const isSuperTopPseudo = code === 'SUPERTOP';
+    let effectiveCode = code;
+    if (isSuperTopPseudo) {
+      const target = superTopByDays[superTopDays] || availableSuperTopDays.map((d) => superTopByDays[d])[0];
+      if (!target) {
+        alert('Pacchetto SuperTop non disponibile');
+        return;
+      }
+      effectiveCode = target.code;
+    }
+
+    setPurchaseLoadingCode(effectiveCode);
     // se non è ancora stato fissato il pacchetto selezionato, impostalo ora
-    const pkg = packages.find((p) => p.code === code) || null;
+    const pkg = packages.find((p) => p.code === effectiveCode) || null;
     if (!selectedPackage && pkg) {
       setSelectedPackage(pkg);
     }
@@ -280,11 +293,11 @@ export default function IncontriVelociDashboard() {
         },
         // per l'acquisto iniziale non passiamo più slot dettagliati; verranno gestiti dalla schermata di aggiornamento
         body: JSON.stringify(
-          code === 'IMMEDIATE' || code.startsWith('SUPERTOP_')
-            ? { meetingId: promoMeeting.id, code, slots: [] }
+          effectiveCode === 'IMMEDIATE' || effectiveCode.startsWith('SUPERTOP_')
+            ? { meetingId: promoMeeting.id, code: effectiveCode, slots: [] }
             : selectedPackage?.type === 'DAY' && daySlots.length > 0
-              ? { meetingId: promoMeeting.id, code, slots: [], days: daySlots }
-              : { meetingId: promoMeeting.id, code, slots: [] }
+              ? { meetingId: promoMeeting.id, code: effectiveCode, slots: [], days: daySlots }
+              : { meetingId: promoMeeting.id, code: effectiveCode, slots: [] }
         )
       });
       const data = await res.json().catch(() => ({}));
@@ -294,7 +307,7 @@ export default function IncontriVelociDashboard() {
       }
 
       // Se il pacchetto è quello di risalita immediata, esegui subito la risalita
-      if (code === 'IMMEDIATE') {
+      if (effectiveCode === 'IMMEDIATE') {
         const bumpRes = await fetch('/api/quick-meetings/bump-now', {
           method: 'POST',
           headers: {
@@ -489,6 +502,18 @@ export default function IncontriVelociDashboard() {
       </div>
     );
   }
+
+  // Deriva i pacchetti SuperTop (SUPERTOP_*) e gli altri
+  const superTopPackages = packages.filter((p) => p.code.startsWith('SUPERTOP_'));
+  const nonSuperTopPackages = packages.filter((p) => !p.code.startsWith('SUPERTOP_'));
+  const superTopByDays: Record<number, QuickMeetingProduct> = {};
+  for (const p of superTopPackages) {
+    superTopByDays[p.durationDays] = p;
+  }
+  const availableSuperTopDays = Object.keys(superTopByDays)
+    .map((d) => Number(d))
+    .filter((d) => Number.isFinite(d))
+    .sort((a, b) => a - b);
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -709,17 +734,83 @@ export default function IncontriVelociDashboard() {
               <>
                 {!activePurchase && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {packages.map((p) => {
+                    {/* Pacchetto SuperTop unico, se disponibile */}
+                    {superTopPackages.length > 0 && availableSuperTopDays.length > 0 && (
+                      (() => {
+                        const selectedDays = availableSuperTopDays.includes(superTopDays)
+                          ? superTopDays
+                          : availableSuperTopDays[0];
+                        const superPkg = superTopByDays[selectedDays];
+                        if (!superPkg) return null;
+                        const isSelected = !!selectedPackage && selectedPackage.code.startsWith('SUPERTOP_');
+                        return (
+                          <button
+                            key="supertop-virtual"
+                            type="button"
+                            onClick={() => {
+                              setSelectedPackage(superPkg);
+                              setSuperTopDays(selectedDays);
+                              // per SuperTop non ci sono fasce orarie
+                              setDaySlots([]);
+                              handlePurchase('SUPERTOP');
+                            }}
+                            className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300 ${
+                              isSelected ? 'ring-2 ring-pink-400' : ''
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                  <span className="text-yellow-300">💎</span>
+                                  <span>SuperTop</span>
+                                </h3>
+                                <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
+                                  SuperTop
+                                </span>
+                              </div>
+                              <div className="text-sm text-gray-300 mb-2 space-y-1">
+                                <p>Metti il tuo annuncio in evidenza fissa in alto.</p>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-gray-300">Durata:</span>
+                                  <select
+                                    value={selectedDays}
+                                    onChange={(e) => {
+                                      const v = Number(e.target.value) || selectedDays;
+                                      setSuperTopDays(v);
+                                    }}
+                                    className="bg-black/40 border border-yellow-500/60 rounded px-2 py-1 text-xs text-yellow-200"
+                                  >
+                                    {availableSuperTopDays.map((d) => (
+                                      <option key={d} value={d}>
+                                        {d} {d === 1 ? 'giorno' : 'giorni'}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-4 flex items-center justify-between">
+                              <div className="text-lg font-bold text-pink-300">{superPkg.creditsCost} crediti</div>
+                              <span className="text-xs text-gray-300">
+                                {isSelected ? 'Selezionato' : 'Clicca per acquistare'}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })()
+                    )}
+
+                    {/* Altri pacchetti standard DAY/NIGHT/IMMEDIATE */}
+                    {nonSuperTopPackages.map((p) => {
                       const isSelected = selectedPackage?.code === p.code;
-                      const isSuperTop = p.code.startsWith('SUPERTOP_');
                       return (
                         <button
                           key={p.id}
                           type="button"
                           onClick={() => {
                             setSelectedPackage(p);
-                            if (!activePurchase && (p.code === 'IMMEDIATE' || p.code.startsWith('SUPERTOP_'))) {
-                              // Per la risalita immediata e per i pacchetti SuperTop non devono mai esserci fasce orarie
+                            if (!activePurchase && p.code === 'IMMEDIATE') {
+                              // Per la risalita immediata non devono mai esserci fasce orarie
                               setDaySlots([]);
                             } else if (!activePurchase && p.type === 'DAY') {
                               // Per i pacchetti GIORNO (non immediati), in fase di acquisto si sceglie la fascia oraria di riferimento sul giorno attuale
@@ -732,41 +823,34 @@ export default function IncontriVelociDashboard() {
                             }
                           }}
                           className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
-                            isSuperTop
-                              ? 'border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300'
-                              : p.type === 'DAY'
-                                ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
-                                : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
+                            p.type === 'DAY'
+                              ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
+                              : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
                           } ${isSelected ? 'ring-2 ring-pink-400' : ''}`}
                         >
                           <div>
                             <div className="flex items-center justify-between mb-2">
                               <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                {isSuperTop && <span className="text-yellow-300">💎</span>}
                                 <span>{p.label}</span>
                               </h3>
                               <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
                                 {p.code === 'IMMEDIATE'
                                   ? 'Risalita immediata'
-                                  : p.code.startsWith('SUPERTOP_')
-                                    ? 'SuperTop'
-                                    : p.type === 'DAY'
-                                      ? 'Giorno'
-                                      : 'Notte'}
+                                  : p.type === 'DAY'
+                                    ? 'Giorno'
+                                    : 'Notte'}
                               </span>
                             </div>
                             <div className="text-sm text-gray-300 mb-2">
                               {p.code === 'IMMEDIATE' ? (
                                 <span>Esegui una risalita immediata utilizzando 10 crediti.</span>
-                              ) : p.code.startsWith('SUPERTOP_') ? (
-                                <span>Metti il tuo annuncio in evidenza fissa in alto per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
                               ) : p.type === 'DAY' ? (
                                 <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
                               ) : (
                                 <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
                               )}
                             </div>
-                            {p.code !== 'IMMEDIATE' && !p.code.startsWith('SUPERTOP_') && (
+                            {p.code !== 'IMMEDIATE' && (
                               <div className="text-sm text-gray-400">
                                 Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}
                               </div>
