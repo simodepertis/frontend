@@ -219,7 +219,7 @@ export default function IncontriVelociPage() {
                         </div>
                       </div>
                     )}
-                    <div className="p-3 space-y-1">
+                    <div className="p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
                           {category?.label}
@@ -234,6 +234,43 @@ export default function IncontriVelociPage() {
                         {meeting.zone && <span>🏘️ {meeting.zone}</span>}
                         {meeting.age && <span>🎂 {meeting.age} anni</span>}
                       </div>
+
+                      {(meeting.phone || meeting.whatsapp) && (
+                        <div className="pt-1 flex gap-2">
+                          {meeting.phone && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (typeof window !== 'undefined') {
+                                  window.location.href = `tel:${meeting.phone}`;
+                                }
+                              }}
+                              className="flex-1 px-2 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white text-[11px] font-semibold flex items-center justify-center gap-1"
+                            >
+                              <span>📞</span>
+                              <span>Chiama</span>
+                            </button>
+                          )}
+                          {meeting.whatsapp && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (typeof window !== 'undefined') {
+                                  window.open(meeting.whatsapp as string, '_blank');
+                                }
+                              }}
+                              className="flex-1 px-2 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white text-[11px] font-semibold flex items-center justify-center gap-1"
+                            >
+                              <span>💬</span>
+                              <span>WhatsApp</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>
