@@ -34,7 +34,8 @@ const CATEGORIES = [
   { value: 'DONNA_CERCA_UOMO', label: 'Donna cerca Uomo' },
   { value: 'TRANS', label: 'Trans' },
   { value: 'UOMO_CERCA_UOMO', label: 'Uomo cerca Uomo' },
-  { value: 'CENTRO_MASSAGGI', label: 'Centro Massaggi' }
+  { value: 'CENTRO_MASSAGGI', label: 'Centro Massaggi' },
+  { value: 'GIGOLO', label: 'Gigolo' }
 ];
 
 // Le città vengono caricate dinamicamente in base alla nazione selezionata

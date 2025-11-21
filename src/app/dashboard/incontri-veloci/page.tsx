@@ -30,7 +30,8 @@ const CATEGORIES = {
   DONNA_CERCA_UOMO: "Donna cerca Uomo",
   TRANS: "Trans",
   UOMO_CERCA_UOMO: "Uomo cerca Uomo",
-  CENTRO_MASSAGGI: "Centro Massaggi"
+  CENTRO_MASSAGGI: "Centro Massaggi",
+  GIGOLO: "Gigolo"
 };
 
 export default function IncontriVelociDashboard() {

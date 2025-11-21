@@ -254,6 +254,7 @@ enum QuickMeetingCategory {
   TRANS
   UOMO_CERCA_UOMO
   CENTRO_MASSAGGI
+  GIGOLO
 }
 
 model QuickMeeting {

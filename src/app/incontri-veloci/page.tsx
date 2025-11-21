@@ -25,7 +25,8 @@ const CATEGORIES = {
   DONNA_CERCA_UOMO: { label: "Donna cerca Uomo", icon: "👩‍❤️‍👨", color: "bg-pink-500" },
   TRANS: { label: "Trans", icon: "🏳️‍⚧️", color: "bg-purple-500" },
   UOMO_CERCA_UOMO: { label: "Uomo cerca Uomo", icon: "👨‍❤️‍👨", color: "bg-blue-500" },
-  CENTRO_MASSAGGI: { label: "Centro Massaggi", icon: "💆‍♀️", color: "bg-green-500" }
+  CENTRO_MASSAGGI: { label: "Centro Massaggi", icon: "💆‍♀️", color: "bg-green-500" },
+  GIGOLO: { label: "Gigolo", icon: "🕺", color: "bg-amber-500" }
 };
 
 export default function IncontriVelociPage() {
@@ -291,7 +292,7 @@ export default function IncontriVelociPage() {
           <div className="text-sm text-gray-500">Prova a cambiare i filtri o torna più tardi</div>
         </div>
       ) : (
-        <div className="grid gap-6 max-w-4xl mx-auto">
+        <div className="grid gap-6 max-w-5xl mx-auto">
           {meetings.filter(m => m.bumpPackage !== 'SUPERTOP').map((meeting) => {
             const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
             return (
