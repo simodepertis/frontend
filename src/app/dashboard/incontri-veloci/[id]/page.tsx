@@ -86,15 +86,8 @@ export default function EditQuickMeeting() {
   };
 
   const handleFilesUpload = async (files: File[]) => {
-    let allowedFiles = files;
-    if (!hasActivePackage) {
-      const remaining = Math.max(0, 1 - photoPreviews.length);
-      if (remaining <= 0) {
-        alert('Per gli annunci senza pacchetto attivo puoi avere solo 1 foto. Acquista un pacchetto per aggiungerne altre.');
-        return;
-      }
-      allowedFiles = files.slice(0, remaining);
-    }
+    // Consenti sempre il caricamento di tutte le foto; la visibilità pubblica sarà gestita in base al pacchetto
+    const allowedFiles = files;
 
     setPhotoFiles(prev => [...prev, ...allowedFiles]);
 
@@ -326,7 +319,7 @@ export default function EditQuickMeeting() {
           <label className="block text-sm font-medium text-gray-300 mb-2">Foto</label>
           {!hasActivePackage && (
             <p className="text-xs text-yellow-300 mb-2">
-              Per gli annunci senza pacchetto attivo puoi caricare solo 1 foto. Acquista un pacchetto Incontri Veloci per aggiungerne altre.
+              Puoi caricare tutte le foto che vuoi: senza pacchetto attivo sul sito sarà visibile solo la prima, le altre si attiveranno quando acquisti un pacchetto Incontri Veloci.
             </p>
           )}
           <div 

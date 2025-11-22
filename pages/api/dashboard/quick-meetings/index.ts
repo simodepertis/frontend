@@ -3,6 +3,15 @@ import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { QuickMeetingCategory } from '@prisma/client';
 
+// Consenti body JSON più grande (foto in base64) per la creazione di annunci con molte immagini
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb'
+    }
+  }
+};
+
 // Helper per verificare autenticazione
 function getUserFromToken(req: NextApiRequest): { userId: number } | null {
   try {

@@ -174,13 +174,8 @@ export default function NuovoIncontroVeloce() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    if (formData.photos.length >= 1) {
-      alert('Per gli annunci gratuiti puoi caricare solo 1 foto. Se acquisti un pacchetto potrai aggiungerne altre.');
-      return;
-    }
 
-    const remaining = 1 - formData.photos.length;
-    const toUse = Array.from(files).slice(0, remaining);
+    const toUse = Array.from(files);
 
     toUse.forEach(file => {
       const reader = new FileReader();
@@ -194,13 +189,7 @@ export default function NuovoIncontroVeloce() {
   };
 
   const handleFilesUpload = (files: FileList) => {
-    if (formData.photos.length >= 1) {
-      alert('Per gli annunci gratuiti puoi caricare solo 1 foto. Se acquisti un pacchetto potrai aggiungerne altre.');
-      return;
-    }
-
-    const remaining = 1 - formData.photos.length;
-    const toUse = Array.from(files).slice(0, remaining);
+    const toUse = Array.from(files);
 
     toUse.forEach(file => {
       const reader = new FileReader();

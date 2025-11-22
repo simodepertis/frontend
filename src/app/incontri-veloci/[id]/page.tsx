@@ -261,6 +261,7 @@ export default function IncontroVeloceDetailPage() {
   }
 
   const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
+  const visiblePhotos = meeting.bumpPackage ? meeting.photos : (meeting.photos?.slice(0, 1) || []);
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -327,7 +328,7 @@ export default function IncontroVeloceDetailPage() {
           </div>
 
           {/* Galleria Foto */}
-          {meeting.photos.length > 0 && (
+          {visiblePhotos.length > 0 && (
             <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
               <h2 className="text-xl font-bold text-white mb-4">📸 Foto ({meeting.photos.length})</h2>
               
@@ -338,14 +339,14 @@ export default function IncontroVeloceDetailPage() {
                   onClick={() => openLightbox(selectedPhoto)}
                 >
                   <img
-                    src={meeting.photos[selectedPhoto]}
+                    src={visiblePhotos[selectedPhoto]}
                     alt={`${meeting.title} - Foto ${selectedPhoto + 1}`}
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />
-                  {meeting.photos[selectedPhoto] && meeting.photos[selectedPhoto] !== '/placeholder.svg' && (
+                  {visiblePhotos[selectedPhoto] && visiblePhotos[selectedPhoto] !== '/placeholder.svg' && (
                     <Watermark />
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
@@ -357,9 +358,9 @@ export default function IncontroVeloceDetailPage() {
               </div>
 
               {/* Miniature */}
-              {meeting.photos.length > 1 && (
+              {visiblePhotos.length > 1 && (
                 <div className="grid grid-cols-6 gap-2">
-                  {meeting.photos.map((photo, index) => (
+                  {visiblePhotos.map((photo, index) => (
                     <button
                       key={index}
                       onClick={() => {
