@@ -2,11 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
-// Consenti body JSON più grande (foto in base64) per evitare errori di salvataggio con molte immagini
+// Consenti un body JSON molto grande per aggiornare annunci con molte foto in base64
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '50mb'
+      sizeLimit: '800mb'
     }
   }
 };
