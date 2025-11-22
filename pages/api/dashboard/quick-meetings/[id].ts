@@ -2,6 +2,15 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
+// Consenti body JSON più grande (foto in base64) per evitare errori di salvataggio con molte immagini
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb'
+    }
+  }
+};
+
 // Helper per verificare autenticazione
 function getUserFromToken(req: NextApiRequest): { userId: number } | null {
   try {
