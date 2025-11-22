@@ -205,7 +205,6 @@ export default function IncontriVelociPage() {
 
       {/* Sezione SuperTop */}
       {meetings.some(m => m.bumpPackage === 'SUPERTOP') && (
-        <>
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
@@ -298,127 +297,89 @@ export default function IncontriVelociPage() {
             })}
           </div>
         </div>
+      )}
 
-        {/* Lista annunci normali (non SuperTop) */}
-        <div className="space-y-4">
-          {meetings
-            .filter((m) => m.bumpPackage !== 'SUPERTOP')
-            .map((meeting) => {
-              const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
-              return (
-                <Link
-                  key={meeting.id}
-                  href={`/incontri-veloci/${meeting.id}`}
-                  className="block group"
-                >
-                  <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors">
-                    <div className="flex gap-3 items-stretch">
-                      {/* Foto a sinistra, formato quadrato piccolo */}
-                      <div className="w-24 h-24 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
-                        {meeting.photos[0] ? (
-                          <img
-                            src={meeting.photos[0]}
-                            alt={meeting.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder.svg';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-500">
-                            📷
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Testo e dettagli a destra */}
-                      <div className="flex-1 flex flex-col justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
-                              {category?.label}
-                            </span>
-                            <span className="text-[11px] text-gray-400">{formatTimeAgo(meeting.publishedAt)}</span>
-                          </div>
-                          <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-blue-300">
-                            {meeting.title}
-                          </h3>
-                          <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
-                            <span>📍 {meeting.city}</span>
-                            {meeting.zone && <span>🏘️ {meeting.zone}</span>}
-                            {meeting.age && <span>🎂 {meeting.age} anni</span>}
-                          </div>
+      {/* Lista annunci normali (non SuperTop) */}
+      <div className="space-y-4">
+        {meetings
+          .filter((m) => m.bumpPackage !== 'SUPERTOP')
+          .map((meeting) => {
+            const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
+            return (
+              <Link
+                key={meeting.id}
+                href={`/incontri-veloci/${meeting.id}`}
+                className="block group"
+              >
+                <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors">
+                  <div className="flex gap-3 items-stretch">
+                    {/* Foto a sinistra, formato quadrato piccolo */}
+                    <div className="w-24 h-24 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+                      {meeting.photos[0] ? (
+                        <img
+                          src={meeting.photos[0]}
+                          alt={meeting.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder.svg';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-500">
+                          📷
                         </div>
+                      )}
+                    </div>
 
-                        {(meeting.phone || meeting.whatsapp) && (
-                          <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                            {meeting.phone && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (typeof window !== 'undefined') {
-                                    window.location.href = `tel:${meeting.phone}`;
-                                  }
-                                }}
-                                className="px-3 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white font-semibold flex items-center justify-center gap-1"
-                              >
-                                <span>📞</span>
-                                <span>Chiama</span>
-                              </button>
-                            )}
-                            {meeting.whatsapp && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (typeof window !== 'undefined') {
-                                    window.open(meeting.whatsapp as string, '_blank');
-                                  }
-                                }}
-                                className="px-3 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white font-semibold flex items-center justify-center gap-1"
-                              >
-                                <span>💬</span>
-                                <span>WhatsApp</span>
-                              </button>
-                            )}
-                          </div>
-                        )}
+                    {/* Testo e dettagli a destra */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
+                            {category?.label}
+                          </span>
+                          <span className="text-[11px] text-gray-400">{formatTimeAgo(meeting.publishedAt)}</span>
+                        </div>
+                        <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-blue-300">
+                          {meeting.title}
+                        </h3>
+                        <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
+                          <span>📍 {meeting.city}</span>
+                          {meeting.zone && <span>🏘️ {meeting.zone}</span>}
+                          {meeting.age && <span>🎂 {meeting.age} anni</span>}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </Link>
-              );
-            })}
-        </div>
+                </div>
+              </Link>
+            );
+          })}
+      </div>
 
-        {/* Paginazione */}
-        {pages > 1 && (
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-            >
-              ← Pagina precedente
-            </button>
-            <span className="text-sm text-gray-300">
-              Pagina {page} di {pages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= pages}
-              onClick={() => setPage((p) => Math.min(pages, p + 1))}
-              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-            >
-              Pagina successiva →
-            </button>
-          </div>
-        )}
-        </>
+      {/* Paginazione */}
+      {pages > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+          >
+            ← Pagina precedente
+          </button>
+          <span className="text-sm text-gray-300">
+            Pagina {page} di {pages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= pages}
+            onClick={() => setPage((p) => Math.min(pages, p + 1))}
+            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+          >
+            Pagina successiva →
+          </button>
+        </div>
       )}
 
     </main>
