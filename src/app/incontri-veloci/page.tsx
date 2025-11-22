@@ -203,6 +203,9 @@ export default function IncontriVelociPage() {
         )}
       </div>
 
+      {/* Contenitore annunci (SuperTop + normali + paginazione) leggermente più stretto */}
+      <div className="max-w-4xl mx-auto lg:mx-0">
+
       {/* Sezione SuperTop */}
       {meetings.some(m => m.bumpPackage === 'SUPERTOP') && (
         <div className="mb-8">
@@ -381,6 +384,8 @@ export default function IncontriVelociPage() {
           </button>
         </div>
       )}
+
+      </div>
 
     </main>
   );
