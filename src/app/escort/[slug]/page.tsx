@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { SERVICE_GROUPS } from "@/data/services";
 import { faHeart as faHeartSolid } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faHeartRegular } from "@fortawesome/free-regular-svg-icons";
+import Watermark from "@/components/Watermark";
 
 export default function EscortDetailPage() {
   type EscortView = {
@@ -567,6 +568,10 @@ export default function EscortDetailPage() {
               }}
               onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
             />
+            {/* Watermark centrale come nelle card */}
+            {escort.foto[active] && escort.foto[active] !== '/placeholder.svg' && (
+              <Watermark />
+            )}
             {escort.girlOfTheDay && (
               <div className="absolute top-3 right-3 rotate-3">
                 <span className="bg-rose-600 text-white text-xs font-semibold px-3 py-1 rounded-md shadow">
@@ -667,7 +672,7 @@ export default function EscortDetailPage() {
           {/* Rimosso blocco Tabs per evitare duplicazioni e sfasamenti con il nuovo layout */}
         </div>
 
-        {/* Sidebar */}
+          {/* Sidebar */}
         <aside className="relative bg-gray-800 rounded-xl border shadow-sm p-4 h-fit">
           {typeof (data as any)?.profileViews === 'number' && (
             <div className="absolute top-3 right-3 text-xs font-semibold bg-black/60 text-white px-2 py-1 rounded-full border border-gray-600">
@@ -936,7 +941,7 @@ export default function EscortDetailPage() {
               const isCustom = wh?.mode === 'custom';
               
               // Orari "stesso ogni giorno" - array di slot { from, to }
-              const sameSlots: Array<{ from: string; to: string }> = Array.isArray(wh?.same) ? wh.same : [];
+              const sameSlots: Array<{ start: string; end: string }> = Array.isArray(wh?.same) ? wh.same : [];
               
               // Orari personalizzati per giorno - { Lun: [{ from, to }], ... }
               const perDay = wh?.perDay || {};
@@ -954,8 +959,8 @@ export default function EscortDetailPage() {
                     <div>
                       <div className="text-sm text-gray-300 mb-1">Stesso orario ogni giorno:</div>
                       <ul className="list-disc ml-5 text-gray-300 text-sm">
-                        {sameSlots.map((slot, i) => (
-                          <li key={`same-${i}`}>{slot.from} – {slot.to}</li>
+                        {sameSlots.map((r, i) => (
+                          <li key={`same-${i}`}>{r.start} – {r.end}</li>
                         ))}
                       </ul>
                     </div>
@@ -1201,6 +1206,7 @@ export default function EscortDetailPage() {
             <div className="text-sm text-gray-300 mb-2">Stai segnalando la foto corrente.</div>
             <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-gray-700 mb-3">
               <img src={reportPhotoUrl || escort.foto[active] || '/placeholder.svg'} alt="Foto da segnalare" className="object-cover absolute inset-0 w-full h-full" />
+              <Watermark />
             </div>
             <input value={reportReason} onChange={e=>setReportReason(e.target.value)} placeholder="Motivo (opzionale)" className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
             <div className="flex justify-end gap-2 mt-3">

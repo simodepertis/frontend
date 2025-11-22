@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Watermark from "@/components/Watermark";
 
 interface ImportedReview {
   id: number;
@@ -344,6 +345,9 @@ export default function IncontroVeloceDetailPage() {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
                     }}
                   />
+                  {meeting.photos[selectedPhoto] && meeting.photos[selectedPhoto] !== '/placeholder.svg' && (
+                    <Watermark />
+                  )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <div className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
                       🔍
@@ -690,6 +694,7 @@ export default function IncontroVeloceDetailPage() {
 
           {/* Immagine */}
           <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <div className="relative max-w-full max-h-full">
             <img
               src={meeting.photos[lightboxIndex]}
               alt={`${meeting.title} - Foto ${lightboxIndex + 1}`}
@@ -698,6 +703,10 @@ export default function IncontroVeloceDetailPage() {
                 (e.target as HTMLImageElement).src = '/placeholder.svg';
               }}
             />
+            {meeting.photos[lightboxIndex] && meeting.photos[lightboxIndex] !== '/placeholder.svg' && (
+              <Watermark />
+            )}
+            </div>
           </div>
 
           {/* Freccia Destra */}
