@@ -99,13 +99,14 @@ export default function IncontriVelociPage() {
 
   const getBumpBadge = (bumpPackage?: string) => {
     if (!bumpPackage) return null;
-    
+
     const badges = {
       '1+1': { label: 'BUMP 2gg', color: 'bg-yellow-500' },
       '1+3': { label: 'BUMP 4gg', color: 'bg-orange-500' },
       '1+7': { label: 'BUMP 8gg', color: 'bg-red-500' },
       '1x10': { label: 'NOTTURNO 10x', color: 'bg-purple-600' },
-      '1x3': { label: 'NOTTURNO 3x', color: 'bg-indigo-600' }
+      '1x3': { label: 'NOTTURNO 3x', color: 'bg-indigo-600' },
+      SUPERTOP: { label: 'SUPERTOP', color: 'bg-yellow-400' },
     };
 
     const badge = badges[bumpPackage as keyof typeof badges];
@@ -122,7 +123,7 @@ export default function IncontriVelociPage() {
     <main className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">⚡ Incontri Veloci</h1>
+        <h1 className="text-4xl font-bold text-white mb-4"> Incontri Veloci</h1>
         <p className="text-gray-300 text-lg">
           Annunci di incontri immediati aggiornati in tempo reale. Trova quello che cerchi nella tua città.
         </p>
@@ -167,8 +168,8 @@ export default function IncontriVelociPage() {
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
             >
               <option value="ALL">Tutte le nazioni</option>
-              <option value="IT">🇮🇹 Italia</option>
-              {COUNTRY_LIST.map(country => (
+              <option value="IT"> Italia</option>
+              {COUNTRY_LIST.map((country) => (
                 <option key={country.code} value={country.code}>
                   {country.name}
                 </option>
@@ -190,211 +191,171 @@ export default function IncontriVelociPage() {
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
               disabled={selectedCountry === 'ALL'}
             >
-              <option value="ALL">{selectedCountry === 'ALL' ? 'Seleziona prima una nazione' : 'Tutte le città'}</option>
-              {availableCities.map(city => (
-                <option key={city} value={city}>{city}</option>
+              <option value="ALL">
+                {selectedCountry === 'ALL' ? 'Seleziona prima una nazione' : 'Tutte le città'}
+              </option>
+              {availableCities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
               ))}
             </select>
           </div>
         </div>
         {selectedCountry === 'ALL' && (
           <div className="mt-3 text-sm text-gray-400">
-            💡 Seleziona una nazione per filtrare per città specifica
+            Seleziona una nazione per filtrare per città specifica
           </div>
         )}
       </div>
 
-      {/* Sezione SuperTop (a tutta larghezza contenitore principale) */}
-      {meetings.some(m => m.bumpPackage === 'SUPERTOP') && (
+      {/* Sezione SuperTop */}
+      {meetings.some((m) => m.bumpPackage === 'SUPERTOP') && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-              <span className="text-yellow-300">💎</span>
+              <span className="text-yellow-300"></span>
               Annunci SuperTop
             </h2>
             <p className="text-xs md:text-sm text-gray-400">Sempre in alto, visibilità massima</p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {meetings.filter(m => m.bumpPackage === 'SUPERTOP').map((meeting) => {
-              const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
-              return (
-                <Link
-                  key={`super-${meeting.id}`}
-                  href={`/incontri-veloci/${meeting.id}`}
-                  className="block group"
-                >
-                  <div className="bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors">
-                    {meeting.photos.length > 0 && (
-                      <>
-                      <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
-                        <img
-                          src={meeting.photos[0]}
-                          alt={meeting.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
-                        />
-                        {meeting.photos[0] && meeting.photos[0] !== '/placeholder.svg' && (
-                          <Watermark />
-                        )}
-                        <div className="absolute bottom-2 left-2 flex items-center gap-2">
-                          <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
-                            {category?.label}
-                          </span>
-                          <span className="text-[11px] text-gray-200 bg-black/60 px-2 py-0.5 rounded-full">
-                            {formatTimeAgo(meeting.publishedAt)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-3 space-y-2">
-                        <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-yellow-300">
-                          {meeting.title}
-                        </h3>
-                        <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
-                          <span>📍 {meeting.city}</span>
-                          {meeting.zone && <span>🏘️ {meeting.zone}</span>}
-                          {meeting.age && <span>🎂 {meeting.age} anni</span>}
-                        </div>
-
-                        {(meeting.phone || meeting.whatsapp) && (
-                          <div className="pt-1 flex gap-2">
-                            {meeting.phone && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (typeof window !== 'undefined') {
-                                    window.location.href = `tel:${meeting.phone}`;
-                                  }
-                                }}
-                                className="flex-1 px-2 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white text-[11px] font-semibold flex items-center justify-center gap-1"
-                              >
-                                <span>📞</span>
-                                <span>Chiama</span>
-                              </button>
-                            )}
-                            {meeting.whatsapp && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  if (typeof window !== 'undefined') {
-                                    window.open(meeting.whatsapp as string, '_blank');
-                                  }
-                                }}
-                                className="flex-1 px-2 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white text-[11px] font-semibold flex items-center justify-center gap-1"
-                              >
-                                <span>💬</span>
-                                <span>WhatsApp</span>
-                              </button>
-                            )}
+            {meetings
+              .filter((m) => m.bumpPackage === 'SUPERTOP')
+              .map((meeting) => {
+                const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
+                return (
+                  <Link
+                    key={`super-${meeting.id}`}
+                    href={`/incontri-veloci/${meeting.id}`}
+                    className="block group"
+                  >
+                    <div className="bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors">
+                      {meeting.photos.length > 0 && (
+                        <>
+                          <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
+                            <img
+                              src={meeting.photos[0]}
+                              alt={meeting.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/placeholder.svg';
+                              }}
+                            />
+                            {meeting.photos[0] && meeting.photos[0] !== '/placeholder.svg' && <Watermark />}
+                            <div className="absolute bottom-2 left-2 flex items-center gap-2">
+                              <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
+                                {category?.label}
+                              </span>
+                              <span className="text-[11px] text-gray-200 bg-black/60 px-2 py-0.5 rounded-full">
+                                {formatTimeAgo(meeting.publishedAt)}
+                              </span>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                      </>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
+                          <div className="p-3 space-y-2">
+                            <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-yellow-300">
+                              {meeting.title}
+                            </h3>
+                            <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
+                              <span> {meeting.city}</span>
+                              {meeting.zone && <span> {meeting.zone}</span>}
+                              {meeting.age && <span> {meeting.age} anni</span>}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
           </div>
         </div>
       )}
 
       {/* Contenitore annunci normali + paginazione leggermente più stretto per lasciare spazio a destra */}
       <div className="max-w-6xl mx-auto lg:mx-0">
+        {/* Lista annunci normali (non SuperTop) */}
+        <div className="space-y-4">
+          {meetings
+            .filter((m) => m.bumpPackage !== 'SUPERTOP')
+            .map((meeting) => {
+              const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
+              return (
+                <Link key={meeting.id} href={`/incontri-veloci/${meeting.id}`} className="block group">
+                  <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors">
+                    <div className="flex gap-3 items-stretch">
+                      {/* Foto a sinistra, formato quadrato piccolo */}
+                      <div className="w-24 h-24 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 relative">
+                        {meeting.photos[0] ? (
+                          <img
+                            src={meeting.photos[0]}
+                            alt={meeting.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-500">
+                            
+                          </div>
+                        )}
+                        {meeting.photos[0] && meeting.photos[0] !== '/placeholder.svg' && (
+                          <Watermark className="[&_span]:text-[9px]" />
+                        )}
+                      </div>
 
-      {/* Lista annunci normali (non SuperTop) */}
-      <div className="space-y-4">
-        {meetings
-          .filter((m) => m.bumpPackage !== 'SUPERTOP')
-          .map((meeting) => {
-            const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
-            return (
-              <Link
-                key={meeting.id}
-                href={`/incontri-veloci/${meeting.id}`}
-                className="block group"
-              >
-                <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors">
-                  <div className="flex gap-3 items-stretch">
-                    {/* Foto a sinistra, formato quadrato piccolo */}
-                    <div className="w-24 h-24 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 relative">
-                      {meeting.photos[0] ? (
-                        <img
-                          src={meeting.photos[0]}
-                          alt={meeting.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/placeholder.svg';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-500">
-                          📷
-                        </div>
-                      )}
-                      {meeting.photos[0] && meeting.photos[0] !== '/placeholder.svg' && (
-                        <Watermark className="[&_span]:text-[9px]" />
-                      )}
-                    </div>
-
-                    {/* Testo e dettagli a destra */}
-                    <div className="flex-1 flex flex-col justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
-                            {category?.label}
-                          </span>
-                          <span className="text-[11px] text-gray-400">{formatTimeAgo(meeting.publishedAt)}</span>
-                        </div>
-                        <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-blue-300">
-                          {meeting.title}
-                        </h3>
-                        <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
-                          <span>📍 {meeting.city}</span>
-                          {meeting.zone && <span>🏘️ {meeting.zone}</span>}
-                          {meeting.age && <span>🎂 {meeting.age} anni</span>}
+                      {/* Testo e dettagli a destra */}
+                      <div className="flex-1 flex flex-col justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
+                              {category?.label}
+                            </span>
+                            <span className="text-[11px] text-gray-400">{formatTimeAgo(meeting.publishedAt)}</span>
+                          </div>
+                          <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-blue-300">
+                            {meeting.title}
+                          </h3>
+                          <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
+                            <span> {meeting.city}</span>
+                            {meeting.zone && <span> {meeting.zone}</span>}
+                            {meeting.age && <span> {meeting.age} anni</span>}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-      </div>
-
-      {/* Paginazione */}
-      {pages > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-8">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-          >
-            ← Pagina precedente
-          </button>
-          <span className="text-sm text-gray-300">
-            Pagina {page} di {pages}
-          </span>
-          <button
-            type="button"
-            disabled={page >= pages}
-            onClick={() => setPage((p) => Math.min(pages, p + 1))}
-            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-          >
-            Pagina successiva →
-          </button>
+                </Link>
+              );
+            })}
         </div>
-      )}
 
+        {/* Paginazione */}
+        {pages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+            >
+              ← Pagina precedente
+            </button>
+            <span className="text-sm text-gray-300">
+              Pagina {page} di {pages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+            >
+              Pagina successiva →
+            </button>
+          </div>
+        )}
       </div>
-
     </main>
   );
 }
