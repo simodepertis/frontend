@@ -300,7 +300,7 @@ export default function IncontriVelociPage() {
         </div>
 
         {/* Lista annunci normali (non SuperTop) */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="space-y-4">
           {meetings
             .filter((m) => m.bumpPackage !== 'SUPERTOP')
             .map((meeting) => {
