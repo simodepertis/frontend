@@ -32,6 +32,8 @@ const CATEGORIES = {
 export default function IncontriVelociPage() {
   const [meetings, setMeetings] = useState<QuickMeeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState<number>(1);
+  const [pages, setPages] = useState<number>(1);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
@@ -39,7 +41,7 @@ export default function IncontriVelociPage() {
 
   useEffect(() => {
     loadMeetings();
-  }, [selectedCategory, selectedCity]);
+  }, [selectedCategory, selectedCity, page]);
 
   // Aggiorna le città disponibili quando cambia la nazione
   useEffect(() => {
@@ -61,11 +63,18 @@ export default function IncontriVelociPage() {
       const params = new URLSearchParams();
       if (selectedCategory !== 'ALL') params.set('category', selectedCategory);
       if (selectedCity !== 'ALL') params.set('city', selectedCity);
+      params.set('limit', '25');
+      params.set('page', String(page));
       
       const res = await fetch(`/api/quick-meetings?${params}`);
       if (res.ok) {
         const data = await res.json();
         setMeetings(data.meetings || []);
+        if (data.pagination) {
+          setPages(data.pagination.pages || 1);
+        } else {
+          setPages(1);
+        }
       }
     } catch (error) {
       console.error('Errore caricamento incontri:', error);
@@ -128,7 +137,10 @@ export default function IncontriVelociPage() {
             </label>
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setPage(1);
+                setSelectedCategory(e.target.value);
+              }}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
             >
               <option value="ALL">Tutte le categorie</option>
@@ -147,7 +159,10 @@ export default function IncontriVelociPage() {
             </label>
             <select
               value={selectedCountry}
-              onChange={(e) => setSelectedCountry(e.target.value)}
+              onChange={(e) => {
+                setPage(1);
+                setSelectedCountry(e.target.value);
+              }}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
             >
               <option value="ALL">Tutte le nazioni</option>
@@ -167,7 +182,10 @@ export default function IncontriVelociPage() {
             </label>
             <select
               value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
+              onChange={(e) => {
+                setPage(1);
+                setSelectedCity(e.target.value);
+              }}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
               disabled={selectedCountry === 'ALL'}
             >
@@ -279,86 +297,32 @@ export default function IncontriVelociPage() {
             })}
           </div>
         </div>
-      )}
 
-      {/* Lista Annunci */}
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="text-gray-400">Caricamento incontri veloci...</div>
-        </div>
-      ) : meetings.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-2">Nessun incontro trovato</div>
-          <div className="text-sm text-gray-500">Prova a cambiare i filtri o torna più tardi</div>
-        </div>
-      ) : (
-        <div className="grid gap-6 max-w-6xl mx-auto">
-          {meetings.filter(m => m.bumpPackage !== 'SUPERTOP').map((meeting) => {
-            const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
-            return (
-              <Link
-                key={meeting.id}
-                href={`/incontri-veloci/${meeting.id}`}
-                className="block group"
-              >
-                <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-blue-600 hover:bg-gray-750 transition-colors">
-                  <div className="p-4 md:p-5 flex gap-4">
-                    {/* Foto a sinistra */}
-                    {meeting.photos.length > 0 && (
-                      <div className="flex-shrink-0">
-                        <div className="w-24 h-24 md:w-28 md:h-28 bg-gray-700 rounded-lg overflow-hidden">
-                          <img
-                            src={meeting.photos[0]}
-                            alt={meeting.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder.svg';
-                            }}
-                          />
-                        </div>
-                        {meeting.photos.length > 1 && (
-                          <div className="text-xs text-gray-400 text-center mt-1">
-                            +{meeting.photos.length - 1} foto
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Contenuto a destra */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center flex-wrap gap-2 mb-2">
-                        <span className={`px-3 py-1 text-xs font-bold text-white rounded-full ${category?.color}`}>
-                          {category?.icon} {category?.label}
-                        </span>
-                        {getBumpBadge(meeting.bumpPackage)}
-                        <span className="text-xs text-gray-400">
-                          {formatTimeAgo(meeting.publishedAt)}
-                        </span>
-                      </div>
-
-                      <h3 className="text-base md:text-lg font-bold text-white mb-1 line-clamp-1 group-hover:text-blue-300">
-                        {meeting.title}
-                      </h3>
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm text-gray-300 mb-2">
-                        <span>📍 {meeting.city}</span>
-                        {meeting.zone && <span>🏘️ {meeting.zone}</span>}
-                        {meeting.age && <span>🎂 {meeting.age} anni</span>}
-                        {meeting.price && <span>💰 €{meeting.price}</span>}
-                      </div>
-
-                      {meeting.description && (
-                        <p className="text-gray-400 text-xs md:text-sm line-clamp-2 md:line-clamp-3">
-                          {meeting.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        {/* Paginazione */}
+        {pages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+            >
+              ← Pagina precedente
+            </button>
+            <span className="text-sm text-gray-300">
+              Pagina {page} di {pages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+            >
+              Pagina successiva →
+            </button>
+          </div>
+        )}
+        </>
       )}
 
     </main>

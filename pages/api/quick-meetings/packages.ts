@@ -42,7 +42,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // pacchetti SuperTop (annuncio fissato in alto per N giorni)
     const supertopDefaults = [
       { code: 'SUPERTOP_1D', label: 'SuperTop · 1 giorno', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 1, creditsCost: 80 },
-      { code: 'SUPERTOP_3D', label: 'SuperTop · 3 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 3, creditsCost: 180 },
+      { code: 'SUPERTOP_2D', label: 'SuperTop · 2 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 2, creditsCost: 120 },
+      { code: 'SUPERTOP_3D', label: 'SuperTop · 3 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 3, creditsCost: 160 },
+      { code: 'SUPERTOP_4D', label: 'SuperTop · 4 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 4, creditsCost: 200 },
+      { code: 'SUPERTOP_5D', label: 'SuperTop · 5 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 5, creditsCost: 240 },
+      { code: 'SUPERTOP_6D', label: 'SuperTop · 6 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 6, creditsCost: 300 },
       { code: 'SUPERTOP_7D', label: 'SuperTop · 7 giorni', type: 'DAY' as const, quantityPerWindow: 0, durationDays: 7, creditsCost: 350 },
     ]
 
