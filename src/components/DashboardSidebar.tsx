@@ -149,6 +149,7 @@ export default function DashboardSidebar() {
       { href: "/dashboard/admin/profili", label: "👤 approvazione Profili", icon: faUser },
       { href: "/dashboard/admin/utenti", label: "👥 Gestione Utenti", icon: faGear },
       { href: "/dashboard/admin/contatti", label: "📇 Gestione Contatti", icon: faGear },
+      { href: "/dashboard/admin/incontri-veloci/pacchetti", label: "⚡ Pacchetti Incontri Veloci", icon: faBolt },
       { href: "/dashboard/admin/crediti/catalogo", label: "🛍️ Catalogo Crediti", icon: faCartShopping },
       { href: "/dashboard/admin/crediti/impostazioni", label: "⚙️ Impostazioni Crediti", icon: faGear },
       { href: "/dashboard/admin/statistiche", label: "📊 Statistiche Sito", icon: faChartBar },
