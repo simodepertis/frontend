@@ -297,32 +297,31 @@ export default function IncontriVelociPage() {
             })}
           </div>
         </div>
+      )}
 
-        {/* Paginazione */}
-        {pages > 1 && (
-          <div className="flex items-center justify-center gap-4 mt-8">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-            >
-              ← Pagina precedente
-            </button>
-            <span className="text-sm text-gray-300">
-              Pagina {page} di {pages}
-            </span>
-            <button
-              type="button"
-              disabled={page >= pages}
-              onClick={() => setPage((p) => Math.min(pages, p + 1))}
-              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-            >
-              Pagina successiva →
-            </button>
-          </div>
-        )}
-        </>
+      {/* Paginazione */}
+      {pages > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+          >
+            ← Pagina precedente
+          </button>
+          <span className="text-sm text-gray-300">
+            Pagina {page} di {pages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= pages}
+            onClick={() => setPage((p) => Math.min(pages, p + 1))}
+            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+          >
+            Pagina successiva →
+          </button>
+        </div>
       )}
 
     </main>
