@@ -297,7 +297,6 @@ export default function IncontriVelociPage() {
                       </>
                     )}
                   </div>
-                </div>
                 </Link>
               );
             })}
