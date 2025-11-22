@@ -205,6 +205,7 @@ export default function IncontriVelociPage() {
 
       {/* Sezione SuperTop */}
       {meetings.some(m => m.bumpPackage === 'SUPERTOP') && (
+        <>
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
@@ -297,115 +298,32 @@ export default function IncontriVelociPage() {
             })}
           </div>
         </div>
-      )}
 
-      {/* Lista annunci normali */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {meetings
-          .filter((m) => m.bumpPackage !== 'SUPERTOP')
-          .map((meeting) => {
-            const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
-            return (
-              <Link
-                key={meeting.id}
-                href={`/incontri-veloci/${meeting.id}`}
-                className="block group"
-              >
-                <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-md overflow-hidden hover:border-blue-400 hover:bg-gray-750 transition-colors">
-                  {meeting.photos.length > 0 && (
-                    <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
-                      <img
-                        src={meeting.photos[0]}
-                        alt={meeting.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                    </div>
-                  )}
-                  <div className="p-3 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
-                        {category?.label}
-                      </span>
-                      <span className="text-[11px] text-gray-400">{formatTimeAgo(meeting.publishedAt)}</span>
-                    </div>
-                    <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-blue-300">
-                      {meeting.title}
-                    </h3>
-                    <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
-                      <span>📍 {meeting.city}</span>
-                      {meeting.zone && <span>🏘️ {meeting.zone}</span>}
-                      {meeting.age && <span>🎂 {meeting.age} anni</span>}
-                    </div>
-
-                    {(meeting.phone || meeting.whatsapp) && (
-                      <div className="pt-1 flex gap-2">
-                        {meeting.phone && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (typeof window !== 'undefined') {
-                                window.location.href = `tel:${meeting.phone}`;
-                              }
-                            }}
-                            className="flex-1 px-2 py-1 rounded-md bg-green-600 hover:bg-green-700 text-white text-[11px] font-semibold flex items-center justify-center gap-1"
-                          >
-                            <span>📞</span>
-                            <span>Chiama</span>
-                          </button>
-                        )}
-                        {meeting.whatsapp && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (typeof window !== 'undefined') {
-                                window.open(meeting.whatsapp as string, '_blank');
-                              }
-                            }}
-                            className="flex-1 px-2 py-1 rounded-md bg-green-500 hover:bg-green-600 text-white text-[11px] font-semibold flex items-center justify-center gap-1"
-                          >
-                            <span>💬</span>
-                            <span>WhatsApp</span>
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-      </div>
-
-      {/* Paginazione */}
-      {pages > 1 && (
-        <div className="flex items-center justify-center gap-4 mt-8">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-          >
-            ← Pagina precedente
-          </button>
-          <span className="text-sm text-gray-300">
-            Pagina {page} di {pages}
-          </span>
-          <button
-            type="button"
-            disabled={page >= pages}
-            onClick={() => setPage((p) => Math.min(pages, p + 1))}
-            className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
-          >
-            Pagina successiva →
-          </button>
-        </div>
+        {/* Paginazione */}
+        {pages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+            >
+              ← Pagina precedente
+            </button>
+            <span className="text-sm text-gray-300">
+              Pagina {page} di {pages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              className="px-4 py-2 rounded bg-gray-800 border border-gray-700 text-sm text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700"
+            >
+              Pagina successiva →
+            </button>
+          </div>
+        )}
+        </>
       )}
 
     </main>
