@@ -18,33 +18,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'GET') {
       const profile = await prisma.escortProfile.findUnique({ where: { userId } })
       if (!profile) return res.status(404).json({ error: 'Profilo non trovato' })
-      
-      const cities = (profile.cities as any) || []
-      return res.status(200).json({ 
-        cities,
-        countries: cities,
-        internationalCities: cities,
-        zones: [],
-        position: { lat: 41.9028, lng: 12.4964 },
-        availability: { incall: {}, outcall: { enabled: true } }
+
+      const raw = (profile.cities as any) ?? {}
+
+      let citiesObj: any
+      if (Array.isArray(raw)) {
+        citiesObj = { cities: raw }
+      } else if (raw && typeof raw === 'object') {
+        citiesObj = raw
+      } else {
+        citiesObj = {}
+      }
+
+      const position = citiesObj.position || { lat: 41.9028, lng: 12.4964 }
+      const availability = citiesObj.availability || { incall: {}, outcall: { enabled: true } }
+
+      return res.status(200).json({
+        cities: citiesObj,
+        countries: citiesObj.countries || [],
+        internationalCities: citiesObj.internationalCities || [],
+        zones: citiesObj.zones || [],
+        position,
+        availability,
       })
     }
 
     if (req.method === 'PATCH') {
-      const { cities, countries, internationalCities, zones, position, availability } = req.body || {}
-      
-      // Salva cities (merge di tutte le città italiane + internazionali)
-      const allCities = [...(cities || []), ...(internationalCities || [])].filter(Boolean)
-      
+      const body = req.body || {}
+
+      const existingProfile = await prisma.escortProfile.findUnique({ where: { userId } })
+      const currentRaw = (existingProfile?.cities as any) ?? {}
+      let currentObj: any
+
+      if (Array.isArray(currentRaw)) {
+        currentObj = { cities: currentRaw }
+      } else if (currentRaw && typeof currentRaw === 'object') {
+        currentObj = currentRaw
+      } else {
+        currentObj = {}
+      }
+
+      const nextCities = {
+        ...currentObj,
+        ...body,
+        position: body.position || currentObj.position,
+      }
+
       await prisma.escortProfile.upsert({
         where: { userId },
-        update: { 
-          cities: allCities.length > 0 ? allCities : undefined 
-        },
-        create: { 
-          userId, 
-          cities: allCities.length > 0 ? allCities : []
-        }
+        update: { cities: nextCities },
+        create: { userId, cities: nextCities },
       })
 
       return res.status(200).json({ ok: true })

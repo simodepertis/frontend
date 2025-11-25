@@ -65,19 +65,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map(u => {
         const profile = u.escortProfile!
         let cities = (profile.cities as any) || []
-        
-        // COMPATIBILITÀ: Se cities è un oggetto (vecchio formato), estrai le città
+
+        // COMPATIBILITÀ: se cities è un oggetto, gestisci sia il vecchio formato
+        // (intlBaseCity, internationalCities, ...) sia il nuovo formato
+        // (baseCity, secondCity, thirdCity, fourthCity, cities[], internationalCities[] ...)
         if (cities && typeof cities === 'object' && !Array.isArray(cities)) {
-          const oldCities = []
-          if (cities.intlBaseCity) oldCities.push(cities.intlBaseCity)
-          if (cities.intlSecondCity) oldCities.push(cities.intlSecondCity)
-          if (cities.intlThirdCity) oldCities.push(cities.intlThirdCity)
-          if (cities.intlFourthCity) oldCities.push(cities.intlFourthCity)
-          // Aggiungi anche da internationalCities array se presente
-          if (Array.isArray(cities.internationalCities)) {
-            oldCities.push(...cities.internationalCities)
+          const collected: string[] = []
+
+          // Vecchio formato internazionale
+          if ((cities as any).intlBaseCity) collected.push((cities as any).intlBaseCity)
+          if ((cities as any).intlSecondCity) collected.push((cities as any).intlSecondCity)
+          if ((cities as any).intlThirdCity) collected.push((cities as any).intlThirdCity)
+          if ((cities as any).intlFourthCity) collected.push((cities as any).intlFourthCity)
+          if (Array.isArray((cities as any).internationalCities)) {
+            collected.push(...((cities as any).internationalCities as any[]))
           }
-          cities = oldCities.filter(Boolean)
+
+          // Nuovo formato città di lavoro (Italia + internazionali)
+          if ((cities as any).baseCity) collected.push((cities as any).baseCity)
+          if ((cities as any).secondCity) collected.push((cities as any).secondCity)
+          if ((cities as any).thirdCity) collected.push((cities as any).thirdCity)
+          if ((cities as any).fourthCity) collected.push((cities as any).fourthCity)
+          if (Array.isArray((cities as any).cities)) {
+            collected.push(...((cities as any).cities as any[]))
+          }
+
+          cities = collected.filter(Boolean)
         }
         
         // Estrai countries dalle città internazionali
