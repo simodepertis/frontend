@@ -112,8 +112,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
       })
       .filter((item) => {
+        // Filtra sempre per paese, per non mischiare nazioni diverse
         if (filterCountry && !item.countries.includes(filterCountry)) return false;
-        if (filterCity && !item.cities.some((c: string) => c.toLowerCase() === filterCity)) return false;
+
+        // Se è stato richiesto un filtro per città:
+        // - se l'escort NON ha una posizione precisa, allora applichiamo il filtro testuale sulla città
+        // - se l'escort HA una posizione precisa (lat/lon), non la escludiamo per differenza di nome città,
+        //   perché la mappa pubblica deve essere guidata dalla posizione salvata.
+        if (filterCity) {
+          const hasPosition = typeof item.lat === 'number' && typeof item.lon === 'number';
+          const cityMatches = item.cities.some((c: string) => c.toLowerCase() === filterCity);
+          if (!hasPosition && !cityMatches) return false;
+        }
         return true;
       });
 
