@@ -31,9 +31,53 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const profile: any = u.escortProfile;
         const citiesJson: any = profile.cities || {};
 
-        // città base e country code (se presente nella struttura JSON)
-        const baseCity: string | null = citiesJson.baseCity || null;
-        const baseCountry: string | null = citiesJson.baseCountry || citiesJson.country || null;
+        // Estrai lista completa di città e paesi (stessa logica di /api/public/annunci)
+        let flatCities: string[] = [];
+        if (Array.isArray(citiesJson)) {
+          flatCities = citiesJson as string[];
+        } else if (citiesJson && typeof citiesJson === 'object') {
+          const collected: string[] = [];
+
+          // Vecchio formato internazionale
+          if (citiesJson.intlBaseCity) collected.push(citiesJson.intlBaseCity);
+          if (citiesJson.intlSecondCity) collected.push(citiesJson.intlSecondCity);
+          if (citiesJson.intlThirdCity) collected.push(citiesJson.intlThirdCity);
+          if (citiesJson.intlFourthCity) collected.push(citiesJson.intlFourthCity);
+          if (Array.isArray(citiesJson.internationalCities)) {
+            collected.push(...(citiesJson.internationalCities as any[]));
+          }
+
+          // Nuovo formato città di lavoro
+          if (citiesJson.baseCity) collected.push(citiesJson.baseCity);
+          if (citiesJson.secondCity) collected.push(citiesJson.secondCity);
+          if (citiesJson.thirdCity) collected.push(citiesJson.thirdCity);
+          if (citiesJson.fourthCity) collected.push(citiesJson.fourthCity);
+          if (Array.isArray(citiesJson.cities)) {
+            collected.push(...(citiesJson.cities as any[]));
+          }
+
+          flatCities = collected.filter(Boolean);
+        }
+
+        const countries: string[] = [];
+        const cityNamesForFilter: string[] = [];
+
+        if (Array.isArray(flatCities)) {
+          flatCities.forEach((c: string) => {
+            const city = String(c).trim();
+            if (city.includes(',')) {
+              // formato "City, COUNTRY_CODE"
+              const parts = city.split(',').map((p) => p.trim());
+              if (parts.length >= 2) {
+                cityNamesForFilter.push(parts[0]);
+                const cc = parts[parts.length - 1].toUpperCase();
+                if (!countries.includes(cc)) countries.push(cc);
+              }
+            } else {
+              cityNamesForFilter.push(city);
+            }
+          });
+        }
 
         // posizione precisa se l'utente ha selezionato la via sulla mappa
         let lat: number | null = null;
@@ -59,8 +103,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           id: u.id,
           slug: u.slug || `escort-${u.id}`,
           name: u.nome,
-          city: baseCity,
-          country: baseCountry ? String(baseCountry).toUpperCase() : null,
+          cities: cityNamesForFilter,
+          countries,
           lat,
           lon,
           category,
@@ -68,9 +112,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
       })
       .filter((item) => {
-        if (!item.city) return false;
-        if (filterCountry && item.country && item.country.toUpperCase() !== filterCountry) return false;
-        if (filterCity && item.city.toLowerCase() !== filterCity) return false;
+        if (filterCountry && !item.countries.includes(filterCountry)) return false;
+        if (filterCity && !item.cities.some((c: string) => c.toLowerCase() === filterCity)) return false;
         return true;
       });
 
