@@ -14,6 +14,7 @@ export default function EscortMapPage() {
   const [center, setCenter] = useState<{ lat: number; lon: number }>({ lat: 45.4642, lon: 9.19 }); // Milano default
   const [escorts, setEscorts] = useState<Array<{ id: number; slug: string; name: string; lat: number | null; lon: number | null; category: string; coverUrl: string | null }>>([]);
   const markersRef = useRef<any[]>([]);
+  const [leafletReady, setLeafletReady] = useState(false);
 
   const availableCities = selectedCountry ? COUNTRIES_CITIES[selectedCountry]?.cities || [] : [];
 
@@ -147,6 +148,8 @@ export default function EscortMapPage() {
           maxZoom: 19,
           attribution: "&copy; OpenStreetMap",
         }).addTo(mapRef.current);
+
+        setLeafletReady(true);
       } catch {
         // ignora errori iniziali
       }
@@ -156,10 +159,10 @@ export default function EscortMapPage() {
     };
   }, [center]);
 
-  // Aggiorna i marker quando cambia l'elenco escort
+  // Aggiorna i marker quando cambia l'elenco escort e la mappa è pronta
   useEffect(() => {
     try {
-      if (!mapRef.current || typeof window === "undefined") return;
+      if (!mapRef.current || typeof window === "undefined" || !leafletReady) return;
       const L = (window as any).L;
       if (!L) return;
 
@@ -181,7 +184,7 @@ export default function EscortMapPage() {
     } catch {
       // ignora errori sui marker
     }
-  }, [escorts]);
+  }, [escorts, leafletReady]);
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -243,6 +246,11 @@ export default function EscortMapPage() {
         >
           🔍 Cerca Escort sulla mappa
         </button>
+        <p className="mt-2 text-sm text-gray-300">
+          {escorts.length > 0
+            ? `Escort con posizione trovate: ${escorts.length}`
+            : "Nessuna escort con posizione trovata per la ricerca corrente"}
+        </p>
       </div>
 
       <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden" style={{ minHeight: "520px" }}>
