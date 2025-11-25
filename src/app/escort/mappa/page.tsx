@@ -52,10 +52,21 @@ export default function EscortMapPage() {
       // Carica le escort con posizione per la città selezionata
       try {
         const qs = new URLSearchParams({ country: selectedCountry, citta: selectedCity }).toString();
-        const r = await fetch(`/api/public/escort-map?${qs}`);
+        const r = await fetch(`/api/public/annunci?${qs}`);
         if (r.ok) {
           const j = await r.json();
-          setEscorts(Array.isArray(j.items) ? j.items : []);
+          const items = Array.isArray(j.items) ? j.items : [];
+          // mappiamo solo le escort che hanno una posizione precisa
+          const mapped = items.map((it: any) => ({
+            id: it.id,
+            slug: it.slug,
+            name: it.name,
+            lat: typeof it.positionLat === 'number' ? it.positionLat : null,
+            lon: typeof it.positionLon === 'number' ? it.positionLon : null,
+            category: it.tier || 'STANDARD',
+            coverUrl: it.coverUrl || null,
+          }));
+          setEscorts(mapped);
         } else {
           setEscorts([]);
         }

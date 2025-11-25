@@ -132,6 +132,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           })
         }
 
+        // posizione precisa (se presente) da cities.position
+        let positionLat: number | null = null
+        let positionLon: number | null = null
+        try {
+          const pos = (profile.cities as any)?.position
+          if (pos && typeof pos.lat === 'number' && typeof pos.lng === 'number') {
+            positionLat = pos.lat
+            positionLon = pos.lng
+          }
+        } catch {}
+
         return {
           id: u.id,
           slug: u.slug || `escort-${u.id}`,
@@ -140,7 +151,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           countries: countries.length > 0 ? countries : [],
           tier: profile.tier || 'STANDARD',
           isVerified: profile.consentAcceptedAt ? true : false,
-          coverUrl: u.photos[0]?.url || null
+          coverUrl: u.photos[0]?.url || null,
+          positionLat,
+          positionLon,
         }
       })
       .filter(item => {
