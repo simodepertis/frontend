@@ -63,7 +63,7 @@ export default function EscortMapPage() {
             name: it.name,
             lat: typeof it.positionLat === 'number' ? it.positionLat : null,
             lon: typeof it.positionLon === 'number' ? it.positionLon : null,
-            category: it.tier || 'STANDARD',
+            category: it.mapCategory || 'ESCORT',
             coverUrl: it.coverUrl || null,
           }));
           setEscorts(mapped);
@@ -185,13 +185,53 @@ export default function EscortMapPage() {
       });
       markersRef.current = [];
 
+      const coords: [number, number][] = [];
+
+      const getIconForCategory = (category: string) => {
+        let bg = '#ec4899'; // escort: rosa
+        let symbol = '&#9792;'; // ♀
+        if (category === 'TRANS') {
+          bg = '#22c55e'; // verde
+          symbol = '&#9895;'; // ⚧
+        } else if (category === 'COPPIE') {
+          bg = '#6366f1'; // blu
+          symbol = '&#9903;'; // generic symbol
+        }
+
+        return L.divIcon({
+          className: 'escort-map-marker',
+          html: `
+            <div style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:9999px;background:${bg};color:white;font-size:16px;border:2px solid white;box-shadow:0 0 6px rgba(0,0,0,0.5);">
+              <span style="line-height:1;">${symbol}</span>
+            </div>
+          `,
+          iconSize: [26, 26],
+          iconAnchor: [13, 26],
+        });
+      };
+
       escorts
         .filter((e) => typeof e.lat === "number" && typeof e.lon === "number")
         .forEach((e) => {
-          const marker = L.marker([e.lat as number, e.lon as number]);
+          const lat = e.lat as number;
+          const lon = e.lon as number;
+          const icon = getIconForCategory(String(e.category || 'ESCORT'));
+          const marker = L.marker([lat, lon], { icon });
+          if (e.name) {
+            marker.bindPopup(e.name);
+          }
           marker.addTo(mapRef.current);
           markersRef.current.push(marker);
+          coords.push([lat, lon]);
         });
+
+      // centra la mappa sui marker se ne abbiamo almeno uno
+      if (coords.length > 0) {
+        try {
+          const bounds = L.latLngBounds(coords.map(([la, lo]) => L.latLng(la, lo)));
+          mapRef.current.fitBounds(bounds, { padding: [40, 40] });
+        } catch {}
+      }
     } catch {
       // ignora errori sui marker
     }

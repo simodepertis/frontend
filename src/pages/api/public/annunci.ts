@@ -143,6 +143,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         } catch {}
 
+        // categoria per mappa: ESCORT / TRANS / COPPIE / ALTRO
+        let mapCategory: 'ESCORT' | 'TRANS' | 'COPPIE' | 'ALTRO' = 'ESCORT'
+        try {
+          const bioInfo = (profile.contacts as any)?.bioInfo || {}
+          const sesso = String(bioInfo.sesso || '').toLowerCase()
+          const tipoProfilo = String(bioInfo.tipoProfilo || '').toLowerCase()
+          if (sesso.includes('trans') || tipoProfilo.includes('trans')) mapCategory = 'TRANS'
+          if (tipoProfilo.includes('coppia') || sesso.includes('coppia')) mapCategory = 'COPPIE'
+        } catch {}
+
         return {
           id: u.id,
           slug: u.slug || `escort-${u.id}`,
@@ -154,6 +164,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           coverUrl: u.photos[0]?.url || null,
           positionLat,
           positionLon,
+          mapCategory,
         }
       })
       .filter(item => {
