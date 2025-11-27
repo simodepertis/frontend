@@ -57,15 +57,19 @@ export default function EscortMapPage() {
           const j = await r.json();
           const items = Array.isArray(j.items) ? j.items : [];
           // mappiamo solo le escort che hanno una posizione precisa
-          const mapped = items.map((it: any) => ({
-            id: it.id,
-            slug: it.slug,
-            name: it.name,
-            lat: typeof it.positionLat === 'number' ? it.positionLat : null,
-            lon: typeof it.positionLon === 'number' ? it.positionLon : null,
-            category: it.mapCategory || 'ESCORT',
-            coverUrl: it.coverUrl || null,
-          }));
+          const mapped = items.map((it: any) => {
+            const latNum = it.positionLat !== undefined && it.positionLat !== null ? Number(it.positionLat) : NaN;
+            const lonNum = it.positionLon !== undefined && it.positionLon !== null ? Number(it.positionLon) : NaN;
+            return {
+              id: it.id,
+              slug: it.slug,
+              name: it.name,
+              lat: Number.isFinite(latNum) ? latNum : null,
+              lon: Number.isFinite(lonNum) ? lonNum : null,
+              category: it.mapCategory || 'ESCORT',
+              coverUrl: it.coverUrl || null,
+            };
+          });
           setEscorts(mapped);
         } else {
           setEscorts([]);
