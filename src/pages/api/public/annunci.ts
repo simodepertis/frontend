@@ -137,9 +137,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let positionLon: number | null = null
         try {
           const pos = (profile.cities as any)?.position
-          if (pos && typeof pos.lat === 'number' && typeof pos.lng === 'number') {
-            positionLat = pos.lat
-            positionLon = pos.lng
+          if (pos && pos.lat != null && pos.lng != null) {
+            const latNum = Number((pos as any).lat)
+            const lonNum = Number((pos as any).lng)
+            positionLat = Number.isFinite(latNum) ? latNum : null
+            positionLon = Number.isFinite(lonNum) ? lonNum : null
           }
         } catch {}
 
