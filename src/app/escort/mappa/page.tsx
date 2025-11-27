@@ -306,6 +306,15 @@ export default function EscortMapPage() {
             ? `Escort con posizione trovate: ${escorts.length}`
             : "Nessuna escort con posizione trovata per la ricerca corrente"}
         </p>
+        {escorts.length > 0 && (
+          <div className="mt-1 text-xs text-gray-400 space-y-1">
+            {escorts.map((e) => (
+              <div key={e.id}>
+                {e.name || "(senza nome)"} → lat: {String(e.lat)} / lon: {String(e.lon)}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden" style={{ minHeight: "520px" }}>
