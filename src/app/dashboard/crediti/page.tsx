@@ -327,7 +327,8 @@ export default function CreditiPage() {
 
       {tab === 'crediti' && (
       <>
-      {/* Stato posizionamento attuale con pausa/ripresa */}
+      {/* Stato posizionamento attuale con pausa/ripresa (SOLO escort/agenzia) */}
+      {userRole !== 'user' && (
       <div className="rounded-xl border bg-gray-800 p-5">
         <div className="flex items-center justify-between mb-2">
           <div className="font-semibold">Stato posizionamento</div>
@@ -425,7 +426,8 @@ export default function CreditiPage() {
         </div>
       </div>
 
-      {/* Catalogo posizionamenti */}
+      {/* Catalogo posizionamenti (SOLO escort/agenzia) */}
+      {userRole !== 'user' && (
       <div className="rounded-xl border bg-gray-800 p-5">
         <div className="font-semibold mb-3">Acquista posizionamenti</div>
         {catalog.length === 0 ? (

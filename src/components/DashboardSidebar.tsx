@@ -127,6 +127,8 @@ export default function DashboardSidebar() {
         { href: "/dashboard/preferiti", label: "Preferiti / Top 10", icon: faHeart },
         { href: "/dashboard/forum", label: "Forum", icon: faComments },
         { href: "/dashboard/supporto", label: "Supporto", icon: faLifeRing },
+        { href: "/dashboard/crediti", label: "Acquista crediti", icon: faBolt },
+        { href: "/dashboard/pacchetti", label: "Acquista pacchetti", icon: faCartShopping },
         { href: "/autenticazione", label: "Esci", icon: faRightFromBracket },
       ];
 
