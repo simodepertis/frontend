@@ -57,7 +57,7 @@ export default function PacchettiUtentePage() {
         window.location.href = "/autenticazione?redirect=" + encodeURIComponent("/dashboard/pacchetti");
         return;
       }
-      const res = await fetch("/api/credits/spend-by-product", {
+      const res = await fetch("/api/credits/spend", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
