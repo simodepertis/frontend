@@ -325,210 +325,209 @@ export default function CreditiPage() {
         </div>
       )}
 
-      {tab === 'crediti' && (
-      <>
-      {/* Stato posizionamento attuale con pausa/ripresa (SOLO escort/agenzia) */}
-      {userRole !== 'user' && (
-      <div className="rounded-xl border bg-gray-800 p-5">
-        <div className="flex items-center justify-between mb-2">
-          <div className="font-semibold">Stato posizionamento</div>
-          {placement ? (
-            <span className={`text-xs px-2 py-1 rounded-full ${placement.status==='ACTIVE' ? 'bg-green-600 text-green-100' : 'bg-amber-600 text-amber-100'}`}>
-              {placement.status==='ACTIVE' ? 'Attivo' : 'In pausa'}
-            </span>
-          ) : (
-            <span className="text-xs text-neutral-500">Nessun posizionamento attivo</span>
-          )}
-        </div>
-        {placement && (
-          <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-300">
-            {typeof placement.remainingDays === 'number' && (
-              <div>Giorni residui: <span className="font-semibold text-white">{placement.remainingDays}</span></div>
-            )}
-            {(() => {
-              try {
-                // Calcolo scadenza stimata: oggi + giorni residui
-                // La pausa estende la scadenza perché i giorni residui non calano da PAUSED
-                if (typeof placement?.remainingDays === 'number') {
-                  const base = new Date();
-                  const d = new Date(base.getTime());
-                  d.setDate(d.getDate() + Math.max(0, placement.remainingDays));
-                  return <div>Scadenza stimata: <span className="font-semibold text-white">{d.toLocaleDateString()}</span></div>;
-                }
-              } catch {}
-              return null;
-            })()}
-            {placement.lastStartAt && <div>Ripreso: {new Date(placement.lastStartAt).toLocaleDateString()}</div>}
-            {placement.lastPauseAt && <div>Pausa: {new Date(placement.lastPauseAt).toLocaleDateString()}</div>}
-            <div className="ml-auto flex items-center gap-2">
-              <Button
-                variant="secondary"
-                disabled={actingPlacement==='pause' || placement.status!=='ACTIVE'}
-                onClick={async()=>{
-                  setActingPlacement('pause');
-                  try {
-                    const res = await fetch('/api/credits/placement', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` }, body: JSON.stringify({ action: 'pause' }) });
-                    const j = await res.json().catch(()=>({}));
-                    if (!res.ok) { alert(j?.error || 'Errore pausa'); return; }
-                    await loadAll();
-                  } finally { setActingPlacement(null); }
-                }}>Metti in pausa</Button>
-              <Button
-                disabled={actingPlacement==='resume' || placement.status!=='PAUSED'}
-                onClick={async()=>{
-                  setActingPlacement('resume');
-                  try {
-                    const res = await fetch('/api/credits/placement', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` }, body: JSON.stringify({ action: 'resume' }) });
-                    const j = await res.json().catch(()=>({}));
-                    if (!res.ok) { alert(j?.error || 'Errore ripresa'); return; }
-                    await loadAll();
-                  } finally { setActingPlacement(null); }
-                }}>Riprendi</Button>
-            </div>
-          </div>
-        )}
-      </div>
-      {/* Hero saldo + acquisto */}
-      <div className="rounded-xl border bg-gray-800 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <div className="text-sm text-neutral-600">Saldo attuale</div>
-          <div className="text-4xl font-extrabold">{balance} crediti</div>
-        </div>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <input type="number" min={minCredits} value={creditsToBuy} onChange={(e) => setCreditsToBuy(Number(e.target.value))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <Button onClick={buyCredits} className="h-10">Procedi al pagamento</Button>
-          </div>
-          {showPayPal && (
-            <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-              <div className="text-sm text-gray-300 mb-3">
-                Acquisto {creditsToBuy} crediti - €{(creditsToBuy * 0.50).toFixed(2)}
+      {tab === 'crediti' ? (
+        <>
+          {/* Stato posizionamento attuale con pausa/ripresa (SOLO escort/agenzia) */}
+          {userRole !== 'user' && (
+            <div className="rounded-xl border bg-gray-800 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-semibold">Stato posizionamento</div>
+                {placement ? (
+                  <span className={`text-xs px-2 py-1 rounded-full ${placement.status==='ACTIVE' ? 'bg-green-600 text-green-100' : 'bg-amber-600 text-amber-100'}`}>
+                    {placement.status==='ACTIVE' ? 'Attivo' : 'In pausa'}
+                  </span>
+                ) : (
+                  <span className="text-xs text-neutral-500">Nessun posizionamento attivo</span>
+                )}
               </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <PayPalButton
-                    credits={creditsToBuy}
-                    onSuccess={handlePayPalSuccess}
-                    onError={handlePayPalError}
-                    onCancel={handlePayPalCancel}
-                  />
-                </div>
-                <Button 
-                  variant="secondary" 
-                  onClick={() => setShowPayPal(false)}
-                  className="px-3"
-                >
-                  Annulla
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Catalogo posizionamenti (SOLO escort/agenzia) */}
-      {userRole !== 'user' && (
-      <div className="rounded-xl border bg-gray-800 p-5">
-        <div className="font-semibold mb-3">Acquista posizionamenti</div>
-        {catalog.length === 0 ? (
-          <div className="text-sm text-neutral-500">Catalogo non disponibile</div>
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {catalog.map(p => {
-              const s = tierClasses(p.code);
-              const popular = p.code.startsWith('VIP');
-              return (
-                <div key={p.code} className={`relative rounded-2xl border p-5 transition-shadow hover:shadow-xl ${s.card}`}>
-                  {popular && (
-                    <div className="absolute -top-2 right-3 text-[10px] uppercase tracking-wide px-2 py-1 bg-rose-600 text-white rounded-full shadow">
-                      Più scelto
-                    </div>
+              {placement && (
+                <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-300">
+                  {typeof placement.remainingDays === 'number' && (
+                    <div>Giorni residui: <span className="font-semibold text-white">{placement.remainingDays}</span></div>
                   )}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 grid place-items-center rounded-full bg-gray-800/80 ${s.ring} ring-2 text-neutral-800`}>
-                      <FontAwesomeIcon icon={tierIcon(p.code)} />
-                    </div>
-                    <div>
-                      <div className="font-extrabold text-lg text-neutral-900">{p.label}</div>
-                    </div>
-                    <span className={`ml-auto text-[11px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
-                  </div>
-                  {p.pricePerDayCredits ? (
-                    <div className="mt-2 grid grid-cols-[1fr,auto,auto] items-end gap-3">
-                      <div className="flex flex-col gap-1">
-                        <label className="text-sm text-neutral-600">Giorni</label>
-                        <input
-                          type="number"
-                          min={p.minDays || 1}
-                          max={p.maxDays || 60}
-                          value={daysByCode[p.code] ?? (p.minDays || 1)}
-                          onChange={(e)=>setDaysByCode(d=>({ ...d, [p.code]: Math.min(Math.max(Number(e.target.value|| (p.minDays||1)), p.minDays||1), p.maxDays||60) }))}
-                          className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <div className="text-xs text-neutral-500">Range: {p.minDays || 1}–{p.maxDays || 60} giorni</div>
-                      </div>
-                      <div className="text-sm">
-                        <div className="text-neutral-700">Costo</div>
-                        <div className="font-semibold text-neutral-900">{(p.pricePerDayCredits||0) * (daysByCode[p.code] ?? (p.minDays||1))} crediti</div>
-                      </div>
-                      <Button onClick={async()=>{
-                        const days = daysByCode[p.code] ?? (p.minDays || 1);
+                  {(() => {
+                    try {
+                      if (typeof placement?.remainingDays === 'number') {
+                        const base = new Date();
+                        const d = new Date(base.getTime());
+                        d.setDate(d.getDate() + Math.max(0, placement.remainingDays));
+                        return <div>Scadenza stimata: <span className="font-semibold text-white">{d.toLocaleDateString()}</span></div>;
+                      }
+                    } catch {}
+                    return null;
+                  })()}
+                  {placement.lastStartAt && <div>Ripreso: {new Date(placement.lastStartAt).toLocaleDateString()}</div>}
+                  {placement.lastPauseAt && <div>Pausa: {new Date(placement.lastPauseAt).toLocaleDateString()}</div>}
+                  <div className="ml-auto flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      disabled={actingPlacement==='pause' || placement.status!=='ACTIVE'}
+                      onClick={async()=>{
+                        setActingPlacement('pause');
                         try {
-                          const res = await fetch('/api/credits/spend-by-product', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`,
-                            },
-                            body: JSON.stringify({ code: p.code, days })
-                          });
-                          const data = await res.json();
-                          if (!res.ok) { alert(data?.error || 'Errore attivazione'); return; }
+                          const res = await fetch('/api/credits/placement', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` }, body: JSON.stringify({ action: 'pause' }) });
+                          const j = await res.json().catch(()=>({}));
+                          if (!res.ok) { alert(j?.error || 'Errore pausa'); return; }
                           await loadAll();
-                          setNotice({ type: 'success', msg: `Pacchetto ${p.code} attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})` });
-                        } catch { alert('Errore attivazione'); }
-                      }} className={`px-4 ${s.cta}`}>Attiva</Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm">
-                        <div className="text-neutral-700">Costo</div>
-                        <div className="font-semibold text-neutral-900">{p.creditsCost} crediti</div>
-                      </div>
-                      <Button onClick={() => spend(p.code)} className={`px-4 ${s.cta}`}>Attiva</Button>
-                    </div>
-                  )}
+                        } finally { setActingPlacement(null); }
+                      }}>Metti in pausa</Button>
+                    <Button
+                      disabled={actingPlacement==='resume' || placement.status!=='PAUSED'}
+                      onClick={async()=>{
+                        setActingPlacement('resume');
+                        try {
+                          const res = await fetch('/api/credits/placement', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}` }, body: JSON.stringify({ action: 'resume' }) });
+                          const j = await res.json().catch(()=>({}));
+                          if (!res.ok) { alert(j?.error || 'Errore ripresa'); return; }
+                          await loadAll();
+                        } finally { setActingPlacement(null); }
+                      }}>Riprendi</Button>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
 
-      {/* Storico */}
-      <div className="rounded-xl border bg-gray-800 p-5">
-        <div className="font-semibold mb-3">Ultime transazioni</div>
-        {sortedTx.length === 0 ? (
-          <div className="text-sm text-neutral-500">Nessuna transazione</div>
-        ) : (
-          <div className="space-y-2">
-            {sortedTx.map(r => (
-              <div key={r.id} className="border rounded-md p-2 text-sm flex items-center justify-between">
-                <div>
-                  <div className="font-medium">{r.type}</div>
-                  {r.reference && <div className="text-xs text-neutral-600">{r.reference}</div>}
-                </div>
-                <div className={r.amount >= 0 ? 'text-green-700' : 'text-red-700'}>{r.amount >= 0 ? `+${r.amount}` : r.amount}</div>
+          {/* Hero saldo + acquisto crediti */}
+          <div className="rounded-xl border bg-gray-800 p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div className="text-sm text-neutral-600">Saldo attuale</div>
+              <div className="text-4xl font-extrabold">{balance} crediti</div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <input type="number" min={minCredits} value={creditsToBuy} onChange={(e) => setCreditsToBuy(Number(e.target.value))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <Button onClick={buyCredits} className="h-10">Procedi al pagamento</Button>
               </div>
-            ))}
+              {showPayPal && (
+                <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                  <div className="text-sm text-gray-300 mb-3">
+                    Acquisto {creditsToBuy} crediti - €{(creditsToBuy * 0.50).toFixed(2)}
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <PayPalButton
+                        credits={creditsToBuy}
+                        onSuccess={handlePayPalSuccess}
+                        onError={handlePayPalError}
+                        onCancel={handlePayPalCancel}
+                      />
+                    </div>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => setShowPayPal(false)}
+                      className="px-3"
+                    >
+                      Annulla
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-      </div>
-      </>
-      )}
 
-      {tab === 'ordini' && (
-      <>
+          {/* Catalogo posizionamenti (SOLO escort/agenzia) */}
+          {userRole !== 'user' && (
+            <div className="rounded-xl border bg-gray-800 p-5">
+              <div className="font-semibold mb-3">Acquista posizionamenti</div>
+              {catalog.length === 0 ? (
+                <div className="text-sm text-neutral-500">Catalogo non disponibile</div>
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                  {catalog.map(p => {
+                    const s = tierClasses(p.code);
+                    const popular = p.code.startsWith('VIP');
+                    return (
+                      <div key={p.code} className={`relative rounded-2xl border p-5 transition-shadow hover:shadow-xl ${s.card}`}>
+                        {popular && (
+                          <div className="absolute -top-2 right-3 text-[10px] uppercase tracking-wide px-2 py-1 bg-rose-600 text-white rounded-full shadow">
+                            Più scelto
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`w-10 h-10 grid place-items-center rounded-full bg-gray-800/80 ${s.ring} ring-2 text-neutral-800`}>
+                            <FontAwesomeIcon icon={tierIcon(p.code)} />
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-lg text-neutral-900">{p.label}</div>
+                          </div>
+                          <span className={`ml-auto text-[11px] px-2 py-1 rounded-full ${s.pill}`}>{p.code.split('_')[0]}</span>
+                        </div>
+                        {p.pricePerDayCredits ? (
+                          <div className="mt-2 grid grid-cols-[1fr,auto,auto] items-end gap-3">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-sm text-neutral-600">Giorni</label>
+                              <input
+                                type="number"
+                                min={p.minDays || 1}
+                                max={p.maxDays || 60}
+                                value={daysByCode[p.code] ?? (p.minDays || 1)}
+                                onChange={(e)=>setDaysByCode(d=>({ ...d, [p.code]: Math.min(Math.max(Number(e.target.value|| (p.minDays||1)), p.minDays||1), p.maxDays||60) }))}
+                                className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                              <div className="text-xs text-neutral-500">Range: {p.minDays || 1}–{p.maxDays || 60} giorni</div>
+                            </div>
+                            <div className="text-sm">
+                              <div className="text-neutral-700">Costo</div>
+                              <div className="font-semibold text-neutral-900">{(p.pricePerDayCredits||0) * (daysByCode[p.code] ?? (p.minDays||1))} crediti</div>
+                            </div>
+                            <Button onClick={async()=>{
+                              const days = daysByCode[p.code] ?? (p.minDays || 1);
+                              try {
+                                const res = await fetch('/api/credits/spend-by-product', {
+                                  method: 'POST',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${localStorage.getItem('auth-token') || ''}`,
+                                  },
+                                  body: JSON.stringify({ code: p.code, days })
+                                });
+                                const data = await res.json();
+                                if (!res.ok) { alert(data?.error || 'Errore attivazione'); return; }
+                                await loadAll();
+                                setNotice({ type: 'success', msg: `Pacchetto ${p.code} attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})` });
+                              } catch { alert('Errore attivazione'); }
+                            }} className={`px-4 ${s.cta}`}>Attiva</Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm">
+                              <div className="text-neutral-700">Costo</div>
+                              <div className="font-semibold text-neutral-900">{p.creditsCost} crediti</div>
+                            </div>
+                            <Button onClick={() => spend(p.code)} className={`px-4 ${s.cta}`}>Attiva</Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Storico */}
+          <div className="rounded-xl border bg-gray-800 p-5">
+            <div className="font-semibold mb-3">Ultime transazioni</div>
+            {sortedTx.length === 0 ? (
+              <div className="text-sm text-neutral-500">Nessuna transazione</div>
+            ) : (
+              <div className="space-y-2">
+                {sortedTx.map(r => (
+                  <div key={r.id} className="border rounded-md p-2 text-sm flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">{r.type}</div>
+                      {r.reference && <div className="text-xs text-neutral-600">{r.reference}</div>}
+                    </div>
+                    <div className={r.amount >= 0 ? 'text-green-700' : 'text-red-700'}>{r.amount >= 0 ? `+${r.amount}` : r.amount}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
         {/* Crea ordine manuale */}
         <div className="rounded-xl border bg-gray-800 p-5 space-y-4">
           <div className="flex items-center justify-between">
