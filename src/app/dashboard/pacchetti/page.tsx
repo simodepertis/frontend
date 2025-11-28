@@ -75,6 +75,17 @@ export default function PacchettiUtentePage() {
         }
         return;
       }
+
+      // Segna lato client che l'utente ha un pacchetto mappa attivo
+      try {
+        if (typeof window !== "undefined") {
+          const payload = { code, acquiredAt: new Date().toISOString() };
+          window.localStorage.setItem("map-access", JSON.stringify(payload));
+        }
+      } catch {
+        // ignora errori di localStorage
+      }
+
       alert("Pacchetto attivato correttamente.");
       try {
         const w = await fetch("/api/credits/wallet", {

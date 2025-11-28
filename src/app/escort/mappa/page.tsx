@@ -29,6 +29,7 @@ export default function EscortMapPage() {
   const [selectedEscort, setSelectedEscort] = useState<MapEscort | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
+  const [hasMapAccess, setHasMapAccess] = useState(false);
 
   const availableCities = selectedCountry ? COUNTRIES_CITIES[selectedCountry]?.cities || [] : [];
 
@@ -51,6 +52,26 @@ export default function EscortMapPage() {
         // utente non loggato o errore: considerato "cliente" generico
       }
     })();
+  }, []);
+
+  // Controlla se l'utente ha un pacchetto mappa attivo salvato in localStorage
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      const raw = window.localStorage.getItem("map-access");
+      if (!raw) return;
+      const data = JSON.parse(raw) as { code?: string; acquiredAt?: string } | null;
+      if (!data?.code || !data?.acquiredAt) return;
+      const acquired = new Date(data.acquiredAt).getTime();
+      if (!Number.isFinite(acquired)) return;
+      const now = Date.now();
+      const days30 = 30 * 24 * 60 * 60 * 1000;
+      if (now - acquired <= days30) {
+        setHasMapAccess(true);
+      }
+    } catch {
+      // ignore parse errors
+    }
   }, []);
 
   const handleSearch = async () => {
@@ -261,6 +282,11 @@ export default function EscortMapPage() {
             marker.bindPopup(e.name);
           }
           marker.on('click', () => {
+            const role = (userRole || '').toLowerCase();
+            if (role === 'escort' || role === 'agency' || role === 'admin' || hasMapAccess) {
+              window.open(`/escort/${e.slug}`, '_blank');
+              return;
+            }
             setSelectedEscort(e);
             setShowPaywall(false);
           });
