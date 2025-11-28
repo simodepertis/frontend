@@ -405,7 +405,7 @@ export default function EscortMapPage() {
 
         {/* Card escort selezionata (click marker) sovrapposta alla mappa */}
         {selectedEscort && (
-          <div className="absolute left-1/2 bottom-4 z-40 w-full max-w-md -translate-x-1/2 px-4 pointer-events-none">
+          <div className="absolute left-1/2 bottom-4 z-[6000] w-full max-w-md -translate-x-1/2 px-4 pointer-events-none">
             <button
               onClick={() => {
                 // Se utente è escort/agency/admin apri direttamente il profilo
@@ -447,7 +447,7 @@ export default function EscortMapPage() {
 
       {/* Modal paywall / pacchetti */}
       {showPaywall && selectedEscort && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 px-4">
           <div className="w-full max-w-lg rounded-2xl border border-gray-700 bg-gray-900 p-5 shadow-2xl relative">
             <button
               onClick={() => setShowPaywall(false)}
