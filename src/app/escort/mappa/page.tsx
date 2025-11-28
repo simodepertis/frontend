@@ -297,7 +297,7 @@ export default function EscortMapPage() {
           >
             <span style={{ lineHeight: 1 }}>
               {/* simbolo femminile */}
-               9879;
+              {"\u2640"}
             </span>
           </span>
           <span className="uppercase tracking-wide text-xs">ESCORT</span>
@@ -310,7 +310,7 @@ export default function EscortMapPage() {
           >
             <span style={{ lineHeight: 1 }}>
               {/* simbolo trans */}
-               9895;
+              {"\u26A7"}
             </span>
           </span>
           <span className="uppercase tracking-wide text-xs">TRANS</span>
@@ -322,8 +322,8 @@ export default function EscortMapPage() {
             style={{ backgroundColor: "#6366f1" }}
           >
             <span style={{ lineHeight: 1 }}>
-              {/* simbolo coppie (generico) */}
-               9903;
+              {/* simbolo coppie (due cerchi intrecciati) */}
+              {"\u26AD"}
             </span>
           </span>
           <span className="uppercase tracking-wide text-xs">COPPIE</span>
