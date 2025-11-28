@@ -248,9 +248,51 @@ export default function EscortMapPage() {
         <p className="text-gray-300">Visualizza su mappa le escort per Paese e città.</p>
       </div>
 
+      {/* Legenda categorie mappa */}
+      <div className="mb-4 flex flex-wrap items-center gap-6 text-sm text-gray-200">
+        <div className="flex items-center gap-2">
+          <span
+            className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow"
+            style={{ backgroundColor: "#ec4899" }}
+          >
+            <span style={{ lineHeight: 1 }}>
+              {/* simbolo femminile */}
+               9879;
+            </span>
+          </span>
+          <span className="uppercase tracking-wide text-xs">ESCORT</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span
+            className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow"
+            style={{ backgroundColor: "#22c55e" }}
+          >
+            <span style={{ lineHeight: 1 }}>
+              {/* simbolo trans */}
+               9895;
+            </span>
+          </span>
+          <span className="uppercase tracking-wide text-xs">TRANS</span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span
+            className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow"
+            style={{ backgroundColor: "#6366f1" }}
+          >
+            <span style={{ lineHeight: 1 }}>
+              {/* simbolo coppie (generico) */}
+               9903;
+            </span>
+          </span>
+          <span className="uppercase tracking-wide text-xs">COPPIE</span>
+        </div>
+      </div>
+
       {/* SELETTORI PAESE E CITTÀ - stesso stile di /internazionale */}
       <div className="rounded-lg border border-gray-700 bg-gray-800 p-6 mb-6">
-        <h2 className="text-lg font-semibold text-white mb-4">🌍 Cerca per Città</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">&#x1F310; Cerca per Città</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           {/* Selezione Paese */}
           <div className="flex flex-col gap-2">
