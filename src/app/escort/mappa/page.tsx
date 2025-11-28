@@ -463,30 +463,48 @@ export default function EscortMapPage() {
             </p>
 
             <div className="grid gap-3 mb-4">
-              <div className="rounded-xl border border-pink-600/70 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400">
+              <div
+                className="rounded-xl border border-pink-600/70 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400"
+                onClick={() => {
+                  setShowPaywall(false);
+                  window.location.href = "/dashboard/pacchetti";
+                }}
+              >
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm font-semibold text-white">Pacchetto Singolo Profilo</span>
-                  <span className="text-lg font-bold text-pink-400">9,90 €</span>
+                  <span className="text-lg font-bold text-pink-400">20 crediti</span>
                 </div>
                 <p className="mt-1 text-xs text-gray-300">
                   Accesso completo al profilo di {selectedEscort.name} per 24 ore.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-gray-600 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400">
+              <div
+                className="rounded-xl border border-gray-600 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400"
+                onClick={() => {
+                  setShowPaywall(false);
+                  window.location.href = "/dashboard/pacchetti";
+                }}
+              >
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm font-semibold text-white">Pacchetto 5 Profili</span>
-                  <span className="text-lg font-bold text-pink-400">24,90 €</span>
+                  <span className="text-lg font-bold text-pink-400">80 crediti</span>
                 </div>
                 <p className="mt-1 text-xs text-gray-300">
                   Sblocca fino a 5 profili escort a tua scelta.
                 </p>
               </div>
 
-              <div className="rounded-xl border border-yellow-500 bg-yellow-500/10 p-3 cursor-pointer hover:border-yellow-400">
+              <div
+                className="rounded-xl border border-yellow-500 bg-yellow-500/10 p-3 cursor-pointer hover:border-yellow-400"
+                onClick={() => {
+                  setShowPaywall(false);
+                  window.location.href = "/dashboard/pacchetti";
+                }}
+              >
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm font-semibold text-yellow-300">Pacchetto Illimitato 30 giorni</span>
-                  <span className="text-lg font-bold text-yellow-300">49,90 €</span>
+                  <span className="text-lg font-bold text-yellow-300">200 crediti</span>
                 </div>
                 <p className="mt-1 text-xs text-yellow-100">
                   Accesso illimitato a tutti i profili per 30 giorni.
