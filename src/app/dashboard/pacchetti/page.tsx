@@ -140,4 +140,5 @@ export default function PacchettiUtentePage() {
         ))}
       </div>
     </div>
-  
+  );
+}
