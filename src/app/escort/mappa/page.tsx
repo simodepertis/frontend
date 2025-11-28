@@ -6,17 +6,52 @@ import { COUNTRIES_CITIES } from "@/lib/internationalCities";
 // Pagina mappa pubblica escort: per ora solo mappa + selettori paese/città
 // In uno step successivo aggiungeremo i marker reali e il paywall sul click della card
 
+type MapEscort = {
+  id: number;
+  slug: string;
+  name: string;
+  lat: number | null;
+  lon: number | null;
+  category: string;
+  coverUrl: string | null;
+  city?: string;
+};
+
 export default function EscortMapPage() {
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
   const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const [center, setCenter] = useState<{ lat: number; lon: number }>({ lat: 45.4642, lon: 9.19 }); // Milano default
-  const [escorts, setEscorts] = useState<Array<{ id: number; slug: string; name: string; lat: number | null; lon: number | null; category: string; coverUrl: string | null }>>([]);
+  const [escorts, setEscorts] = useState<MapEscort[]>([]);
   const markersRef = useRef<any[]>([]);
   const [leafletReady, setLeafletReady] = useState(false);
+  const [selectedEscort, setSelectedEscort] = useState<MapEscort | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
 
   const availableCities = selectedCountry ? COUNTRIES_CITIES[selectedCountry]?.cities || [] : [];
+
+  // Carica ruolo utente (user / escort / agency / admin ...)
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+        const res = await fetch("/api/user/me", {
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const rawRole: string = (data?.user?.ruolo || "").toLowerCase();
+        const map: Record<string, string> = { agenzia: "agency" };
+        const norm = map[rawRole] || rawRole;
+        setUserRole(norm);
+      } catch {
+        // utente non loggato o errore: considerato "cliente" generico
+      }
+    })();
+  }, []);
 
   const handleSearch = async () => {
     if (!selectedCountry || !selectedCity) {
@@ -57,7 +92,7 @@ export default function EscortMapPage() {
           const j = await r.json();
           const items = Array.isArray(j.items) ? j.items : [];
           // mappiamo solo le escort che hanno una posizione precisa
-          const mapped = items.map((it: any) => {
+          const mapped: MapEscort[] = items.map((it: any) => {
             const latNum = it.positionLat !== undefined && it.positionLat !== null ? Number(it.positionLat) : NaN;
             const lonNum = it.positionLon !== undefined && it.positionLon !== null ? Number(it.positionLon) : NaN;
             return {
@@ -68,6 +103,7 @@ export default function EscortMapPage() {
               lon: Number.isFinite(lonNum) ? lonNum : null,
               category: it.mapCategory || 'ESCORT',
               coverUrl: it.coverUrl || null,
+              city: Array.isArray(it.cities) && it.cities.length > 0 ? String(it.cities[0]) : undefined,
             };
           });
           setEscorts(mapped);
@@ -224,6 +260,10 @@ export default function EscortMapPage() {
           if (e.name) {
             marker.bindPopup(e.name);
           }
+          marker.on('click', () => {
+            setSelectedEscort(e);
+            setShowPaywall(false);
+          });
           marker.addTo(mapRef.current);
           markersRef.current.push(marker);
           coords.push([lat, lon]);
@@ -362,6 +402,95 @@ export default function EscortMapPage() {
       <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden" style={{ minHeight: "520px" }}>
         <div ref={mapDivRef} className="w-full h-[520px]" />
       </div>
+
+      {/* Card escort selezionata (click marker) */}
+      {selectedEscort && (
+        <div className="fixed left-1/2 bottom-4 z-40 w-full max-w-md -translate-x-1/2 px-4">
+          <button
+            onClick={() => {
+              // Se utente è escort/agency/admin apri direttamente il profilo
+              const role = (userRole || "").toLowerCase();
+              if (role === "escort" || role === "agency" || role === "admin") {
+                window.open(`/escort/${selectedEscort.slug}`, "_blank");
+                return;
+              }
+              setShowPaywall(true);
+            }}
+            className="flex w-full items-center gap-3 rounded-xl border border-gray-700 bg-gray-900/95 p-3 text-left shadow-xl hover:border-pink-500 hover:bg-gray-900 cursor-pointer transition-colors"
+          >
+            {selectedEscort.coverUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={selectedEscort.coverUrl}
+                alt={selectedEscort.name}
+                className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-white truncate">{selectedEscort.name}</span>
+                <span className="text-xs text-yellow-400">★★★★★ <span className="text-[10px] text-gray-300">recensioni</span></span>
+              </div>
+              {selectedEscort.city && (
+                <div className="text-xs text-gray-300 mt-1 truncate">
+                  Escort {selectedEscort.city}
+                </div>
+              )}
+              <div className="mt-1 text-xs text-pink-400 font-medium">Clicca per vedere i pacchetti e sbloccare il profilo completo</div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Modal paywall / pacchetti */}
+      {showPaywall && selectedEscort && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-gray-700 bg-gray-900 p-5 shadow-2xl relative">
+            <button
+              onClick={() => setShowPaywall(false)}
+              className="absolute right-3 top-3 text-gray-400 hover:text-white text-sm"
+            >
+              ✕
+            </button>
+            <h2 className="text-xl font-semibold text-white mb-1">
+              Sblocca il profilo di {selectedEscort.name}
+            </h2>
+            <p className="text-sm text-gray-300 mb-4">
+              Acquista un pacchetto per vedere tutte le foto, recensioni complete e i contatti dell'escort.
+            </p>
+
+            <div className="grid gap-3 mb-4">
+              <div className="rounded-xl border border-pink-600/70 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-semibold text-white">Pacchetto Singolo Profilo</span>
+                  <span className="text-lg font-bold text-pink-400">9,90 €</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-300">Accesso completo al profilo di {selectedEscort.name} per 24 ore.</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-600 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-semibold text-white">Pacchetto 5 Profili</span>
+                  <span className="text-lg font-bold text-pink-400">24,90 €</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-300">Sblocca fino a 5 profili escort a tua scelta.</p>
+              </div>
+
+              <div className="rounded-xl border border-yellow-500 bg-yellow-500/10 p-3 cursor-pointer hover:border-yellow-400">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-semibold text-yellow-300">Pacchetto Illimitato 30 giorni</span>
+                  <span className="text-lg font-bold text-yellow-300">49,90 €</span>
+                </div>
+                <p className="mt-1 text-xs text-yellow-100">Accesso illimitato a tutti i profili per 30 giorni.</p>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-gray-400">
+              * Pagina di pagamento reale da collegare in seguito. Nessun addebito viene effettuato in questa fase.
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
