@@ -143,9 +143,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         const explicitCountries = Array.from(new Set(aggCountries))
+
+        // posizione precisa (se presente) da cities.position
+        let positionLat: number | null = null
+        let positionLon: number | null = null
+        try {
+          const pos = (obj as any)?.position
+          if (pos && pos.lat != null && pos.lng != null) {
+            const latNum = Number((pos as any).lat)
+            const lonNum = Number((pos as any).lng)
+            positionLat = Number.isFinite(latNum) ? latNum : null
+            positionLon = Number.isFinite(lonNum) ? lonNum : null
+          }
+        } catch {}
         const isGirl = p.girlOfTheDayDate ? p.girlOfTheDayDate.toISOString().slice(0, 10) === todayStr : false
         
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
+
+        // categoria per mappa: ESCORT / TRANS / COPPIE / ALTRO
+        let mapCategory: 'ESCORT' | 'TRANS' | 'COPPIE' | 'ALTRO' = 'ESCORT'
+        try {
+          const bioInfo = (p.contacts as any)?.bioInfo || {}
+          const sesso = String(bioInfo.sesso || '').toLowerCase()
+          const tipoProfilo = String(bioInfo.tipoProfilo || '').toLowerCase()
+          if (sesso.includes('trans') || tipoProfilo.includes('trans')) mapCategory = 'TRANS'
+          if (tipoProfilo.includes('coppia') || sesso.includes('coppia')) mapCategory = 'COPPIE'
+        } catch {}
         
         // Debug SEMPRE per vedere cosa viene letto
         console.log(`🔍 Profilo ${p.userId} (${displayName}) - rawCities:`, raw, `cities:`, cities, `countries:`, explicitCountries)
@@ -185,6 +208,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           isAgencyEscort,
           agencyName: p.agency?.nome || null,
           tierExpiresAt: p.tierExpiresAt, // Mantieni per debug
+          positionLat,
+          positionLon,
+          mapCategory,
         } as any
       })
 
