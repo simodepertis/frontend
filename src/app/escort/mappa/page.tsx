@@ -399,48 +399,51 @@ export default function EscortMapPage() {
         )}
       </div>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden" style={{ minHeight: "520px" }}>
+      {/* Contenitore mappa con card sovrapposta */}
+      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden relative" style={{ minHeight: "520px" }}>
         <div ref={mapDivRef} className="w-full h-[520px]" />
-      </div>
 
-      {/* Card escort selezionata (click marker) */}
-      {selectedEscort && (
-        <div className="fixed left-1/2 bottom-4 z-40 w-full max-w-md -translate-x-1/2 px-4">
-          <button
-            onClick={() => {
-              // Se utente è escort/agency/admin apri direttamente il profilo
-              const role = (userRole || "").toLowerCase();
-              if (role === "escort" || role === "agency" || role === "admin") {
-                window.open(`/escort/${selectedEscort.slug}`, "_blank");
-                return;
-              }
-              setShowPaywall(true);
-            }}
-            className="flex w-full items-center gap-3 rounded-xl border border-gray-700 bg-gray-900/95 p-3 text-left shadow-xl hover:border-pink-500 hover:bg-gray-900 cursor-pointer transition-colors"
-          >
-            {selectedEscort.coverUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={selectedEscort.coverUrl}
-                alt={selectedEscort.name}
-                className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-white truncate">{selectedEscort.name}</span>
-                <span className="text-xs text-yellow-400">★★★★★ <span className="text-[10px] text-gray-300">recensioni</span></span>
-              </div>
-              {selectedEscort.city && (
-                <div className="text-xs text-gray-300 mt-1 truncate">
-                  Escort {selectedEscort.city}
-                </div>
+        {/* Card escort selezionata (click marker) sovrapposta alla mappa */}
+        {selectedEscort && (
+          <div className="absolute left-1/2 bottom-4 z-40 w-full max-w-md -translate-x-1/2 px-4 pointer-events-none">
+            <button
+              onClick={() => {
+                // Se utente è escort/agency/admin apri direttamente il profilo
+                const role = (userRole || "").toLowerCase();
+                if (role === "escort" || role === "agency" || role === "admin") {
+                  window.open(`/escort/${selectedEscort.slug}`, "_blank");
+                  return;
+                }
+                setShowPaywall(true);
+              }}
+              className="pointer-events-auto flex w-full items-center gap-3 rounded-xl border border-gray-700 bg-gray-900/95 p-3 text-left shadow-xl hover:border-pink-500 hover:bg-gray-900 cursor-pointer transition-colors"
+            >
+              {selectedEscort.coverUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={selectedEscort.coverUrl}
+                  alt={selectedEscort.name}
+                  className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
+                />
               )}
-              <div className="mt-1 text-xs text-pink-400 font-medium">Clicca per vedere i pacchetti e sbloccare il profilo completo</div>
-            </div>
-          </button>
-        </div>
-      )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-white truncate">{selectedEscort.name}</span>
+                  <span className="text-xs text-yellow-400">
+                    ★★★★★ <span className="text-[10px] text-gray-300">recensioni</span>
+                  </span>
+                </div>
+                {selectedEscort.city && (
+                  <div className="text-xs text-gray-300 mt-1 truncate">Escort {selectedEscort.city}</div>
+                )}
+                <div className="mt-1 text-xs text-pink-400 font-medium">
+                  Clicca per vedere i pacchetti e sbloccare il profilo completo
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Modal paywall / pacchetti */}
       {showPaywall && selectedEscort && (
@@ -465,7 +468,9 @@ export default function EscortMapPage() {
                   <span className="text-sm font-semibold text-white">Pacchetto Singolo Profilo</span>
                   <span className="text-lg font-bold text-pink-400">9,90 €</span>
                 </div>
-                <p className="mt-1 text-xs text-gray-300">Accesso completo al profilo di {selectedEscort.name} per 24 ore.</p>
+                <p className="mt-1 text-xs text-gray-300">
+                  Accesso completo al profilo di {selectedEscort.name} per 24 ore.
+                </p>
               </div>
 
               <div className="rounded-xl border border-gray-600 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400">
@@ -473,7 +478,9 @@ export default function EscortMapPage() {
                   <span className="text-sm font-semibold text-white">Pacchetto 5 Profili</span>
                   <span className="text-lg font-bold text-pink-400">24,90 €</span>
                 </div>
-                <p className="mt-1 text-xs text-gray-300">Sblocca fino a 5 profili escort a tua scelta.</p>
+                <p className="mt-1 text-xs text-gray-300">
+                  Sblocca fino a 5 profili escort a tua scelta.
+                </p>
               </div>
 
               <div className="rounded-xl border border-yellow-500 bg-yellow-500/10 p-3 cursor-pointer hover:border-yellow-400">
@@ -481,7 +488,9 @@ export default function EscortMapPage() {
                   <span className="text-sm font-semibold text-yellow-300">Pacchetto Illimitato 30 giorni</span>
                   <span className="text-lg font-bold text-yellow-300">49,90 €</span>
                 </div>
-                <p className="mt-1 text-xs text-yellow-100">Accesso illimitato a tutti i profili per 30 giorni.</p>
+                <p className="mt-1 text-xs text-yellow-100">
+                  Accesso illimitato a tutti i profili per 30 giorni.
+                </p>
               </div>
             </div>
 
