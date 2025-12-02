@@ -29,6 +29,7 @@ export default function EscortMapPage() {
   const [selectedEscort, setSelectedEscort] = useState<MapEscort | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasMapAccess, setHasMapAccess] = useState(false);
 
   const availableCities = selectedCountry ? COUNTRIES_CITIES[selectedCountry]?.cities || [] : [];
@@ -48,6 +49,7 @@ export default function EscortMapPage() {
         const map: Record<string, string> = { agenzia: "agency" };
         const norm = map[rawRole] || rawRole;
         setUserRole(norm);
+        setIsAuthenticated(true);
       } catch {
         // utente non loggato o errore: considerato "cliente" generico
       }
@@ -283,10 +285,17 @@ export default function EscortMapPage() {
           }
           marker.on('click', () => {
             const role = (userRole || '').toLowerCase();
+            // Utente non autenticato: manda al login/registrazione
+            if (!isAuthenticated) {
+              window.location.href = `/autenticazione?redirect=${encodeURIComponent('/escort/mappa')}`;
+              return;
+            }
+            // Escort / agenzia / admin o utente con pacchetto mappa: apri subito profilo
             if (role === 'escort' || role === 'agency' || role === 'admin' || hasMapAccess) {
               window.open(`/escort/${e.slug}`, '_blank');
               return;
             }
+            // Utente loggato senza pacchetto: mostra paywall
             setSelectedEscort(e);
             setShowPaywall(false);
           });
@@ -434,12 +443,18 @@ export default function EscortMapPage() {
           <div className="absolute left-1/2 bottom-4 z-[6000] w-full max-w-md -translate-x-1/2 px-4 pointer-events-none">
             <button
               onClick={() => {
-                // Se utente è escort/agency/admin apri direttamente il profilo
                 const role = (userRole || "").toLowerCase();
-                if (role === "escort" || role === "agency" || role === "admin") {
+                // Utente non autenticato: manda al login/registrazione
+                if (!isAuthenticated) {
+                  window.location.href = `/autenticazione?redirect=${encodeURIComponent('/escort/mappa')}`;
+                  return;
+                }
+                // Se utente è escort/agency/admin o ha pacchetto mappa apri direttamente il profilo
+                if (role === "escort" || role === "agency" || role === "admin" || hasMapAccess) {
                   window.open(`/escort/${selectedEscort.slug}`, "_blank");
                   return;
                 }
+                // Utente loggato senza pacchetto: mostra paywall
                 setShowPaywall(true);
               }}
               className="pointer-events-auto flex w-full items-center gap-3 rounded-xl border border-gray-700 bg-gray-900/95 p-3 text-left shadow-xl hover:border-pink-500 hover:bg-gray-900 cursor-pointer transition-colors"
