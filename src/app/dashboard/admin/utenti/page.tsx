@@ -238,7 +238,7 @@ export default function AdminUtentiPage() {
                       </Button>
                       {user.hasEscortProfile && (
                         <Button
-                          onClick={() => router.push(`/dashboard/agenzia/escort/compila?escortUserId=${user.id}`)}
+                          onClick={() => router.push(`/dashboard/admin/escort/${user.id}`)}
                           className="ml-2 text-xs px-2 py-1 bg-blue-600 hover:bg-blue-700"
                         >
                           Gestisci escort
