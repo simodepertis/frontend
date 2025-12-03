@@ -150,7 +150,7 @@ export default function Navbar() {
           <li><Link href="/happy-hour" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Happy Hour</Link></li>
           <li><Link href="/forum" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Forum</Link></li>
           <li><Link href="/internazionale" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Internazionale</Link></li>
-          <li><Link href="/escort/mappa" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Mappa</Link></li>
+          <li><Link href="/escort/mappa" className="px-3 py-1.5 rounded-md hover:bg-gray-700 hover:text-white transition-colors">Street Fireflies</Link></li>
         </ul>
       </nav>
     </header>
