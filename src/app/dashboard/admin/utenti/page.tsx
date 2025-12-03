@@ -3,6 +3,7 @@
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function AdminUtentiPage() {
   type User = { 
@@ -26,6 +27,7 @@ export default function AdminUtentiPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'user' | 'escort' | 'agency' | 'admin'>('all');
+  const router = useRouter();
 
   useEffect(() => {
     loadUsers();
@@ -234,6 +236,14 @@ export default function AdminUtentiPage() {
                       >
                         {user.suspended ? 'Riattiva' : 'Sospendi'}
                       </Button>
+                      {user.hasEscortProfile && (
+                        <Button
+                          onClick={() => router.push(`/dashboard/agenzia/escort/compila?escortUserId=${user.id}`)}
+                          className="ml-2 text-xs px-2 py-1 bg-blue-600 hover:bg-blue-700"
+                        >
+                          Gestisci escort
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))}
