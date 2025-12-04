@@ -66,6 +66,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
+    if (req.method === 'DELETE') {
+      const idParam = (req.query.id ?? (req.body && (req.body as any).id)) as any
+      const documentId = Number(idParam || 0)
+      if (!documentId) return res.status(400).json({ error: 'ID mancante' })
+      try {
+        const deleted = await prisma.document.delete({ where: { id: documentId } })
+        return res.json({ success: true, deleted })
+      } catch (e:any) {
+        return res.status(404).json({ error: 'Documento non trovato' })
+      }
+    }
+
     return res.status(405).json({ error: 'Method not allowed' })
   } catch (error) {
     console.error('❌ Errore API admin/documents:', error)

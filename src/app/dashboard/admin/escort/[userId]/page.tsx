@@ -28,6 +28,7 @@ export default function AdminEscortDetailPage() {
   const [user, setUser] = useState<AdminEscortProfile | null>(null);
   const [bioIt, setBioIt] = useState("");
   const [deletingPhotoId, setDeletingPhotoId] = useState<number | null>(null);
+  const [actingDocumentId, setActingDocumentId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -110,6 +111,34 @@ export default function AdminEscortDetailPage() {
       setError("Errore imprevisto durante l'eliminazione della foto");
     } finally {
       setDeletingPhotoId(null);
+    }
+  }
+
+  async function deleteDocument(docId: number) {
+    if (!user) return;
+    if (!window.confirm("Sei sicuro di voler eliminare questo documento?")) return;
+    try {
+      setActingDocumentId(docId);
+      setError(null);
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+      const res = await fetch(`/api/admin/documents?id=${docId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || j?.error) {
+        setError(j?.error || "Errore durante l'eliminazione del documento");
+        return;
+      }
+      setUser({
+        ...user,
+        documents: user.documents.filter((d) => d.id !== docId),
+      });
+    } catch (e) {
+      console.error(e);
+      setError("Errore imprevisto durante l'eliminazione del documento");
+    } finally {
+      setActingDocumentId(null);
     }
   }
 
@@ -196,6 +225,46 @@ export default function AdminEscortDetailPage() {
                           disabled={deletingPhotoId === photo.id}
                         >
                           {deletingPhotoId === photo.id ? "Eliminazione…" : "Elimina"}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {user.documents.length > 0 && (
+              <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-4">
+                <div className="text-sm font-semibold text-white">Documenti / Video</div>
+                <div className="space-y-2 text-xs text-gray-300">
+                  {user.documents.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between gap-3 border border-gray-700 rounded-md px-3 py-2 bg-black/30"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium text-white text-[12px]">Documento #{doc.id}</span>
+                        <span className="text-[11px] text-gray-400">Stato: {doc.status}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {doc.url && (
+                          <a
+                            href={doc.url?.startsWith('/uploads/') ? ('/api' + doc.url) : doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] px-2 py-1 rounded-md bg-gray-700 hover:bg-gray-600 text-white"
+                          >
+                            Apri
+                          </a>
+                        )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-6 px-2 text-[11px]"
+                          onClick={() => deleteDocument(doc.id)}
+                          disabled={actingDocumentId === doc.id}
+                        >
+                          {actingDocumentId === doc.id ? "Eliminazione…" : "Elimina"}
                         </Button>
                       </div>
                     </div>
