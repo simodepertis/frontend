@@ -666,3 +666,39 @@ model QuickMeetingBumpSchedule {
   @@index([status])
   @@index([runAt])
 }
+
+// ==============================
+// Street Fireflies (mappa speciale gestita solo da admin)
+// ==============================
+
+model StreetEscort {
+  id               Int      @id @default(autoincrement())
+  name             String
+  city             String
+  lat              Float?
+  lon              Float?
+  shortDescription String?
+  fullDescription  String?
+  price            Int?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  photos StreetEscortPhoto[]
+
+  @@index([city, active])
+}
+
+model StreetEscortPhoto {
+  id             Int      @id @default(autoincrement())
+  streetEscortId Int
+  url            String
+  isCensored     Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  streetEscort StreetEscort @relation(fields: [streetEscortId], references: [id], onDelete: Cascade)
+
+  @@index([streetEscortId])
+}
+
