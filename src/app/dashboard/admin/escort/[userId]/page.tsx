@@ -27,6 +27,7 @@ export default function AdminEscortDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<AdminEscortProfile | null>(null);
   const [bioIt, setBioIt] = useState("");
+  const [deletingPhotoId, setDeletingPhotoId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -81,6 +82,34 @@ export default function AdminEscortDetailPage() {
       setError("Errore imprevisto durante il salvataggio");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function deletePhoto(photoId: number) {
+    if (!user) return;
+    if (!window.confirm("Sei sicuro di voler eliminare questa foto?")) return;
+    try {
+      setDeletingPhotoId(photoId);
+      setError(null);
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+      const res = await fetch(`/api/admin/media/photos?id=${photoId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || j?.error) {
+        setError(j?.error || "Errore durante l'eliminazione della foto");
+        return;
+      }
+      setUser({
+        ...user,
+        photos: user.photos.filter((p) => p.id !== photoId),
+      });
+    } catch (e) {
+      console.error(e);
+      setError("Errore imprevisto durante l'eliminazione della foto");
+    } finally {
+      setDeletingPhotoId(null);
     }
   }
 
@@ -143,6 +172,37 @@ export default function AdminEscortDetailPage() {
                 </Button>
               </div>
             </div>
+
+            {user.photos.length > 0 && (
+              <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-4">
+                <div className="text-sm font-semibold text-white">Foto della escort</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {user.photos.map((photo) => (
+                    <div key={photo.id} className="border border-gray-700 rounded-md overflow-hidden bg-black/40 flex flex-col">
+                      <div className="aspect-[4/5] bg-gray-900 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={photo.url}
+                          alt={`Foto ${photo.id}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="p-2 text-xs text-gray-300 flex items-center justify-between gap-2 border-t border-gray-700">
+                        <span className="uppercase tracking-wide text-[10px] text-gray-400">{photo.status}</span>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="h-6 px-2 text-[11px]"
+                          onClick={() => deletePhoto(photo.id)}
+                          disabled={deletingPhotoId === photo.id}
+                        >
+                          {deletingPhotoId === photo.id ? "Eliminazione…" : "Elimina"}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
