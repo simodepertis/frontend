@@ -15,6 +15,9 @@ type MapEscort = {
   category: string;
   coverUrl: string | null;
   city?: string;
+  // Nuovi campi per distinguere escort normali da Street Fireflies
+  source: "NORMAL" | "STREET";
+  streetId?: number;
 };
 
 export default function EscortMapPage() {
@@ -111,11 +114,12 @@ export default function EscortMapPage() {
       try {
         const qs = new URLSearchParams({ country: selectedCountry, citta: selectedCity }).toString();
         const r = await fetch(`/api/public/annunci?${qs}`);
+        let mappedNormal: MapEscort[] = [];
         if (r.ok) {
           const j = await r.json();
           const items = Array.isArray(j.items) ? j.items : [];
-          // mappiamo solo le escort che hanno una posizione precisa
-          const mapped: MapEscort[] = items.map((it: any) => {
+          // mappiamo solo le escort che hanno una posizione precisa (fonte normale)
+          mappedNormal = items.map((it: any) => {
             const latNum = it.positionLat !== undefined && it.positionLat !== null ? Number(it.positionLat) : NaN;
             const lonNum = it.positionLon !== undefined && it.positionLon !== null ? Number(it.positionLon) : NaN;
             return {
@@ -127,12 +131,40 @@ export default function EscortMapPage() {
               category: it.mapCategory || 'ESCORT',
               coverUrl: it.coverUrl || null,
               city: Array.isArray(it.cities) && it.cities.length > 0 ? String(it.cities[0]) : undefined,
+              source: "NORMAL",
             };
           });
-          setEscorts(mapped);
-        } else {
-          setEscorts([]);
         }
+
+        // Carica le Street Fireflies per la stessa città (solo attive)
+        let mappedStreet: MapEscort[] = [];
+        try {
+          const r2 = await fetch(`/api/public/street-fireflies?city=${encodeURIComponent(selectedCity)}`);
+          if (r2.ok) {
+            const j2 = await r2.json();
+            const items2 = Array.isArray(j2.items) ? j2.items : [];
+            mappedStreet = items2.map((it: any) => {
+              const latNum = typeof it.lat === 'number' ? it.lat : NaN;
+              const lonNum = typeof it.lon === 'number' ? it.lon : NaN;
+              return {
+                id: it.id,
+                slug: `street-${it.id}`,
+                name: it.name,
+                lat: Number.isFinite(latNum) ? latNum : null,
+                lon: Number.isFinite(lonNum) ? lonNum : null,
+                category: 'ESCORT',
+                coverUrl: null,
+                city: it.city || selectedCity,
+                source: "STREET",
+                streetId: it.id,
+              };
+            });
+          }
+        } catch {
+          // se fallisce lo strato Street Fireflies, non blocchiamo il resto
+        }
+
+        setEscorts([...mappedNormal, ...mappedStreet]);
       } catch {
         setEscorts([]);
       }
@@ -292,7 +324,11 @@ export default function EscortMapPage() {
             }
             // Escort / agenzia / admin o utente con pacchetto mappa: apri subito profilo
             if (role === 'escort' || role === 'agency' || role === 'admin' || hasMapAccess) {
-              window.open(`/escort/${e.slug}`, '_blank');
+              if (e.source === 'STREET' && e.streetId) {
+                window.open(`/street-fireflies/${e.streetId}`, '_blank');
+              } else {
+                window.open(`/escort/${e.slug}`, '_blank');
+              }
               return;
             }
             // Utente loggato senza pacchetto: mostra paywall
