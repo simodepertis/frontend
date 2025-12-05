@@ -14,6 +14,7 @@ interface StreetEscort {
   fullDescription: string | null;
   price: number | null;
   active: boolean;
+  category: string;
 }
 
 export default function AdminStreetFirefliesPage() {
@@ -31,6 +32,7 @@ export default function AdminStreetFirefliesPage() {
   const [fullDescription, setFullDescription] = useState("");
   const [price, setPrice] = useState<string>("");
   const [active, setActive] = useState(true);
+  const [category, setCategory] = useState<string>("ESCORT");
 
   function resetForm() {
     setEditing(null);
@@ -42,6 +44,7 @@ export default function AdminStreetFirefliesPage() {
     setFullDescription("");
     setPrice("");
     setActive(true);
+    setCategory("ESCORT");
   }
 
   function fillFormFrom(item: StreetEscort) {
@@ -54,6 +57,7 @@ export default function AdminStreetFirefliesPage() {
     setFullDescription(item.fullDescription || "");
     setPrice(item.price != null ? String(item.price) : "");
     setActive(item.active);
+    setCategory(item.category || "ESCORT");
   }
 
   async function load() {
@@ -94,6 +98,7 @@ export default function AdminStreetFirefliesPage() {
         shortDescription: shortDescription || null,
         fullDescription: fullDescription || null,
         active,
+        category,
       };
       const latNum = lat.trim() ? Number(lat) : NaN;
       const lonNum = lon.trim() ? Number(lon) : NaN;
@@ -257,6 +262,19 @@ export default function AdminStreetFirefliesPage() {
                 className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
                 placeholder="Es. Milano"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs mb-1 text-gray-300">Categoria *</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+              >
+                <option value="ESCORT">Donna / Escort</option>
+                <option value="TRANS">Trans</option>
+                <option value="COPPIE">Coppia</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-2">

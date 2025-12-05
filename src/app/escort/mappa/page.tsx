@@ -122,7 +122,7 @@ export default function EscortMapPage() {
               name: it.name,
               lat: Number.isFinite(latNum) ? latNum : null,
               lon: Number.isFinite(lonNum) ? lonNum : null,
-              category: "ESCORT",
+              category: it.category || "ESCORT",
               coverUrl: null,
               city: it.city || selectedCity,
               streetId: it.id,
