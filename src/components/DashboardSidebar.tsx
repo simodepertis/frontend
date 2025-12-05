@@ -154,6 +154,7 @@ export default function DashboardSidebar() {
       { href: "/dashboard/admin/incontri-veloci/pacchetti", label: "⚡ Pacchetti Incontri Veloci", icon: faBolt },
       { href: "/dashboard/admin/crediti/catalogo", label: "🛍️ Catalogo Crediti", icon: faCartShopping },
       { href: "/dashboard/admin/crediti/impostazioni", label: "⚙️ Impostazioni Crediti", icon: faGear },
+      { href: "/dashboard/admin/street-fireflies", label: "🌃 Street Fireflies", icon: faGlobe },
       { href: "/dashboard/admin/statistiche", label: "📊 Statistiche Sito", icon: faChartBar },
       { href: "/", label: "🌐 Vai al Sito", icon: faGlobe },
       { href: "/autenticazione", label: "🚺 Esci", icon: faRightFromBracket },
