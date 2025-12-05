@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import SectionHeader from "@/components/SectionHeader";
 import { Button } from "@/components/ui/button";
+import { COUNTRIES_CITIES, COUNTRY_LIST } from "@/lib/internationalCities";
 
 interface StreetEscort {
   id: number;
@@ -44,6 +45,16 @@ export default function AdminStreetFirefliesPage() {
   const [photos, setPhotos] = useState<StreetEscortPhoto[]>([]);
   const [newPhotoUrl, setNewPhotoUrl] = useState<string>("");
 
+  const [selectedCountry, setSelectedCountry] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
+  const [center, setCenter] = useState<{ lat: number; lon: number }>({ lat: 45.4642, lon: 9.19 });
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const mapDivRef = useRef<HTMLDivElement | null>(null);
+  const [leafletReady, setLeafletReady] = useState(false);
+
+  const availableCities = selectedCountry ? COUNTRIES_CITIES[selectedCountry]?.cities || [] : [];
+
   function resetForm() {
     setEditing(null);
     setName("");
@@ -57,6 +68,9 @@ export default function AdminStreetFirefliesPage() {
     setCategory("ESCORT");
     setPhotos([]);
     setNewPhotoUrl("");
+    setSelectedCountry("");
+    setSelectedCity("");
+    setCenter({ lat: 45.4642, lon: 9.19 });
   }
 
   function fillFormFrom(item: StreetEscort) {
@@ -70,7 +84,17 @@ export default function AdminStreetFirefliesPage() {
     setPrice(item.price != null ? String(item.price) : "");
     setActive(item.active);
     setCategory(item.category || "ESCORT");
+    setSelectedCity(item.city || "");
+    setSelectedCountry("");
+    if (typeof item.lat === "number" && typeof item.lon === "number") {
+      setCenter({ lat: item.lat, lon: item.lon });
+    }
     loadPhotos(item.id);
+  }
+
+  function updateLatLon(pos: { lat: number; lon: number }) {
+    setLat(String(pos.lat));
+    setLon(String(pos.lon));
   }
 
   async function loadPhotos(streetEscortId: number) {
@@ -90,6 +114,59 @@ export default function AdminStreetFirefliesPage() {
       console.error(e);
       setPhotos([]);
     }
+  }
+
+  function loadLeafletFromCDN(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (typeof window === "undefined") return reject(new Error("SSR"));
+      const w: any = window as any;
+      if (w.L) return resolve(w.L);
+      const cssId = "leaflet-css";
+      if (!document.getElementById(cssId)) {
+        const link = document.createElement("link");
+        link.id = cssId;
+        link.rel = "stylesheet";
+        link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        document.head.appendChild(link);
+      }
+      const jsId = "leaflet-js";
+      if (!document.getElementById(jsId)) {
+        const s = document.createElement("script");
+        s.id = jsId;
+        s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        s.async = true;
+        s.onload = () => {
+          try {
+            const L = (window as any).L;
+            L.Icon.Default.mergeOptions({
+              iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+              shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+            });
+            resolve(L);
+          } catch (e) {
+            reject(e);
+          }
+        };
+        s.onerror = () => reject(new Error("Leaflet load failed"));
+        document.body.appendChild(s);
+      } else {
+        const iv = setInterval(() => {
+          if ((window as any).L) {
+            clearInterval(iv);
+            const L = (window as any).L;
+            L.Icon.Default.mergeOptions({
+              iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+              shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+            });
+            resolve(L);
+          }
+        }, 50);
+        setTimeout(() => {
+          clearInterval(iv);
+          reject(new Error("Leaflet not available"));
+        }, 5000);
+      }
+    });
   }
 
   async function addPhoto() {
@@ -164,6 +241,41 @@ export default function AdminStreetFirefliesPage() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!mapDivRef.current || mapRef.current) return;
+    (async () => {
+      const L = await loadLeafletFromCDN().catch(() => null);
+      if (!L || !mapDivRef.current) return;
+      const map = L.map(mapDivRef.current).setView([center.lat, center.lon], 12);
+      mapRef.current = map;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap",
+      }).addTo(map);
+      const marker = L.marker([center.lat, center.lon], { draggable: true }).addTo(map);
+      markerRef.current = marker;
+      marker.on("dragend", () => {
+        const p = marker.getLatLng();
+        updateLatLon({ lat: p.lat, lon: p.lng });
+        setCenter({ lat: p.lat, lon: p.lng });
+      });
+      map.on("click", (e: any) => {
+        const p = e.latlng;
+        marker.setLatLng(p);
+        updateLatLon({ lat: p.lat, lon: p.lng });
+        setCenter({ lat: p.lat, lon: p.lng });
+      });
+      setLeafletReady(true);
+    })();
+  }, [center.lat, center.lon]);
+
+  useEffect(() => {
+    if (!leafletReady || !mapRef.current || !markerRef.current) return;
+    try {
+      markerRef.current.setLatLng([center.lat, center.lon]);
+      mapRef.current.setView([center.lat, center.lon]);
+    } catch {}
+  }, [center, leafletReady]);
 
   async function save() {
     try {
@@ -333,13 +445,44 @@ export default function AdminStreetFirefliesPage() {
             </div>
 
             <div>
-              <label className="block text-xs mb-1 text-gray-300">Città *</label>
-              <input
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
+              <label className="block text-xs mb-1 text-gray-300">Nazione *</label>
+              <select
+                value={selectedCountry}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCountry(val);
+                  setSelectedCity("");
+                }}
                 className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
-                placeholder="Es. Milano"
-              />
+              >
+                <option value="">Seleziona nazione</option>
+                {COUNTRY_LIST.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs mb-1 text-gray-300">Città *</label>
+              <select
+                value={selectedCity}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedCity(val);
+                  setCity(val);
+                }}
+                className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+                disabled={!selectedCountry}
+              >
+                <option value="">{!selectedCountry ? "Seleziona prima una nazione" : "Seleziona città"}</option>
+                {availableCities.map((ct) => (
+                  <option key={ct} value={ct}>
+                    {ct}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -374,6 +517,18 @@ export default function AdminStreetFirefliesPage() {
                   placeholder="9.19"
                 />
               </div>
+            </div>
+
+            <div className="mt-2">
+              <label className="block text-xs mb-1 text-gray-300">Seleziona il punto sulla mappa</label>
+              <div
+                ref={mapDivRef}
+                className="w-full h-56 rounded-md border border-gray-700 overflow-hidden bg-black/30"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">
+                Usa la mappa per scegliere la posizione esatta: clicca sulla mappa o trascina il marker. I campi Latitudine e
+                Longitudine verranno aggiornati automaticamente.
+              </p>
             </div>
 
             <div>
