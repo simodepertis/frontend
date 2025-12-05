@@ -242,6 +242,30 @@ export default function AdminStreetFirefliesPage() {
     load();
   }, []);
 
+  // Quando l'admin seleziona nazione e città, centra la mappa su quella città
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!selectedCountry || !selectedCity) return;
+        const countryName = COUNTRIES_CITIES[selectedCountry]?.name || selectedCountry;
+        const q = encodeURIComponent(`${selectedCity}, ${countryName}`);
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`,
+          { headers: { "Accept-Language": "it" } }
+        );
+        if (!resp.ok) return;
+        const arr = await resp.json();
+        const lat = arr?.[0]?.lat ? parseFloat(arr[0].lat) : null;
+        const lon = arr?.[0]?.lon ? parseFloat(arr[0].lon) : null;
+        if (lat == null || lon == null || !Number.isFinite(lat) || !Number.isFinite(lon)) return;
+        setCenter({ lat, lon });
+        updateLatLon({ lat, lon });
+      } catch {
+        // ignora errori di rete/geocoding
+      }
+    })();
+  }, [selectedCountry, selectedCity]);
+
   useEffect(() => {
     if (!mapDivRef.current || mapRef.current) return;
     (async () => {
