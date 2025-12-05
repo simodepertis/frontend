@@ -17,6 +17,13 @@ interface StreetEscort {
   category: string;
 }
 
+interface StreetEscortPhoto {
+  id: number;
+  streetEscortId: number;
+  url: string;
+  isCensored: boolean;
+}
+
 export default function AdminStreetFirefliesPage() {
   const [items, setItems] = useState<StreetEscort[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +41,9 @@ export default function AdminStreetFirefliesPage() {
   const [active, setActive] = useState(true);
   const [category, setCategory] = useState<string>("ESCORT");
 
+  const [photos, setPhotos] = useState<StreetEscortPhoto[]>([]);
+  const [newPhotoUrl, setNewPhotoUrl] = useState<string>("");
+
   function resetForm() {
     setEditing(null);
     setName("");
@@ -45,6 +55,8 @@ export default function AdminStreetFirefliesPage() {
     setPrice("");
     setActive(true);
     setCategory("ESCORT");
+    setPhotos([]);
+    setNewPhotoUrl("");
   }
 
   function fillFormFrom(item: StreetEscort) {
@@ -58,6 +70,72 @@ export default function AdminStreetFirefliesPage() {
     setPrice(item.price != null ? String(item.price) : "");
     setActive(item.active);
     setCategory(item.category || "ESCORT");
+    loadPhotos(item.id);
+  }
+
+  async function loadPhotos(streetEscortId: number) {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+      const res = await fetch(`/api/admin/street-escorts-photos?streetEscortId=${streetEscortId}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error(j?.error || "Errore caricamento foto");
+        setPhotos([]);
+        return;
+      }
+      setPhotos(j.photos || []);
+    } catch (e) {
+      console.error(e);
+      setPhotos([]);
+    }
+  }
+
+  async function addPhoto() {
+    if (!editing || !newPhotoUrl.trim()) return;
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+      const res = await fetch("/api/admin/street-escorts-photos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ streetEscortId: editing.id, url: newPhotoUrl.trim() }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(j?.error || "Errore aggiunta foto");
+        return;
+      }
+      setNewPhotoUrl("");
+      await loadPhotos(editing.id);
+    } catch (e) {
+      console.error(e);
+      alert("Errore imprevisto durante l'aggiunta della foto");
+    }
+  }
+
+  async function removePhoto(id: number) {
+    if (!editing) return;
+    if (!window.confirm("Eliminare questa foto?")) return;
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+      const res = await fetch(`/api/admin/street-escorts-photos?id=${id}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(j?.error || "Errore eliminazione foto");
+        return;
+      }
+      await loadPhotos(editing.id);
+    } catch (e) {
+      console.error(e);
+      alert("Errore imprevisto durante l'eliminazione della foto");
+    }
   }
 
   async function load() {
@@ -226,8 +304,8 @@ export default function AdminStreetFirefliesPage() {
           )}
         </div>
 
-        {/* Colonna destra: form */}
-        <div className="md:col-span-1">
+        {/* Colonna destra: form + foto */}
+        <div className="md:col-span-1 space-y-4">
           <div className="rounded-lg border border-gray-700 bg-gray-800 p-4 space-y-3 text-sm">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white">
@@ -347,6 +425,59 @@ export default function AdminStreetFirefliesPage() {
               </Button>
             </div>
           </div>
+
+          {editing && (
+            <div className="rounded-lg border border-gray-700 bg-gray-800 p-4 space-y-3 text-sm mt-4">
+              <h3 className="text-sm font-semibold text-white">Foto Street Firefly</h3>
+              <p className="text-xs text-gray-300">
+                Le foto caricate qui sono considerate <strong>già censurate</strong>. Verranno mostrate nella pagina pubblica
+                solo in versione censurata.
+              </p>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {photos.length === 0 && (
+                  <div className="text-xs text-gray-400">Nessuna foto caricata per questa Street Firefly.</div>
+                )}
+                {photos.map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between gap-3 border border-gray-700 rounded-md px-2 py-1 bg-black/30"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={p.url}
+                        alt="Foto Street Firefly"
+                        className="h-12 w-12 rounded object-cover flex-shrink-0"
+                      />
+                      <div className="text-xs text-gray-300 truncate">ID {p.id}</div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => removePhoto(p.id)}
+                    >
+                      Elimina
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 space-y-2">
+                <label className="block text-xs mb-1 text-gray-300">Nuova foto (URL)</label>
+                <input
+                  value={newPhotoUrl}
+                  onChange={(e) => setNewPhotoUrl(e.target.value)}
+                  className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+                  placeholder="Incolla qui l'URL dell'immagine censurata"
+                />
+                <Button size="sm" onClick={addPhoto} disabled={!newPhotoUrl.trim()}>
+                  Aggiungi foto
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
