@@ -677,6 +677,8 @@ model StreetEscort {
   city             String
   lat              Float?
   lon              Float?
+  // Categoria per icone mappa: ESCORT | TRANS | COPPIE
+  category         String   @default("ESCORT")
   shortDescription String?
   fullDescription  String?
   price            Int?

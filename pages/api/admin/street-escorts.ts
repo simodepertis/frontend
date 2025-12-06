@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'POST') {
-      const { name, city, lat, lon, shortDescription, fullDescription, price, active } = req.body || {}
+      const { name, city, lat, lon, shortDescription, fullDescription, price, active, category } = req.body || {}
       if (!name || !city) return res.status(400).json({ error: 'Nome e città sono obbligatori' })
       const created = await prisma.streetEscort.create({
         data: {
@@ -34,6 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           city: String(city),
           lat: typeof lat === 'number' ? lat : null,
           lon: typeof lon === 'number' ? lon : null,
+          category: category ? String(category) : 'ESCORT',
           shortDescription: shortDescription ? String(shortDescription) : null,
           fullDescription: fullDescription ? String(fullDescription) : null,
           price: typeof price === 'number' ? price : null,
@@ -57,6 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (rest.fullDescription !== undefined) data.fullDescription = rest.fullDescription ? String(rest.fullDescription) : null
       if (rest.price !== undefined) data.price = typeof rest.price === 'number' ? rest.price : null
       if (rest.active !== undefined) data.active = !!rest.active
+      if (rest.category !== undefined) data.category = rest.category ? String(rest.category) : 'ESCORT'
 
       const updated = await prisma.streetEscort.update({ where: { id: sid }, data })
       return res.json({ item: updated })
