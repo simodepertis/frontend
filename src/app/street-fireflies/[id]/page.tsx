@@ -107,8 +107,8 @@ export default function StreetFireflyDetailPage() {
                     Foto gestite dall'amministratore. Il volto può essere parzialmente censurato per privacy.
                   </div>
                 )}
-                {/* Maschera fissa per censurare in modo evidente la metà superiore (volto) indipendentemente dal pacchetto */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-black" />
+                {/* Maschera fissa: sfocatura e oscuramento leggero sulla metà superiore (volto), indipendentemente dal pacchetto */}
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-black/40 backdrop-blur-md" />
               </div>
             </div>
             <div className="flex-1 space-y-3">
