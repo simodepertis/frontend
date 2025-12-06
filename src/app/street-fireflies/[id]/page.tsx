@@ -26,6 +26,27 @@ export default function StreetFireflyDetailPage() {
   const [item, setItem] = useState<StreetEscortDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasMapAccess, setHasMapAccess] = useState(false);
+
+  // Riusa la stessa logica di /escort/mappa per capire se l'utente ha un pacchetto attivo
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      const raw = window.localStorage.getItem("map-access");
+      if (!raw) return;
+      const data = JSON.parse(raw) as { code?: string; acquiredAt?: string } | null;
+      if (!data?.code || !data?.acquiredAt) return;
+      const acquired = new Date(data.acquiredAt).getTime();
+      if (!Number.isFinite(acquired)) return;
+      const now = Date.now();
+      const days30 = 30 * 24 * 60 * 60 * 1000;
+      if (now - acquired <= days30) {
+        setHasMapAccess(true);
+      }
+    } catch {
+      // ignora errori di parsing
+    }
+  }, []);
 
   useEffect(() => {
     const id = params?.id;
@@ -105,18 +126,27 @@ export default function StreetFireflyDetailPage() {
               )}
 
               <div className="pt-2">
-                <Button
-                  onClick={() => {
-                    // Reindirizza ai pacchetti per sbloccare i profili, riusando il sistema esistente
-                    window.location.href = "/dashboard/pacchetti";
-                  }}
-                >
-                  Sblocca questo profilo con un pacchetto
-                </Button>
-                <p className="mt-2 text-xs text-gray-400">
-                  Dopo aver acquistato un pacchetto valido potrai vedere tutte le informazioni disponibili
-                  e lasciare recensioni secondo le regole del sito.
-                </p>
+                {!hasMapAccess ? (
+                  <>
+                    <Button
+                      onClick={() => {
+                        // Reindirizza ai pacchetti per sbloccare i profili, riusando il sistema esistente
+                        window.location.href = "/dashboard/pacchetti";
+                      }}
+                    >
+                      Sblocca questo profilo con un pacchetto
+                    </Button>
+                    <p className="mt-2 text-xs text-gray-400">
+                      Dopo aver acquistato un pacchetto valido potrai vedere tutte le informazioni disponibili
+                      e lasciare recensioni secondo le regole del sito.
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-2 text-xs text-green-400">
+                    Profilo sbloccato grazie al tuo pacchetto attivo. Le foto rimangono censurate per privacy,
+                    ma puoi consultare tutte le informazioni testuali e usare le funzionalit di recensione.
+                  </p>
+                )}
               </div>
             </div>
           </div>

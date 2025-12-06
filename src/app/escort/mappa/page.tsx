@@ -108,12 +108,14 @@ export default function EscortMapPage() {
         // ignora errori di setView
       }
 
-      // Carica SOLO le Street Fireflies per la città selezionata (gestite da admin)
+      // Carica le Street Fireflies e filtra per la città selezionata (gestite da admin)
       try {
         const r2 = await fetch(`/api/public/street-fireflies?city=${encodeURIComponent(selectedCity)}`);
         if (r2.ok) {
           const j2 = await r2.json();
-          const items2 = Array.isArray(j2.items) ? j2.items : [];
+          let items2 = Array.isArray(j2.items) ? j2.items : [];
+          const cityLc = selectedCity.toLowerCase();
+          items2 = items2.filter((it: any) => String(it.city || "").toLowerCase() === cityLc);
           const mappedStreet: MapEscort[] = items2.map((it: any) => {
             const latNum = typeof it.lat === "number" ? it.lat : NaN;
             const lonNum = typeof it.lon === "number" ? it.lon : NaN;
