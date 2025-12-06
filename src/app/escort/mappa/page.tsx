@@ -285,19 +285,7 @@ export default function EscortMapPage() {
             marker.bindPopup(e.name);
           }
           marker.on('click', () => {
-            const role = (userRole || '').toLowerCase();
-            // Utente non autenticato: manda al login/registrazione
-            if (!isAuthenticated) {
-              window.location.href = `/autenticazione?redirect=${encodeURIComponent('/escort/mappa')}`;
-              return;
-            }
-            // Escort / agenzia / admin o utente con pacchetto mappa: apri subito profilo Street Fireflies
-            if (role === 'escort' || role === 'agency' || role === 'admin' || hasMapAccess) {
-              const targetId = e.streetId || e.id;
-              window.open(`/street-fireflies/${targetId}`, '_blank');
-              return;
-            }
-            // Utente loggato senza pacchetto: mostra paywall
+            // Il marker apre solo la card; la card gestisce poi pacchetto/redirect
             setSelectedEscort(e);
             setShowPaywall(false);
           });
