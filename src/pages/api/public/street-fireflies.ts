@@ -23,12 +23,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       lat: { not: null },
       lon: { not: null },
     };
-    if (city) {
-      const c = String(city).trim();
-      if (c) {
-        where.city = { equals: c, mode: 'insensitive' };
-      }
-    }
 
     const items = await prisma.streetEscort.findMany({
       where,
