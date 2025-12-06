@@ -44,6 +44,8 @@ export default function AdminStreetFirefliesPage() {
 
   const [photos, setPhotos] = useState<StreetEscortPhoto[]>([]);
   const [newPhotoUrl, setNewPhotoUrl] = useState<string>("");
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
@@ -191,6 +193,51 @@ export default function AdminStreetFirefliesPage() {
     } catch (e) {
       console.error(e);
       alert("Errore imprevisto durante l'aggiunta della foto");
+    }
+  }
+
+  async function uploadFiles(files: FileList) {
+    if (!editing || !files.length) return;
+    setUploadingPhotos(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("auth-token") : null;
+
+      const toBase64 = (file: File) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const res = reader.result;
+            if (typeof res === "string") resolve(res);
+            else reject(new Error("Impossibile leggere il file"));
+          };
+          reader.onerror = () => reject(reader.error || new Error("Errore lettura file"));
+          reader.readAsDataURL(file);
+        });
+
+      for (const file of Array.from(files)) {
+        try {
+          const base64 = await toBase64(file);
+          const res = await fetch("/api/admin/street-escorts-photos", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ streetEscortId: editing.id, url: base64 }),
+          });
+          const j = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            console.error(j?.error || "Errore upload foto");
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      await loadPhotos(editing.id);
+    } finally {
+      setUploadingPhotos(false);
+      setIsDragging(false);
     }
   }
 
@@ -644,16 +691,70 @@ export default function AdminStreetFirefliesPage() {
               </div>
 
               <div className="pt-2 space-y-2">
-                <label className="block text-xs mb-1 text-gray-300">Nuova foto (URL)</label>
-                <input
-                  value={newPhotoUrl}
-                  onChange={(e) => setNewPhotoUrl(e.target.value)}
-                  className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
-                  placeholder="Incolla qui l'URL dell'immagine censurata"
-                />
-                <Button size="sm" onClick={addPhoto} disabled={!newPhotoUrl.trim()}>
-                  Aggiungi foto
-                </Button>
+                <label className="block text-xs mb-1 text-gray-300">Carica nuove foto</label>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!editing) return;
+                    const files = e.dataTransfer.files;
+                    if (files && files.length) {
+                      uploadFiles(files);
+                    }
+                  }}
+                  className={`border-2 border-dashed rounded-md px-3 py-4 text-xs cursor-pointer transition-colors ${
+                    isDragging ? "border-pink-500 bg-pink-500/10" : "border-gray-600 bg-black/20"
+                  }`}
+                >
+                  <p className="text-gray-200 mb-1">Trascina qui le immagini censurate oppure clicca per selezionarle.</p>
+                  <p className="text-[11px] text-gray-400">Sono supportati file JPG, PNG, WEBP. Le foto saranno salvate come censurate.</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    id="sf-photos-input"
+                    onChange={(e) => {
+                      if (e.target.files) uploadFiles(e.target.files);
+                    }}
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2 items-center">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => {
+                        const inp = document.getElementById("sf-photos-input") as HTMLInputElement | null;
+                        if (inp) inp.click();
+                      }}
+                      disabled={uploadingPhotos}
+                    >
+                      Scegli file
+                    </Button>
+                    {uploadingPhotos && <span className="text-[11px] text-gray-300">Caricamento in corso...</span>}
+                  </div>
+                </div>
+
+                <div className="space-y-1 pt-2">
+                  <label className="block text-xs mb-1 text-gray-300">Oppure da URL</label>
+                  <input
+                    value={newPhotoUrl}
+                    onChange={(e) => setNewPhotoUrl(e.target.value)}
+                    className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+                    placeholder="Incolla qui l'URL dell'immagine censurata"
+                  />
+                  <Button size="sm" onClick={addPhoto} disabled={!newPhotoUrl.trim()}>
+                    Aggiungi da URL
+                  </Button>
+                </div>
               </div>
             </div>
           )}
