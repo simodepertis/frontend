@@ -27,11 +27,10 @@ export default function EscortMapPage() {
   const [escorts, setEscorts] = useState<MapEscort[]>([]);
   const markersRef = useRef<any[]>([]);
   const [leafletReady, setLeafletReady] = useState(false);
-  const [selectedEscort, setSelectedEscort] = useState<MapEscort | null>(null);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasMapAccess, setHasMapAccess] = useState(false);
+  const [selectedEscort, setSelectedEscort] = useState<MapEscort | null>(null);
 
   const availableCities = selectedCountry ? COUNTRIES_CITIES[selectedCountry]?.cities || [] : [];
 
@@ -285,9 +284,7 @@ export default function EscortMapPage() {
             marker.bindPopup(e.name);
           }
           marker.on('click', () => {
-            // Il marker apre solo la card; la card gestisce poi pacchetto/redirect
             setSelectedEscort(e);
-            setShowPaywall(false);
           });
           marker.addTo(mapRef.current);
           markersRef.current.push(marker);
@@ -434,7 +431,12 @@ export default function EscortMapPage() {
               type="button"
               className="pointer-events-auto w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900/95 shadow-xl flex gap-3 p-3 items-center hover:border-pink-500 transition-colors"
               onClick={() => {
+                const token = typeof window !== "undefined" ? window.localStorage.getItem("auth-token") || "" : "";
                 const targetId = selectedEscort.streetId || selectedEscort.id;
+                if (!token) {
+                  window.location.href = `/autenticazione?redirect=${encodeURIComponent("/escort/mappa")}`;
+                  return;
+                }
                 window.open(`/street-fireflies/${targetId}`, "_blank");
               }}
             >
@@ -457,18 +459,13 @@ export default function EscortMapPage() {
                   <div className="text-xs text-gray-300 mt-1 truncate">Escort {selectedEscort.city}</div>
                 )}
                 <div className="mt-1 text-xs text-pink-400 font-medium">
-                  Clicca per aprire il profilo Street Fireflies completo
+                  Clicca per vedere il profilo Street Fireflies di questa escort
                 </div>
               </div>
             </button>
           </div>
         )}
       </div>
-
-      {/* Modal paywall / pacchetti */}
-      {false && showPaywall && selectedEscort && (
-        <div />
-      )}
     </main>
   );
 }
