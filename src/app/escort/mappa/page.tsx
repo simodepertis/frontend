@@ -422,11 +422,11 @@ export default function EscortMapPage() {
       </div>
 
       {/* Contenitore mappa con card sovrapposta */}
-      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden relative" style={{ minHeight: "520px" }}>
+      <div className="bg-gray-900 rounded-xl border border-gray-800 relative" style={{ minHeight: "520px" }}>
         <div ref={mapDivRef} className="w-full h-[520px]" />
 
         {selectedEscort && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-4 flex justify-center z-10">
+          <div className="pointer-events-none absolute inset-x-4 bottom-4 flex justify-center z-50">
             <button
               type="button"
               className="pointer-events-auto w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900/95 shadow-xl flex gap-3 p-3 items-center hover:border-pink-500 transition-colors"
