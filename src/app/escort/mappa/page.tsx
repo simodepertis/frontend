@@ -426,12 +426,13 @@ export default function EscortMapPage() {
         <div ref={mapDivRef} className="w-full h-[520px]" />
 
         {selectedEscort && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-4 flex justify-center z-50">
+          <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-4 z-[10000] flex justify-center">
             <button
               type="button"
-              className="pointer-events-auto w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900/95 shadow-xl flex gap-3 p-3 items-center hover:border-pink-500 transition-colors"
+              className="pointer-events-auto w-full max-w-md rounded-xl border border-gray-700 bg-gray-900/95 shadow-xl flex gap-3 px-3 py-2 items-center hover:border-pink-500 transition-colors"
               onClick={() => {
-                const token = typeof window !== "undefined" ? window.localStorage.getItem("auth-token") || "" : "";
+                const token =
+                  typeof window !== "undefined" ? window.localStorage.getItem("auth-token") || "" : "";
                 const targetId = selectedEscort.streetId || selectedEscort.id;
                 if (!token) {
                   window.location.href = `/autenticazione?redirect=${encodeURIComponent("/escort/mappa")}`;
@@ -445,7 +446,7 @@ export default function EscortMapPage() {
                 <img
                   src={selectedEscort.coverUrl}
                   alt={selectedEscort.name || "Escort"}
-                  className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
+                  className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
                 />
               ) : null}
               <div className="flex-1 min-w-0">
