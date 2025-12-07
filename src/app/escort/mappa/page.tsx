@@ -428,36 +428,24 @@ export default function EscortMapPage() {
       <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden relative" style={{ minHeight: "520px" }}>
         <div ref={mapDivRef} className="w-full h-[520px]" />
 
-        {/* Card escort selezionata (click marker) sovrapposta alla mappa */}
         {selectedEscort && (
-          <div className="absolute left-1/2 bottom-4 z-[6000] w-full max-w-md -translate-x-1/2 px-4 pointer-events-none">
+          <div className="pointer-events-none absolute inset-x-4 bottom-4 flex justify-center">
             <button
+              type="button"
+              className="pointer-events-auto w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900/95 shadow-xl flex gap-3 p-3 items-center hover:border-pink-500 transition-colors"
               onClick={() => {
-                const role = (userRole || "").toLowerCase();
-                // Utente non autenticato: manda al login/registrazione
-                if (!isAuthenticated) {
-                  window.location.href = `/autenticazione?redirect=${encodeURIComponent('/escort/mappa')}`;
-                  return;
-                }
-                // Se utente è escort/agency/admin o ha pacchetto mappa apri direttamente il profilo Street Fireflies
-                if (role === "escort" || role === "agency" || role === "admin" || hasMapAccess) {
-                  const targetId = selectedEscort.streetId || selectedEscort.id;
-                  window.open(`/street-fireflies/${targetId}`, "_blank");
-                  return;
-                }
-                // Utente loggato senza pacchetto: mostra paywall
-                setShowPaywall(true);
+                const targetId = selectedEscort.streetId || selectedEscort.id;
+                window.open(`/street-fireflies/${targetId}`, "_blank");
               }}
-              className="pointer-events-auto flex w-full items-center gap-3 rounded-xl border border-gray-700 bg-gray-900/95 p-3 text-left shadow-xl hover:border-pink-500 hover:bg-gray-900 cursor-pointer transition-colors"
             >
-              {selectedEscort.coverUrl && (
+              {selectedEscort.coverUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={selectedEscort.coverUrl}
-                  alt={selectedEscort.name}
+                  alt={selectedEscort.name || "Escort"}
                   className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
                 />
-              )}
+              ) : null}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-white truncate">{selectedEscort.name}</span>
@@ -469,7 +457,7 @@ export default function EscortMapPage() {
                   <div className="text-xs text-gray-300 mt-1 truncate">Escort {selectedEscort.city}</div>
                 )}
                 <div className="mt-1 text-xs text-pink-400 font-medium">
-                  Clicca per vedere i pacchetti e sbloccare il profilo completo
+                  Clicca per aprire il profilo Street Fireflies completo
                 </div>
               </div>
             </button>
@@ -478,77 +466,8 @@ export default function EscortMapPage() {
       </div>
 
       {/* Modal paywall / pacchetti */}
-      {showPaywall && selectedEscort && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-lg rounded-2xl border border-gray-700 bg-gray-900 p-5 shadow-2xl relative">
-            <button
-              onClick={() => setShowPaywall(false)}
-              className="absolute right-3 top-3 text-gray-400 hover:text-white text-sm"
-            >
-              ✕
-            </button>
-            <h2 className="text-xl font-semibold text-white mb-1">
-              Sblocca il profilo di {selectedEscort.name}
-            </h2>
-            <p className="text-sm text-gray-300 mb-4">
-              Acquista un pacchetto per vedere tutte le foto, recensioni complete e i contatti dell'escort.
-            </p>
-
-            <div className="grid gap-3 mb-4">
-              <div
-                className="rounded-xl border border-pink-600/70 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400"
-                onClick={() => {
-                  setShowPaywall(false);
-                  window.location.href = "/dashboard/pacchetti";
-                }}
-              >
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-semibold text-white">Pacchetto Singolo Profilo</span>
-                  <span className="text-lg font-bold text-pink-400">20 crediti</span>
-                </div>
-                <p className="mt-1 text-xs text-gray-300">
-                  Accesso completo al profilo di {selectedEscort.name} per 24 ore.
-                </p>
-              </div>
-
-              <div
-                className="rounded-xl border border-gray-600 bg-gray-800/80 p-3 cursor-pointer hover:border-pink-400"
-                onClick={() => {
-                  setShowPaywall(false);
-                  window.location.href = "/dashboard/pacchetti";
-                }}
-              >
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-semibold text-white">Pacchetto 5 Profili</span>
-                  <span className="text-lg font-bold text-pink-400">80 crediti</span>
-                </div>
-                <p className="mt-1 text-xs text-gray-300">
-                  Sblocca fino a 5 profili escort a tua scelta.
-                </p>
-              </div>
-
-              <div
-                className="rounded-xl border border-yellow-500 bg-yellow-500/10 p-3 cursor-pointer hover:border-yellow-400"
-                onClick={() => {
-                  setShowPaywall(false);
-                  window.location.href = "/dashboard/pacchetti";
-                }}
-              >
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-semibold text-yellow-300">Pacchetto Illimitato 30 giorni</span>
-                  <span className="text-lg font-bold text-yellow-300">200 crediti</span>
-                </div>
-                <p className="mt-1 text-xs text-yellow-100">
-                  Accesso illimitato a tutti i profili per 30 giorni.
-                </p>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-gray-400">
-              * Pagina di pagamento reale da collegare in seguito. Nessun addebito viene effettuato in questa fase.
-            </p>
-          </div>
-        </div>
+      {false && showPaywall && selectedEscort && (
+        <div />
       )}
     </main>
   );
