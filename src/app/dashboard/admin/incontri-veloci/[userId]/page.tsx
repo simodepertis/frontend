@@ -122,7 +122,7 @@ export default function AdminUserQuickMeetingsPage() {
                   <td className="px-4 py-3 flex gap-2">
                     <button
                       type="button"
-                      onClick={() => router.push(`/dashboard/admin/incontri-veloci/${m.id}`)}
+                      onClick={() => router.push(`/dashboard/admin/incontri-veloci/dettaglio/${m.id}`)}
                       className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-xs text-white"
                     >
                       Modifica
