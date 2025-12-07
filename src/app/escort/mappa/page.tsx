@@ -426,7 +426,7 @@ export default function EscortMapPage() {
         <div ref={mapDivRef} className="w-full h-[520px]" />
 
         {selectedEscort && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-4 flex justify-center">
+          <div className="pointer-events-none absolute inset-x-4 bottom-4 flex justify-center z-10">
             <button
               type="button"
               className="pointer-events-auto w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900/95 shadow-xl flex gap-3 p-3 items-center hover:border-pink-500 transition-colors"
