@@ -466,6 +466,9 @@ model User {
   quickMeetings         QuickMeeting[]
   quickMeetingReviews   QuickMeetingReview[]
   quickMeetingPurchases QuickMeetingPurchase[]
+
+  // Street Fireflies reviews
+  streetFireflyReviews  StreetFireflyReview[]
 }
 
 model EscortProfile {
@@ -688,6 +691,8 @@ model StreetEscort {
 
   photos StreetEscortPhoto[]
 
+  streetFireflyReviews StreetFireflyReview[]
+
   @@index([city, active])
 }
 
@@ -704,3 +709,22 @@ model StreetEscortPhoto {
   @@index([streetEscortId])
 }
 
+model StreetFireflyReview {
+  id             Int      @id @default(autoincrement())
+  streetEscortId Int
+  userId         Int
+  title          String
+  rating         Int // 1-5 stelle
+  reviewText     String
+  createdAt      DateTime @default(now())
+  isApproved     Boolean  @default(false)
+  isVisible      Boolean  @default(true)
+
+  streetEscort StreetEscort @relation(fields: [streetEscortId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([streetEscortId])
+  @@index([userId])
+  @@index([createdAt(sort: Desc)])
+  @@index([isApproved])
+}

@@ -15,6 +15,7 @@ export default function AdminUtentiPage() {
     lastLogin?: string;
     suspended?: boolean;
     hasEscortProfile?: boolean;
+    quickMeetingsCount?: number;
     counts?: {
       photosApproved: number;
       photosReview: number;
@@ -52,6 +53,7 @@ export default function AdminUtentiPage() {
           lastLogin: 'N/A',
           suspended: !!user.suspended,
           hasEscortProfile: !!user.hasEscortProfile,
+          quickMeetingsCount: typeof user.quickMeetingsCount === 'number' ? user.quickMeetingsCount : 0,
           counts: user.counts || { photosApproved: 0, photosReview: 0, videosApproved: 0, videosReview: 0, docsApproved: 0 }
         }));
         setUsers(transformedUsers);
@@ -193,6 +195,7 @@ export default function AdminUtentiPage() {
                   <th className="px-4 py-3 text-left text-white">Foto Review</th>
                   <th className="px-4 py-3 text-left text-white">Video OK</th>
                   <th className="px-4 py-3 text-left text-white">Doc OK</th>
+                  <th className="px-4 py-3 text-left text-white">Incontri veloci</th>
                   <th className="px-4 py-3 text-left text-white">Escort</th>
                   <th className="px-4 py-3 text-left text-white">Stato</th>
                   <th className="px-4 py-3 text-left text-white">Azioni</th>
@@ -221,6 +224,7 @@ export default function AdminUtentiPage() {
                     <td className="px-4 py-3 text-gray-300 text-sm">{user.counts?.photosReview ?? 0}</td>
                     <td className="px-4 py-3 text-gray-300 text-sm">{user.counts?.videosApproved ?? 0}</td>
                     <td className="px-4 py-3 text-gray-300 text-sm">{user.counts?.docsApproved ?? 0}</td>
+                    <td className="px-4 py-3 text-gray-300 text-sm">{user.quickMeetingsCount ?? 0}</td>
                     <td className="px-4 py-3 text-gray-300 text-sm">{user.hasEscortProfile ? 'Sì' : 'No'}</td>
                     <td className="px-4 py-3 text-sm">{user.suspended ? <span className="px-2 py-1 rounded bg-red-700 text-white text-xs">Sospeso</span> : <span className="px-2 py-1 rounded bg-emerald-700 text-white text-xs">Attivo</span>}</td>
                     <td className="px-4 py-3">
@@ -242,6 +246,14 @@ export default function AdminUtentiPage() {
                           className="ml-2 text-xs px-2 py-1 bg-blue-600 hover:bg-blue-700"
                         >
                           Gestisci escort
+                        </Button>
+                      )}
+                      {user.quickMeetingsCount && user.quickMeetingsCount > 0 && (
+                        <Button
+                          onClick={() => router.push(`/dashboard/admin/incontri-veloci/${user.id}`)}
+                          className="ml-2 text-xs px-2 py-1 bg-purple-600 hover:bg-purple-700"
+                        >
+                          Incontri veloci
                         </Button>
                       )}
                     </td>

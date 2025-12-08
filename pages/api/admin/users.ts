@@ -25,7 +25,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           photos: { select: { status: true } },
           documents: { select: { status: true } },
           videos: { select: { status: true } },
-        }
+          quickMeetings: { select: { id: true } },
+        },
       }) as any
 
       const enriched = (users as any[]).map((u: any) => {
@@ -34,6 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const videosApproved = (u.videos as any[]).filter((v: any) => v.status === 'APPROVED').length
         const videosReview = (u.videos as any[]).filter((v: any) => v.status === 'IN_REVIEW').length
         const docsApproved = (u.documents as any[]).filter((d: any) => d.status === 'APPROVED').length
+        const quickMeetingsCount = Array.isArray((u as any).quickMeetings) ? (u as any).quickMeetings.length : 0
         return {
           id: u.id,
           nome: u.nome,
@@ -47,6 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             videosApproved, videosReview,
             docsApproved,
           }
+          ,
+          quickMeetingsCount,
         }
       })
 
