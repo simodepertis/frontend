@@ -16,8 +16,10 @@ const fetch = require('undici').fetch;
 const cheerio = require('cheerio');
 const { PrismaClient } = require('@prisma/client');
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 const prisma = new PrismaClient();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const USER_ID = process.env.USER_ID ? parseInt(process.env.USER_ID, 10) : null;
 const CATEGORY = process.env.CATEGORY || 'DONNA_CERCA_UOMO';
@@ -54,41 +56,81 @@ async function scrapeLista(url) {
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
     
     console.log('🌐 Caricamento pagina...');
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
+
+    // Gestione popup 18+ / cookie
+    try {
+      await page.waitForTimeout(2000);
+      // prova prima con il bottone esplicito "Accetto"
+      const accettoButton = await page.$('button[aria-label="Accetto"]');
+      if (accettoButton) {
+        console.log('✅ Click su bottone [aria-label="Accetto"]');
+        await accettoButton.click();
+      } else {
+        // fallback: cerca bottoni/link con testo che contiene "Accetto" ecc.
+        await page.evaluate(() => {
+          const candidates = Array.from(document.querySelectorAll('button, a'));
+          const acceptTexts = ['accetto', 'accetta', 'ho più di 18', 'ho piu di 18', 'enter'];
+
+          for (const el of candidates) {
+            const text = (el.textContent || '').toLowerCase().trim();
+            if (!text) continue;
+            if (acceptTexts.some(t => text.includes(t))) {
+              (el instanceof HTMLElement) && el.click();
+              break;
+            }
+          }
+        });
+      }
+
+      // dai tempo alla pagina di aggiornarsi dopo il click
+      await page.waitForTimeout(3000);
+    } catch (e) {
+      console.log('ℹ️ Nessun popup 18+/cookie rilevato o gestione non necessaria');
+    }
     
     // Attendi che il contenuto sia caricato
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await page.waitForTimeout(2000);
+
+    // DEBUG: salva HTML della pagina per capire cosa vede Puppeteer
+    try {
+      const html = await page.content();
+      fs.writeFileSync('/root/debug-bakecaincontri.html', html);
+      console.log('💾 Salvato HTML in /root/debug-bakecaincontri.html');
+    } catch (e) {
+      console.log('⚠️ Impossibile salvare HTML di debug in /root:', e.message);
+    }
     
     console.log('🔍 Estrazione link...');
     const links = await page.evaluate(() => {
       const results = [];
-      const anchors = document.querySelectorAll('a[href]');
-      
+
+      // Link annuncio tipico:
+      // <a href="https://www.bakecaincontrii.com/annuncio/..." data-pck="..." ...>
+      const anchors = document.querySelectorAll('a[data-pck][href*="/annuncio/"]');
+
       anchors.forEach(a => {
         const href = a.getAttribute('href');
         if (!href) return;
-        
+
         let full = href;
         if (!full.startsWith('http')) {
           full = full.startsWith('/') ? `${window.location.origin}${full}` : `${window.location.origin}/${full}`;
         }
-        
+
         try {
           const u = new URL(full);
-          const segs = u.pathname.split('/').filter(Boolean);
-          
-          // Filtra: path >= 3 segmenti, stesso dominio, non immagini
+
+          // Accettiamo anche host diversi (es. www.bakecaincontrii.com vs milano.bakecaincontrii.com)
           if (
-            u.host === window.location.host &&
-            segs.length >= 3 &&
-            !/\.(jpg|jpeg|png|gif|webp|svg|css|js)$/i.test(u.pathname) &&
+            u.pathname.includes('/annuncio/') &&
             !results.includes(full)
           ) {
             results.push(full);
           }
         } catch (e) {}
       });
-      
+
       return results;
     });
     
@@ -169,44 +211,44 @@ async function salvaAnnuncio(data, sourceUrl) {
   return meeting;
 }
 
-async function main() {
-  console.log(`🤖 Bot Bakecaincontri START`);
+async function runOnce() {
+  console.log(`🤖 Bot Bakecaincontri RUN`);
   console.log(`📊 Parametri: USER_ID=${USER_ID}, CATEGORY=${CATEGORY}, CITY=${CITY}, LIMIT=${LIMIT}`);
-  
+
   if (!CATEGORY_URLS[CATEGORY]) {
     console.error(`❌ Categoria non valida: ${CATEGORY}`);
-    process.exit(1);
+    return;
   }
-  
+
   const url = buildUrl(CITY, CATEGORY);
   console.log(`📄 URL: ${url}`);
-  
+
   let links = await scrapeLista(url);
-  
+
   if (!links || links.length === 0) {
     console.error(`❌ Nessun annuncio trovato`);
-    process.exit(1);
+    return;
   }
-  
+
   let imported = 0;
   let skipped = 0;
-  
+
   for (const href of links.slice(0, LIMIT)) {
     try {
       const d = await scrapeDettaglio(href);
-      
+
       if (!d.title || d.title.length < 5) {
         console.log(`⏭️ Skip: titolo troppo corto`);
         skipped++;
         continue;
       }
-      
+
       if (!d.photos || d.photos.length === 0) {
         console.log(`⏭️ Skip: nessuna foto`);
         skipped++;
         continue;
       }
-      
+
       await salvaAnnuncio({
         title: d.title,
         description: d.description || d.title,
@@ -215,10 +257,10 @@ async function main() {
         age: d.age || null,
         photos: d.photos
       }, href);
-      
+
       imported++;
       console.log(`✅ Importato: ${d.title.substring(0, 50)}...`);
-      
+
     } catch (error) {
       if (error.message === 'Già esistente') {
         console.log(`⏭️ Skip: già esistente`);
@@ -228,12 +270,34 @@ async function main() {
       skipped++;
     }
   }
-  
-  await prisma.$disconnect();
-  
-  console.log(`\n🎉 COMPLETATO`);
+
+  console.log(`\n🎉 RUN COMPLETATA`);
   console.log(`📊 Importati: ${imported}`);
   console.log(`⏭️ Saltati: ${skipped}`);
+}
+
+async function main() {
+  const LOOP = process.env.LOOP === '1';
+  const INTERVAL_MINUTES = parseInt(process.env.INTERVAL_MINUTES || '10', 10);
+
+  if (!LOOP) {
+    await runOnce();
+    await prisma.$disconnect();
+    return;
+  }
+
+  console.log(`♻️ Modalità LOOP attiva (INTERVAL_MINUTES=${INTERVAL_MINUTES})`);
+
+  while (true) {
+    try {
+      await runOnce();
+    } catch (err) {
+      console.error('❌ Errore in runOnce:', err);
+    }
+
+    console.log(`⏸️ Attendo ${INTERVAL_MINUTES} minuti prima del prossimo giro...`);
+    await sleep(INTERVAL_MINUTES * 60 * 1000);
+  }
 }
 
 main().catch(async (err) => {

@@ -16,6 +16,7 @@ const cheerio = require('cheerio');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const USER_ID = process.env.USER_ID ? parseInt(process.env.USER_ID, 10) : null;
 const CITY = process.env.CITY || 'Milano';
@@ -92,27 +93,26 @@ async function salvaAnnuncio(data, sourceUrl) {
   return meeting;
 }
 
-async function main() {
-  console.log(`🤖 Bot Bakeca Massaggi START`);
+async function runOnce() {
+  console.log(`🤖 Bot Bakeca Massaggi RUN`);
   console.log(`📊 Parametri: USER_ID=${USER_ID}, CITY=${CITY}, LIMIT=${LIMIT}`);
-  
+
   const url = `https://www.bakeca.it/annunci/massaggi-benessere/${CITY.toLowerCase()}/`;
-  
+
   let items = await scrapeLista(url);
   if (!items || items.length === 0) {
     console.log(`⚠️ Nessun annuncio trovato con città, provo senza città...`);
     items = await scrapeLista('https://www.bakeca.it/annunci/massaggi-benessere/');
   }
-  
+
   if (!items || items.length === 0) {
     console.error(`❌ Nessun annuncio trovato`);
-    await prisma.$disconnect();
-    process.exit(1);
+    return;
   }
-  
+
   let imported = 0;
   let skipped = 0;
-  
+
   for (const it of items.slice(0, LIMIT)) {
     try {
       await salvaAnnuncio(it, it.href);
@@ -127,12 +127,34 @@ async function main() {
       skipped++;
     }
   }
-  
-  await prisma.$disconnect();
-  
-  console.log(`\n🎉 COMPLETATO`);
+
+  console.log(`\n🎉 RUN COMPLETATA`);
   console.log(`📊 Importati: ${imported}`);
   console.log(`⏭️ Saltati: ${skipped}`);
+}
+
+async function main() {
+  const LOOP = process.env.LOOP === '1';
+  const INTERVAL_MINUTES = parseInt(process.env.INTERVAL_MINUTES || '10', 10);
+
+  if (!LOOP) {
+    await runOnce();
+    await prisma.$disconnect();
+    return;
+  }
+
+  console.log(`♻️ Modalità LOOP attiva (INTERVAL_MINUTES=${INTERVAL_MINUTES})`);
+
+  while (true) {
+    try {
+      await runOnce();
+    } catch (err) {
+      console.error('❌ Errore in runOnce:', err);
+    }
+
+    console.log(`⏸️ Attendo ${INTERVAL_MINUTES} minuti prima del prossimo giro...`);
+    await sleep(INTERVAL_MINUTES * 60 * 1000);
+  }
 }
 
 main().catch(async (err) => {

@@ -21,6 +21,7 @@ const cheerio = require('cheerio');
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const LIMIT = parseInt(process.env.LIMIT || '50', 10);
 const BASE_URL = 'https://www.escort-advisor.com';
@@ -188,35 +189,34 @@ async function saveReview(review, quickMeetingId) {
   return imported;
 }
 
-async function main() {
-  console.log(`🤖 Bot Escort Advisor START`);
+async function runOnce() {
+  console.log(`🤖 Bot Escort Advisor RUN`);
   console.log(`📊 Parametri: LIMIT=${LIMIT}`);
-  
+
   const reviews = await scrapeReviews(LIMIT);
-  
+
   if (!reviews || reviews.length === 0) {
     console.error(`❌ Nessuna recensione trovata`);
-    await prisma.$disconnect();
-    process.exit(1);
+    return;
   }
-  
+
   let imported = 0;
   let skipped = 0;
   let created = 0;
-  
+
   for (const review of reviews) {
     try {
       const meeting = await findOrCreateQuickMeeting(review);
-      
+
       if (!meeting.sourceUrl) {
         created++;
       }
-      
+
       await saveReview(review, meeting.id);
-      
+
       imported++;
       console.log(`✅ Recensione importata: ${review.name.substring(0, 40)}...`);
-      
+
     } catch (error) {
       if (error.message === 'Recensione già importata') {
         console.log(`⏭️ Skip: già importata`);
@@ -226,13 +226,35 @@ async function main() {
       skipped++;
     }
   }
-  
-  await prisma.$disconnect();
-  
-  console.log(`\n🎉 COMPLETATO`);
+
+  console.log(`\n🎉 RUN COMPLETATA`);
   console.log(`📊 Recensioni importate: ${imported}`);
   console.log(`➕ Profili creati: ${created}`);
   console.log(`⏭️ Saltate: ${skipped}`);
+}
+
+async function main() {
+  const LOOP = process.env.LOOP === '1';
+  const INTERVAL_MINUTES = parseInt(process.env.INTERVAL_MINUTES || '30', 10);
+
+  if (!LOOP) {
+    await runOnce();
+    await prisma.$disconnect();
+    return;
+  }
+
+  console.log(`♻️ Modalità LOOP attiva (INTERVAL_MINUTES=${INTERVAL_MINUTES})`);
+
+  while (true) {
+    try {
+      await runOnce();
+    } catch (err) {
+      console.error('❌ Errore in runOnce:', err);
+    }
+
+    console.log(`⏸️ Attendo ${INTERVAL_MINUTES} minuti prima del prossimo giro...`);
+    await sleep(INTERVAL_MINUTES * 60 * 1000);
+  }
 }
 
 main().catch(async (err) => {
