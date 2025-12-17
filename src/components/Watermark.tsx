@@ -12,16 +12,16 @@ export default function Watermark({
   return (
     <div
       className={
-        // fascia orizzontale in basso sull'immagine
-        "pointer-events-none select-none absolute inset-x-0 bottom-0 flex justify-center pb-2 " +
+        // banda centrale molto visibile per coprire watermark esistenti
+        "pointer-events-none select-none absolute inset-0 flex items-center justify-center " +
         (className ? className : "")
       }
       aria-hidden
     >
-      {/* Barra scura per coprire bene eventuali watermark sottostanti */}
-      <div className="w-full max-w-[900px] px-4 py-2 bg-black/55">
+      {/* Barra scura spessa per coprire la scritta di bakecaincontri al centro */}
+      <div className="w-full max-w-[1000px] px-8 py-6 bg-black/80">
         <span
-          className="uppercase tracking-[0.35em] font-semibold text-white/80 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap text-[10px] sm:text-xs md:text-sm"
+          className="uppercase tracking-[0.35em] font-semibold text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] whitespace-nowrap text-sm sm:text-base md:text-lg"
           style={{
             // leggera sfocatura per effetto watermark
             filter: "blur(0.15px)",
