@@ -17,6 +17,7 @@ const cheerio = require('cheerio');
 const { PrismaClient } = require('@prisma/client');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+const path = require('path');
 
 const prisma = new PrismaClient();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -60,7 +61,7 @@ async function scrapeLista(url) {
 
     // Gestione popup 18+ / cookie
     try {
-      await page.waitForTimeout(2000);
+      await sleep(2000);
       // prova prima con il bottone esplicito "Accetto"
       const accettoButton = await page.$('button[aria-label="Accetto"]');
       if (accettoButton) {
@@ -84,21 +85,24 @@ async function scrapeLista(url) {
       }
 
       // dai tempo alla pagina di aggiornarsi dopo il click
-      await page.waitForTimeout(3000);
+      await sleep(3000);
     } catch (e) {
       console.log('ℹ️ Nessun popup 18+/cookie rilevato o gestione non necessaria');
     }
     
     // Attendi che il contenuto sia caricato
-    await page.waitForTimeout(2000);
+    await sleep(2000);
 
     // DEBUG: salva HTML della pagina per capire cosa vede Puppeteer
     try {
+      const debugPath = process.platform === 'win32'
+        ? path.join(__dirname, 'debug-bakecaincontri.html')
+        : '/root/debug-bakecaincontri.html';
       const html = await page.content();
-      fs.writeFileSync('/root/debug-bakecaincontri.html', html);
-      console.log('💾 Salvato HTML in /root/debug-bakecaincontri.html');
+      fs.writeFileSync(debugPath, html);
+      console.log(`💾 Salvato HTML in ${debugPath}`);
     } catch (e) {
-      console.log('⚠️ Impossibile salvare HTML di debug in /root:', e.message);
+      console.log('⚠️ Impossibile salvare HTML di debug:', e.message);
     }
     
     console.log('🔍 Estrazione link...');
@@ -144,37 +148,128 @@ async function scrapeLista(url) {
 
 async function scrapeDettaglio(url) {
   console.log(`🔍 Scarico dettaglio: ${url}`);
-  const res = await fetch(url, { 
-    headers: { 'User-Agent': 'Mozilla/5.0' },
-    dispatcher: new (require('undici').Agent)({ connect: { rejectUnauthorized: false } })
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors']
   });
-  const html = await res.text();
-  const $ = cheerio.load(html);
-  
-  const title = ($('h1').first().text() || $('[class*="title"]').first().text()).trim();
-  const description = ($('[class*="description"]').first().text() || $('article').text() || $('p').text()).trim();
-  
-  let phone = null;
-  const telHref = $('a[href^="tel:"]').first().attr('href');
-  if (telHref) phone = telHref.replace('tel:', '').trim();
-  
-  let whatsapp = null;
-  const waHref = $('a[href*="wa.me"], a[href*="whatsapp"]').first().attr('href');
-  if (waHref) whatsapp = waHref;
-  
-  let age = null;
-  const m = $('body').text().match(/(\d{2})\s*anni|età\s*(\d{2})/i);
-  if (m) age = parseInt(m[1] || m[2], 10);
-  
-  const photos = [];
-  $('img').each((_, img) => {
-    const src = $(img).attr('src') || $(img).attr('data-src');
-    if (src && src.startsWith('http') && !src.includes('logo') && !photos.includes(src)) {
-      photos.push(src);
+
+  try {
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
+    await sleep(2000);
+
+    const html = await page.content();
+    const $ = cheerio.load(html);
+
+    const title = ($('h1').first().text() || $('[class*="title"]').first().text()).trim();
+    const description = ($('[class*="description"]').first().text() || $('article').text() || $('p').text()).trim();
+
+    let phone = null;
+    const telHref = $('a[href^="tel:"]').first().attr('href');
+    if (telHref) {
+      phone = telHref.replace('tel:', '').replace(/[^0-9+]/g, '').trim();
     }
-  });
-  
-  return { title, description, phone, whatsapp, age, photos };
+
+    // Fallback: se non c'è link tel:, prova a trovare un numero nel testo (10+ cifre)
+    if (!phone) {
+      const bodyText = $('body').text();
+      const phoneMatch = bodyText.match(/(\+?\d[\s\-\.]*){8,14}/);
+      if (phoneMatch) {
+        const cleaned = phoneMatch[0].replace(/[^0-9+]/g, '');
+        if (cleaned.length >= 8) {
+          phone = cleaned;
+        }
+      }
+    }
+
+    let whatsapp = null;
+    const waHref = $('a[href*="wa.me"], a[href*="whatsapp"]').first().attr('href');
+    if (waHref) {
+      // prova a estrarre il numero dall'URL (es. https://wa.me/39xxxxxxxxx o ?phone=39...)
+      const waNumberMatch = waHref.match(/(\+?\d[0-9]{7,14})/);
+      whatsapp = waNumberMatch ? waNumberMatch[0] : waHref;
+    }
+
+    let age = null;
+    const m = $('body').text().match(/(\d{2})\s*anni|età\s*(\d{2})/i);
+    if (m) age = parseInt(m[1] || m[2], 10);
+
+    const photos = [];
+    const base = new URL(url);
+
+    function normalizeSrc(raw) {
+      if (!raw) return null;
+      let s = raw.trim();
+      if (!s) return null;
+
+      // gestisci srcset (prendi la prima URL)
+      if (s.includes(' ')) {
+        const first = s.split(',')[0].trim().split(' ')[0].trim();
+        if (first) s = first;
+      }
+
+      try {
+        const u = new URL(s, base);
+        return u.toString();
+      } catch {
+        return null;
+      }
+    }
+
+    // img classiche (src, data-src, lazy, ecc.)
+    $('img').each((_, img) => {
+      const el = $(img);
+      const candidates = [
+        el.attr('src'),
+        el.attr('data-src'),
+        el.attr('data-lazy'),
+        el.attr('data-original'),
+        el.attr('srcset'),
+      ];
+
+      for (const c of candidates) {
+        const norm = normalizeSrc(c);
+        if (!norm) continue;
+        if (norm.includes('logo')) continue;
+        if (!photos.includes(norm)) {
+          photos.push(norm);
+        }
+      }
+    });
+
+    // fallback: meta og:image
+    if (photos.length === 0) {
+      const og = $('meta[property="og:image"]').attr('content');
+      const norm = normalizeSrc(og);
+      if (norm && !norm.includes('logo') && !photos.includes(norm)) {
+        photos.push(norm);
+      }
+    }
+
+    // DEBUG: se ancora nessuna foto, salva HTML dettaglio per analisi
+    if (photos.length === 0) {
+      try {
+        const debugDir = process.platform === 'win32'
+          ? __dirname
+          : '/root';
+        const safeSlug = Buffer.from(url).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+        const debugPath = process.platform === 'win32'
+          ? path.join(debugDir, `debug-detail-${safeSlug}.html`)
+          : `${debugDir}/debug-detail-${safeSlug}.html`;
+
+        fs.writeFileSync(debugPath, html);
+        console.log(`💾 Salvato dettaglio senza foto in ${debugPath}`);
+      } catch (e) {
+        console.log('⚠️ Impossibile salvare dettaglio senza foto:', e.message);
+      }
+    }
+
+    return { title, description, phone, whatsapp, age, photos };
+  } finally {
+    await browser.close();
+  }
 }
 
 async function salvaAnnuncio(data, sourceUrl) {
@@ -182,7 +277,7 @@ async function salvaAnnuncio(data, sourceUrl) {
   
   // Controlla se esiste già
   const exists = await prisma.quickMeeting.findFirst({
-    where: { sourceId, userId: USER_ID }
+    where: { sourceUrl, userId: USER_ID }
   });
   
   if (exists) {
