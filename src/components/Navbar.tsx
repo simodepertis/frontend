@@ -81,28 +81,29 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-black text-white border-gray-800">
       {/* BARRA PRINCIPALE */}
-      <div className="container flex h-16 max-w-screen-2xl items-center">
-        
-        {/* COLONNA SINISTRA: Link di navigazione - MODIFICATO justify-end */}
-        <div className="w-1/3 flex justify-end items-center gap-4 text-sm font-medium">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between gap-6">
+        {/* SINISTRA: Logo */}
+        <div className="flex items-center">
+          <Logo className="w-[260px]" />
+        </div>
+
+        {/* DESTRA: Menu principale + azioni */}
+        <div className="flex-1 flex items-center justify-end gap-6 text-sm">
+          {/* Link principali (Nuove Escort, Tours, ecc.) */}
+          <nav className="hidden md:flex items-center gap-4 font-medium">
             <Link href="/nuove-escort" className="hover:text-blue-400 transition-colors">Nuove Escort</Link>
             <Link href="/tours" className="hover:text-blue-400 transition-colors">Tours</Link>
             <Link href="/incontri-veloci" className="hover:text-blue-400 transition-colors">⚡ Incontri Veloci</Link>
             <Link href="/uomini" className="hover:text-blue-400 transition-colors">Gigolo</Link>
             <Link href="/instant-book" className="hover:text-blue-400 transition-colors">Instant Book</Link>
             <Link href="/agenzie" className="hover:text-blue-400 transition-colors">Agenzie</Link>
-        </div>
+          </nav>
 
-        {/* COLONNA CENTRALE: Logo */}
-        <div className="w-1/3 flex justify-center">
-            <Logo className="w-[260px]" />
-        </div>
-
-        {/* COLONNA DESTRA: Azioni e Contatti - MODIFICATO justify-start */}
-        <div className="w-1/3 flex justify-start items-center gap-4 text-sm">
+          {/* Contatti / Accedi / Cerca */}
+          <div className="flex items-center gap-4">
             <Link href="/contatti" className="flex items-center gap-2 hover:text-blue-400 transition-colors">
-                <FontAwesomeIcon icon={faPhone} />
-                <span>Contatti</span>
+              <FontAwesomeIcon icon={faPhone} />
+              <span>Contatti</span>
             </Link>
             {userName ? (
               <div className="flex items-center gap-2">
@@ -125,8 +126,9 @@ export default function Navbar() {
               </Link>
             )}
             <Link href="/cerca" className="hover:text-blue-400 transition-colors">
-                <FontAwesomeIcon icon={faSearch} size="lg" />
+              <FontAwesomeIcon icon={faSearch} size="lg" />
             </Link>
+          </div>
         </div>
 
       </div>
