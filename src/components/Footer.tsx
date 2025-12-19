@@ -16,6 +16,7 @@ export default function Footer() {
             <a href="/termini" className="text-gray-400 hover:text-white transition-colors">Termini</a>
             <a href="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy</a>
             <a href="/cookie" className="text-gray-400 hover:text-white transition-colors">Cookie</a>
+            <a href="/linguaggio" className="text-gray-400 hover:text-white transition-colors">Linguaggio</a>
           </div>
           <p className="text-xs text-gray-500">Tutte le escorts avevano 18 anni al momento dell'inserimento dell'annuncio.</p>
         </div>
