@@ -6,13 +6,29 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faUser, faVideo, faImages, faStar, faComments, faTrophy, faBullhorn, faLaptop, faPhone, faSearch, faUserCheck, faMapMarkerAlt, faCrown, faVenus
+  faUser,
+  faVideo,
+  faImages,
+  faStar,
+  faComments,
+  faTrophy,
+  faBullhorn,
+  faLaptop,
+  faPhone,
+  faSearch,
+  faUserCheck,
+  faMapMarkerAlt,
+  faCrown,
+  faVenus,
+  faBars,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [userName, setUserName] = useState<string>("");
   const [hasAptAds, setHasAptAds] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -81,15 +97,15 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-black text-white border-gray-800">
       {/* BARRA PRINCIPALE */}
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between gap-6">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between gap-3 sm:gap-6">
         {/* SINISTRA: Logo */}
         <div className="flex items-center">
-          <Logo className="w-[260px]" />
+          <Logo className="w-[180px] sm:w-[220px] lg:w-[260px]" />
         </div>
 
         {/* DESTRA: Menu principale + azioni */}
-        <div className="flex-1 flex items-center justify-end gap-6 text-sm">
-          {/* Link principali (Nuove Escort, Tours, ecc.) */}
+        <div className="flex-1 flex items-center justify-end gap-3 sm:gap-6 text-sm">
+          {/* Link principali (Nuove Escort, Tours, ecc.) - solo desktop */}
           <nav className="hidden md:flex items-center gap-4 font-medium">
             <Link href="/nuove-escort" className="hover:text-blue-400 transition-colors">Nuove Escort</Link>
             <Link href="/tours" className="hover:text-blue-400 transition-colors">Tours</Link>
@@ -99,16 +115,16 @@ export default function Navbar() {
             <Link href="/agenzie" className="hover:text-blue-400 transition-colors">Agenzie</Link>
           </nav>
 
-          {/* Contatti / Accedi / Cerca */}
-          <div className="flex items-center gap-4">
-            <Link href="/contatti" className="flex items-center gap-2 hover:text-blue-400 transition-colors">
+          {/* Contatti / Accedi / Cerca + hamburger */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Link href="/contatti" className="hidden md:flex items-center gap-2 hover:text-blue-400 transition-colors">
               <FontAwesomeIcon icon={faPhone} />
               <span>Contatti</span>
             </Link>
             {userName ? (
               <div className="flex items-center gap-2">
                 <Link href="/dashboard">
-                  <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 rounded-full px-4 py-2 shrink-0">
                     <FontAwesomeIcon icon={faUser} />
                     <span>Ciao, {userName}</span>
                   </Button>
@@ -119,19 +135,93 @@ export default function Navbar() {
               </div>
             ) : (
               <Link href="/autenticazione">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 rounded-full px-4 py-2">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 rounded-full px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-base shrink-0">
                   <FontAwesomeIcon icon={faUser} />
                   <span>Accedi</span>
                 </Button>
               </Link>
             )}
-            <Link href="/cerca" className="hover:text-blue-400 transition-colors">
+            <Link href="/cerca" className="hidden sm:inline-flex hover:text-blue-400 transition-colors">
               <FontAwesomeIcon icon={faSearch} size="lg" />
             </Link>
+            <button
+              type="button"
+              className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-300 hover:text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black shrink-0"
+              aria-label="Apri menu"
+              onClick={() => setMobileOpen((prev) => !prev)}
+            >
+              <FontAwesomeIcon icon={mobileOpen ? faXmark : faBars} />
+            </button>
           </div>
         </div>
 
       </div>
+      {mobileOpen && (
+        <div className="md:hidden border-t border-gray-800 bg-black/95">
+          <div className="container py-3 flex flex-col gap-2 text-sm font-medium">
+            <Link
+              href="/nuove-escort"
+              className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Nuove Escort
+            </Link>
+            <Link
+              href="/tours"
+              className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Tours
+            </Link>
+            <Link
+              href="/incontri-veloci"
+              className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              ⚡ Incontri Veloci
+            </Link>
+            <Link
+              href="/uomini"
+              className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Gigolo
+            </Link>
+            <Link
+              href="/instant-book"
+              className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Instant Book
+            </Link>
+            <Link
+              href="/agenzie"
+              className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Agenzie
+            </Link>
+            <div className="h-px w-full bg-gray-800 my-1" />
+            <Link
+              href="/contatti"
+              className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors flex items-center gap-2"
+              onClick={() => setMobileOpen(false)}
+            >
+              <FontAwesomeIcon icon={faPhone} />
+              <span>Contatti</span>
+            </Link>
+            {!userName && (
+              <Link
+                href="/autenticazione"
+                className="py-1.5 px-1 rounded hover:bg-gray-800 hover:text-white transition-colors"
+                onClick={() => setMobileOpen(false)}
+              >
+                Accedi
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* BARRA SECONDARIA DELLE CATEGORIE */}
       <nav className="w-full bg-gray-900 border-y border-gray-700">
