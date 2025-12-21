@@ -287,21 +287,26 @@ export default function IncontriVelociPage() {
                       {/* Foto a sinistra, formato quadrato piccolo */}
                       <div className="w-24 h-24 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 relative">
                         {meeting.photos[0] ? (
-                          <img
-                            src={meeting.photos[0]}
-                            alt={meeting.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder.svg';
-                            }}
-                          />
+                          <>
+                            <img
+                              src={meeting.photos[0]}
+                              alt={meeting.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/placeholder.svg';
+                              }}
+                            />
+                            <Watermark className="[&_span]:text-[9px]" />
+                          </>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-500">
-                            
-                          </div>
-                        )}
-                        {meeting.photos[0] && meeting.photos[0] !== '/placeholder.svg' && (
-                          <Watermark className="[&_span]:text-[9px]" />
+                          <>
+                            <img
+                              src="/placeholder.svg"
+                              alt={meeting.title}
+                              className="w-full h-full object-cover"
+                            />
+                            <Watermark variant="cover" />
+                          </>
                         )}
                       </div>
 

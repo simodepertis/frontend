@@ -39,6 +39,16 @@ const CATEGORY_URLS = {
   UOMO_CERCA_UOMO: 'uomo-cerca-uomo'
 };
 
+// Lista città usata quando CITY=ALL
+const DEFAULT_CITIES = [
+  'Milano',
+  'Roma',
+  'Torino',
+  'Napoli',
+  'Bologna',
+  'Firenze',
+];
+
 function buildUrl(city, category) {
   // Struttura: {città}.bakecaincontrii.com/{categoria}/
   return `https://${city.toLowerCase()}.bakecaincontrii.com/${CATEGORY_URLS[category]}/`;
@@ -196,57 +206,53 @@ async function scrapeDettaglio(url) {
     const m = $('body').text().match(/(\d{2})\s*anni|età\s*(\d{2})/i);
     if (m) age = parseInt(m[1] || m[2], 10);
 
-    const photos = [];
-    const base = new URL(url);
-
-    function normalizeSrc(raw) {
-      if (!raw) return null;
-      let s = raw.trim();
-      if (!s) return null;
-
-      // gestisci srcset (prendi la prima URL)
-      if (s.includes(' ')) {
-        const first = s.split(',')[0].trim().split(' ')[0].trim();
-        if (first) s = first;
-      }
-
-      try {
-        const u = new URL(s, base);
-        return u.toString();
-      } catch {
-        return null;
-      }
-    }
-
-    // img classiche (src, data-src, lazy, ecc.)
-    $('img').each((_, img) => {
-      const el = $(img);
-      const candidates = [
-        el.attr('src'),
-        el.attr('data-src'),
-        el.attr('data-lazy'),
-        el.attr('data-original'),
-        el.attr('srcset'),
+    // Estrazione foto potenziata con page.evaluate per gestire JS
+    const photos = await page.evaluate(() => {
+      const results = new Set();
+      const imageSelectors = [
+        '.ad-photos-slick-item img',
+        '.ad-photos-grid-item img',
+        '.carousel-slide.gallery-item img', // nuovo carousel principale
+        '.post-gallery img',
+        'article img',
+        'img[alt*="foto"]',
+        'img[src*="/image/post/"]', // nuovo path immagini
+        'img[src*="/image/"]'
       ];
 
-      for (const c of candidates) {
-        const norm = normalizeSrc(c);
-        if (!norm) continue;
-        if (norm.includes('logo')) continue;
-        if (!photos.includes(norm)) {
-          photos.push(norm);
-        }
+      for (const selector of imageSelectors) {
+        const images = document.querySelectorAll(selector);
+        images.forEach(img => {
+          const src = img.getAttribute('data-src') || img.getAttribute('src');
+          if (src) {
+            try {
+              const fullUrl = new URL(src, window.location.href).href;
+              if (!fullUrl.includes('logo')) {
+                results.add(fullUrl);
+              }
+            } catch {}
+          }
+        });
       }
-    });
 
-    // fallback: meta og:image
-    if (photos.length === 0) {
-      const og = $('meta[property="og:image"]').attr('content');
-      const norm = normalizeSrc(og);
-      if (norm && !norm.includes('logo') && !photos.includes(norm)) {
-        photos.push(norm);
+      // Fallback: prova a leggere gli href delle gallery-item se per qualche motivo gli <img> non hanno src
+      if (results.size === 0) {
+        const anchors = document.querySelectorAll('.carousel-slide.gallery-item a[href*="/image/"]');
+        anchors.forEach(a => {
+          const href = a.getAttribute('href');
+          if (href) {
+            try {
+              const fullUrl = new URL(href, window.location.href).href;
+              if (!fullUrl.includes('logo')) {
+                results.add(fullUrl);
+              }
+            } catch {}
+          }
+        });
       }
-    }
+
+      return Array.from(results);
+    });
 
     // DEBUG: se ancora nessuna foto, salva HTML dettaglio per analisi
     if (photos.length === 0) {
@@ -272,8 +278,8 @@ async function scrapeDettaglio(url) {
   }
 }
 
-async function salvaAnnuncio(data, sourceUrl) {
-  const sourceId = `bot_${CATEGORY}_${Buffer.from(sourceUrl).toString('base64').slice(0, 20)}`;
+async function salvaAnnuncio(data, sourceUrl, category, city) {
+  const sourceId = `bot_${category}_${Buffer.from(sourceUrl).toString('base64').slice(0, 20)}`;
   
   // Controlla se esiste già
   const exists = await prisma.quickMeeting.findFirst({
@@ -289,12 +295,14 @@ async function salvaAnnuncio(data, sourceUrl) {
     data: {
       title: data.title,
       description: data.description || data.title,
-      category: CATEGORY,
-      city: CITY.toUpperCase(),
+      category,
+      city: city.toUpperCase(),
       phone: data.phone || null,
       whatsapp: data.whatsapp || null,
       age: data.age || null,
-      photos: data.photos || [],
+      // Il cliente non vuole più le foto reali sugli annunci importati dal bot:
+      // salviamo photos vuoto così il frontend usa solo il placeholder.
+      photos: [],
       sourceUrl,
       sourceId,
       userId: USER_ID,
@@ -306,16 +314,16 @@ async function salvaAnnuncio(data, sourceUrl) {
   return meeting;
 }
 
-async function runOnce() {
+async function runOnceFor(city, category) {
   console.log(`🤖 Bot Bakecaincontri RUN`);
-  console.log(`📊 Parametri: USER_ID=${USER_ID}, CATEGORY=${CATEGORY}, CITY=${CITY}, LIMIT=${LIMIT}`);
+  console.log(`📊 Parametri: USER_ID=${USER_ID}, CATEGORY=${category}, CITY=${city}, LIMIT=${LIMIT}`);
 
-  if (!CATEGORY_URLS[CATEGORY]) {
-    console.error(`❌ Categoria non valida: ${CATEGORY}`);
+  if (!CATEGORY_URLS[category]) {
+    console.error(`❌ Categoria non valida: ${category}`);
     return;
   }
 
-  const url = buildUrl(CITY, CATEGORY);
+  const url = buildUrl(city, category);
   console.log(`📄 URL: ${url}`);
 
   let links = await scrapeLista(url);
@@ -351,7 +359,7 @@ async function runOnce() {
         whatsapp: d.whatsapp || '',
         age: d.age || null,
         photos: d.photos
-      }, href);
+      }, href, category, city);
 
       imported++;
       console.log(`✅ Importato: ${d.title.substring(0, 50)}...`);
@@ -366,9 +374,35 @@ async function runOnce() {
     }
   }
 
-  console.log(`\n🎉 RUN COMPLETATA`);
+  console.log(`\n🎉 RUN COMPLETATA per CITY=${city}, CATEGORY=${category}`);
   console.log(`📊 Importati: ${imported}`);
   console.log(`⏭️ Saltati: ${skipped}`);
+}
+
+async function runOnce() {
+  // Determina categorie
+  let categories;
+  if (CATEGORY === 'ALL') {
+    categories = Object.keys(CATEGORY_URLS);
+  } else if (!CATEGORY_URLS[CATEGORY]) {
+    console.error(`❌ Categoria non valida: ${CATEGORY}`);
+    return;
+  } else {
+    categories = [CATEGORY];
+  }
+
+  // Determina città
+  const cities = CITY === 'ALL' ? DEFAULT_CITIES : [CITY];
+
+  for (const city of cities) {
+    for (const category of categories) {
+      try {
+        await runOnceFor(city, category);
+      } catch (err) {
+        console.error(`❌ Errore run per CITY=${city}, CATEGORY=${category}:`, err.message || err);
+      }
+    }
+  }
 }
 
 async function main() {

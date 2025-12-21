@@ -44,6 +44,7 @@ interface QuickMeeting {
   views: number;
   importedReviews?: ImportedReview[];
   reviewCount?: number;
+  sourceUrl?: string;
 }
 
 const CATEGORIES = {
@@ -261,7 +262,11 @@ export default function IncontroVeloceDetailPage() {
   }
 
   const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
-  const visiblePhotos = meeting.bumpPackage ? meeting.photos : (meeting.photos?.slice(0, 1) || []);
+  const isImported = !!meeting.sourceUrl;
+  const hasPhotos = Array.isArray(meeting.photos) && meeting.photos.length > 0;
+  const visiblePhotos = hasPhotos
+    ? (meeting.bumpPackage ? meeting.photos : (meeting.photos?.slice(0, 1) || []))
+    : ["/placeholder.svg"];
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -328,68 +333,64 @@ export default function IncontroVeloceDetailPage() {
           </div>
 
           {/* Galleria Foto */}
-          {visiblePhotos.length > 0 && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-              <h2 className="text-xl font-bold text-white mb-4">📸 Foto ({meeting.photos.length})</h2>
-              
-              {/* Foto principale */}
-              <div className="mb-4">
-                <div 
-                  className="aspect-video bg-gray-700 rounded-lg overflow-hidden cursor-pointer relative group"
-                  onClick={() => openLightbox(selectedPhoto)}
-                >
-                  <img
-                    src={visiblePhotos[selectedPhoto]}
-                    alt={`${meeting.title} - Foto ${selectedPhoto + 1}`}
-                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
-                    }}
-                  />
-                  {visiblePhotos[selectedPhoto] && visiblePhotos[selectedPhoto] !== '/placeholder.svg' && (
-                    <Watermark />
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                    <div className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
-                      🔍
-                    </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            <h2 className="text-xl font-bold text-white mb-4">📸 Foto ({hasPhotos ? meeting.photos.length : 0})</h2>
+            
+            {/* Foto principale */}
+            <div className="mb-4">
+              <div 
+                className="aspect-video bg-gray-700 rounded-lg overflow-hidden cursor-pointer relative group"
+                onClick={() => openLightbox(selectedPhoto)}
+              >
+                <img
+                  src={visiblePhotos[selectedPhoto]}
+                  alt={`${meeting.title} - Foto ${selectedPhoto + 1}`}
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/placeholder.svg';
+                  }}
+                />
+                <Watermark variant={isImported ? 'cover' : 'default'} />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <div className="text-white text-4xl opacity-0 group-hover:opacity-100 transition-opacity">
+                    🔍
                   </div>
                 </div>
               </div>
-
-              {/* Miniature */}
-              {visiblePhotos.length > 1 && (
-                <div className="grid grid-cols-6 gap-2">
-                  {visiblePhotos.map((photo, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setSelectedPhoto(index);
-                        openLightbox(index);
-                      }}
-                      className={`aspect-square bg-gray-700 rounded-lg overflow-hidden border-2 transition-colors cursor-pointer group relative ${
-                        selectedPhoto === index ? 'border-blue-500' : 'border-transparent hover:border-gray-500'
-                      }`}
-                    >
-                      <img
-                        src={photo}
-                        alt={`Miniatura ${index + 1}`}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.svg';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                        <div className="text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                          🔍
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
-          )}
+
+            {/* Miniature (solo se ci sono foto reali) */}
+            {hasPhotos && visiblePhotos.length > 1 && (
+              <div className="grid grid-cols-6 gap-2">
+                {visiblePhotos.map((photo, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      setSelectedPhoto(index);
+                      openLightbox(index);
+                    }}
+                    className={`aspect-square bg-gray-700 rounded-lg overflow-hidden border-2 transition-colors cursor-pointer group relative ${
+                      selectedPhoto === index ? 'border-blue-500' : 'border-transparent hover:border-gray-500'
+                    }`}
+                  >
+                    <img
+                      src={photo}
+                      alt={`Miniatura ${index + 1}`}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <div className="text-white text-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        🔍
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Statistiche (solo per SuperTop) */}
           {meeting.bumpPackage === 'SUPERTOP' && (
@@ -696,17 +697,15 @@ export default function IncontroVeloceDetailPage() {
           {/* Immagine */}
           <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <div className="relative max-w-full max-h-full">
-            <img
-              src={meeting.photos[lightboxIndex]}
-              alt={`${meeting.title} - Foto ${lightboxIndex + 1}`}
-              className="max-w-full max-h-full object-contain rounded-lg"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/placeholder.svg';
-              }}
-            />
-            {meeting.photos[lightboxIndex] && meeting.photos[lightboxIndex] !== '/placeholder.svg' && (
-              <Watermark />
-            )}
+              <img
+                src={hasPhotos ? meeting.photos[lightboxIndex] : '/placeholder.svg'}
+                alt={`${meeting.title} - Foto ${lightboxIndex + 1}`}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/placeholder.svg';
+                }}
+              />
+              <Watermark variant={isImported ? 'cover' : 'default'} />
             </div>
           </div>
 
@@ -721,9 +720,11 @@ export default function IncontroVeloceDetailPage() {
           )}
 
           {/* Contatore foto */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full">
-            {lightboxIndex + 1} / {meeting.photos.length}
-          </div>
+          {hasPhotos && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full">
+              {lightboxIndex + 1} / {meeting.photos.length}
+            </div>
+          )}
         </div>
       )}
     </main>

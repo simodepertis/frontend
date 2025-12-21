@@ -146,7 +146,11 @@ export default function Navbar() {
             </Link>
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-300 hover:text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black shrink-0"
+              className={`md:hidden inline-flex items-center justify-center rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black shrink-0 transition-all duration-200 ${
+                mobileOpen
+                  ? 'bg-gray-800 text-white'
+                  : 'bg-blue-600 text-white shadow-lg shadow-blue-500/60 animate-pulse'
+              }`}
               aria-label="Apri menu"
               onClick={() => setMobileOpen((prev) => !prev)}
             >

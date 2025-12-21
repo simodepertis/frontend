@@ -8,11 +8,27 @@ const { spawn } = require('child_process');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// CITIES è una lista di città separate da virgola, es: "Milano,Roma,Napoli"
-const RAW_CITIES = (process.env.CITIES || 'Milano')
-  .split(',')
-  .map((c) => c.trim())
-  .filter((c) => c.length > 0);
+// CITIES può essere:
+// - una lista di città separate da virgola, es: "Milano,Roma,Napoli"
+// - la stringa speciale "ALL" per usare una lista interna di città principali
+const ALL_CITIES = [
+  'Milano', 'Roma', 'Napoli', 'Torino', 'Bologna', 'Firenze', 'Genova', 'Palermo', 'Catania',
+  'Bari', 'Verona', 'Padova', 'Brescia', 'Trieste', 'Prato', 'Parma', 'Modena', 'Reggio Emilia',
+  'Perugia', 'Ravenna', 'Livorno', 'Cagliari', 'Foggia', 'Rimini', 'Salerno', 'Ferrara',
+  'Sassari', 'Latina', 'Monza', 'Pescara', 'Bergamo', 'Forlì', 'Vicenza', 'Terni', 'Bolzano',
+  'Novara', 'Piacenza', 'Ancona', 'Taranto'
+];
+
+const RAW_CITIES = (() => {
+  const raw = process.env.CITIES || 'Milano';
+  if (raw.toUpperCase() === 'ALL') {
+    return ALL_CITIES;
+  }
+  return raw
+    .split(',')
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
+})();
 
 function buildRuns() {
   const runs = [];
