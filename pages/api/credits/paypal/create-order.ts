@@ -4,9 +4,9 @@ import { verifyToken } from '@/lib/auth'
 
 async function getPayPalAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID as string
-  const secret = process.env.PAYPAL_SECRET as string
+  const secret = (process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET) as string
   const env = (process.env.PAYPAL_ENV || 'sandbox').toLowerCase()
-  if (!clientId || !secret) throw new Error('PAYPAL_CLIENT_ID or PAYPAL_SECRET missing')
+  if (!clientId || !secret) throw new Error('PAYPAL_CLIENT_ID or PAYPAL_SECRET / PAYPAL_CLIENT_SECRET missing')
   const base = env === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com'
   const res = await fetch(base + '/v1/oauth2/token', {
     method: 'POST',
@@ -80,6 +80,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Errore creazione ordine PayPal' })
     }
     const data = await ppRes.json() as any
+
+    // Salva l'ID ordine PayPal in meta.paypalOrderId per il successivo capture-order
+    await prisma.creditOrder.update({
+      where: { id: order.id },
+      data: {
+        meta: {
+          ...(order as any).meta,
+          paypalOrderId: data.id,
+        },
+      },
+    })
+
     const approvalUrl = (data.links || []).find((l: any) => l.rel === 'approve')?.href
 
     return res.status(200).json({ ok: true, orderId: data.id, approvalUrl, localOrderId: order.id, total })
