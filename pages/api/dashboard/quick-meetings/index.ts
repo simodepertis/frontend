@@ -12,12 +12,24 @@ export const config = {
   }
 };
 
-// Helper per verificare autenticazione
+// Helper per verificare autenticazione (supporta sia cookie che header Authorization Bearer)
 function getUserFromToken(req: NextApiRequest): { userId: number } | null {
   try {
-    const token = req.cookies['auth-token'];
+    let token: string | undefined;
+
+    // 1) Prova header Authorization: Bearer <token>
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+
+    // 2) Fallback: cookie auth-token
+    if (!token) {
+      token = req.cookies['auth-token'];
+    }
+
     if (!token) return null;
-    
+
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; email: string };
     

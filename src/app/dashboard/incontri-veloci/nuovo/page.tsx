@@ -239,9 +239,13 @@ export default function NuovoIncontroVeloce() {
     setLoading(true);
 
     try {
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
       const res = await fetch('/api/dashboard/quick-meetings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
@@ -334,7 +338,7 @@ export default function NuovoIncontroVeloce() {
                 >
                   <option value="">Seleziona nazione</option>
                   {COUNTRY_LIST.map(country => (
-                    <option key={country.code} value={country.code}>{country.flag} {country.name}</option>
+                    <option key={country.code} value={country.code}>{country.name}</option>
                   ))}
                 </select>
               </div>

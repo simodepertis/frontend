@@ -30,7 +30,8 @@ function buildCategoryUrl(category: QuickMeetingCategory, city: string) {
     DONNA_CERCA_UOMO: 'https://www.bakecaincontri.com/donna-cerca-uomo',
     TRANS: 'https://www.bakecaincontri.com/trans',
     UOMO_CERCA_UOMO: 'https://www.bakecaincontri.com/uomo-cerca-uomo',
-    CENTRO_MASSAGGI: ''
+    CENTRO_MASSAGGI: '',
+    GIGOLO: 'https://www.bakecaincontri.com/uomo-cerca-uomo',
   }
   return `${baseByCat[category]}/${encodeURIComponent(c)}/`
 }
@@ -43,7 +44,8 @@ function buildCategoryBaseUrl(category: QuickMeetingCategory) {
     DONNA_CERCA_UOMO: 'https://www.bakecaincontri.com/donna-cerca-uomo/',
     TRANS: 'https://www.bakecaincontri.com/trans/',
     UOMO_CERCA_UOMO: 'https://www.bakecaincontri.com/uomo-cerca-uomo/',
-    CENTRO_MASSAGGI: ''
+    CENTRO_MASSAGGI: '',
+    GIGOLO: 'https://www.bakecaincontri.com/uomo-cerca-uomo/',
   }
   return baseByCat[category]
 }
@@ -61,7 +63,8 @@ function buildCandidateUrls(category: QuickMeetingCategory, city: string) {
     DONNA_CERCA_UOMO: 'https://www.bakecaincontri.com/donna-cerca-uomo',
     TRANS: 'https://www.bakecaincontri.com/trans',
     UOMO_CERCA_UOMO: 'https://www.bakecaincontri.com/uomo-cerca-uomo',
-    CENTRO_MASSAGGI: ''
+    CENTRO_MASSAGGI: '',
+    GIGOLO: 'https://www.bakecaincontri.com/uomo-cerca-uomo',
   }
   const cityFirst = `https://www.bakecaincontri.com/${encodeURIComponent(c)}/`
   const catFirst = `${catFirstByCat[category]}/${encodeURIComponent(c)}/`
@@ -71,7 +74,8 @@ function buildCandidateUrls(category: QuickMeetingCategory, city: string) {
     DONNA_CERCA_UOMO: 'https://www.bakecaincontrii.com/donna-cerca-uomo',
     TRANS: 'https://www.bakecaincontrii.com/trans',
     UOMO_CERCA_UOMO: 'https://www.bakecaincontrii.com/uomo-cerca-uomo',
-    CENTRO_MASSAGGI: ''
+    CENTRO_MASSAGGI: '',
+    GIGOLO: 'https://www.bakecaincontrii.com/uomo-cerca-uomo',
   }
   const altCityFirst = `https://www.bakecaincontrii.com/${encodeURIComponent(c)}/`
   const altCatFirst = `${altCatFirstByCat[category]}/${encodeURIComponent(c)}/`
@@ -169,7 +173,17 @@ async function scrapeBakecaincontriiDetail(url: string) {
   const description = ($('[class*="description"], .description, [itemprop="description"]').first().text() || $('article').text() || $('p').text()).trim()
   let phone: string | null = null
   const telHref = $('a[href^="tel:"]').first().attr('href')
-  if (telHref) phone = telHref.replace('tel:', '').trim()
+  if (telHref) {
+    phone = telHref.replace('tel:', '').replace(/[^0-9+]/g, '').trim()
+  }
+  // Fallback: se non c'è link tel:, prova a trovare un numero nel testo (almeno 8-14 cifre)
+  if (!phone) {
+    const bodyText = $('body').text()
+    const match = bodyText.match(/(\+?[0-9][0-9\s\-\.]{7,14})/)
+    if (match) {
+      phone = match[1].replace(/[^0-9+]/g, '').trim()
+    }
+  }
   let whatsapp: string | null = null
   const waHref = $('a[href*="wa.me"], a[href*="api.whatsapp"], a[href*="whatsapp"]').first().attr('href')
   if (waHref) whatsapp = waHref

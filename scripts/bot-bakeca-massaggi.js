@@ -61,6 +61,20 @@ async function scrapeLista(url) {
   });
   
   console.log(`✅ Trovati ${merged.length} annunci`);
+
+  // DEBUG: se non troviamo nulla, salviamo l'HTML per analizzarlo
+  if (merged.length === 0) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const debugPath = path.join(__dirname, 'debug-bakeca-massaggi.html');
+      fs.writeFileSync(debugPath, html);
+      console.log(`💾 Salvato HTML debug massaggi in ${debugPath}`);
+    } catch (e) {
+      console.log('⚠️ Impossibile salvare HTML debug massaggi:', e.message);
+    }
+  }
+
   return merged;
 }
 
@@ -97,12 +111,43 @@ async function runOnce() {
   console.log(`🤖 Bot Bakeca Massaggi RUN`);
   console.log(`📊 Parametri: USER_ID=${USER_ID}, CITY=${CITY}, LIMIT=${LIMIT}`);
 
-  const url = `https://www.bakeca.it/annunci/massaggi-benessere/${CITY.toLowerCase()}/`;
+  const maxAds = LIMIT > 0 ? LIMIT : Number.MAX_SAFE_INTEGER;
+  const maxPages = 50;
 
-  let items = await scrapeLista(url);
+  async function collectAllPages(baseUrl) {
+    const all = [];
+
+    for (let page = 1; page <= maxPages && all.length < maxAds; page++) {
+      const pageUrl = page === 1 ? baseUrl : `${baseUrl}?page=${page}`;
+      console.log(`📄 Pagina massaggi ${page}: ${pageUrl}`);
+
+      const pageItems = await scrapeLista(pageUrl);
+
+      if (!pageItems || pageItems.length === 0) {
+        if (page === 1) {
+          console.log(`⚠️ Nessun annuncio trovato a pagina ${page}`);
+        } else {
+          console.log(`ℹ️ Nessun annuncio aggiuntivo a pagina ${page}, stop paginazione`);
+        }
+        break;
+      }
+
+      for (const it of pageItems) {
+        if (!all.find(x => x.href === it.href) && all.length < maxAds) {
+          all.push(it);
+        }
+      }
+    }
+
+    return all;
+  }
+
+  const cityUrl = `https://www.bakeca.it/annunci/massaggi-benessere/${CITY.toLowerCase()}/`;
+
+  let items = await collectAllPages(cityUrl);
   if (!items || items.length === 0) {
     console.log(`⚠️ Nessun annuncio trovato con città, provo senza città...`);
-    items = await scrapeLista('https://www.bakeca.it/annunci/massaggi-benessere/');
+    items = await collectAllPages('https://www.bakeca.it/annunci/massaggi-benessere/');
   }
 
   if (!items || items.length === 0) {

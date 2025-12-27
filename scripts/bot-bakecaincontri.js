@@ -120,8 +120,8 @@ async function scrapeLista(url) {
       const results = [];
 
       // Link annuncio tipico:
-      // <a href="https://www.bakecaincontrii.com/annuncio/..." data-pck="..." ...>
-      const anchors = document.querySelectorAll('a[data-pck][href*="/annuncio/"]');
+      // <a href="https://www.bakecaincontrii.com/annuncio/..." ...>
+      const anchors = document.querySelectorAll('a[href*="/annuncio/"]');
 
       anchors.forEach(a => {
         const href = a.getAttribute('href');
@@ -323,20 +323,44 @@ async function runOnceFor(city, category) {
     return;
   }
 
-  const url = buildUrl(city, category);
-  console.log(`📄 URL: ${url}`);
+  const baseUrl = buildUrl(city, category);
+  console.log(`📄 URL base: ${baseUrl}`);
 
-  let links = await scrapeLista(url);
+  // Paginazione: scorri /?page=2,3,... finché trovi annunci o raggiungi LIMIT
+  const maxAds = LIMIT > 0 ? LIMIT : Number.MAX_SAFE_INTEGER;
+  const maxPages = 50; // sicurezza per non ciclare all'infinito
+  const links = [];
 
-  if (!links || links.length === 0) {
-    console.error(`❌ Nessun annuncio trovato`);
+  for (let page = 1; page <= maxPages && links.length < maxAds; page++) {
+    const pageUrl = page === 1 ? baseUrl : `${baseUrl}?page=${page}`;
+    console.log(`📄 URL pagina ${page}: ${pageUrl}`);
+
+    const pageLinks = await scrapeLista(pageUrl);
+
+    if (!pageLinks || pageLinks.length === 0) {
+      if (page === 1) {
+        console.error(`❌ Nessun annuncio trovato`);
+      } else {
+        console.log(`ℹ️ Nessun annuncio aggiuntivo a pagina ${page}, stop paginazione`);
+      }
+      break;
+    }
+
+    for (const href of pageLinks) {
+      if (!links.includes(href) && links.length < maxAds) {
+        links.push(href);
+      }
+    }
+  }
+
+  if (!links.length) {
     return;
   }
 
   let imported = 0;
   let skipped = 0;
 
-  for (const href of links.slice(0, LIMIT)) {
+  for (const href of links) {
     try {
       const d = await scrapeDettaglio(href);
 

@@ -214,14 +214,16 @@ export default function EditQuickMeeting() {
       let allPhotos = [...form.photos];
       
       if (photoFiles.length > 0) {
-        for (const file of photoFiles) {
-          const reader = new FileReader();
-          const base64 = await new Promise<string>((resolve) => {
-            reader.onload = (e) => resolve(e.target?.result as string);
+        const toBase64 = (file: File) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => resolve(ev.target?.result as string);
+            reader.onerror = () => reject(new Error('Errore lettura file'));
             reader.readAsDataURL(file);
           });
-          allPhotos.push(base64);
-        }
+
+        const encoded = await Promise.all(photoFiles.map((f) => toBase64(f)));
+        allPhotos = allPhotos.concat(encoded);
       }
 
       const body: any = {
@@ -237,14 +239,18 @@ export default function EditQuickMeeting() {
       };
       
       const token = localStorage.getItem('auth-token') || '';
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 120000);
       const res = await fetch(`/api/dashboard/quick-meetings/${id}`, {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       
       if (res.ok) {
         alert('Annuncio aggiornato con successo!');
@@ -253,9 +259,13 @@ export default function EditQuickMeeting() {
         const e = await res.json().catch(() => ({}));
         alert(e.error || "Errore salvataggio");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore:', error);
-      alert('Errore durante il salvataggio');
+      if (error?.name === 'AbortError') {
+        alert('Salvataggio troppo lento: riprova (o carica meno foto alla volta)');
+      } else {
+        alert('Errore durante il salvataggio');
+      }
     } finally {
       setSaving(false);
     }

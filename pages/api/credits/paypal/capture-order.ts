@@ -4,9 +4,9 @@ import { verifyToken } from '@/lib/auth'
 
 async function getPayPalAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID as string
-  const secret = process.env.PAYPAL_SECRET as string
+  const secret = (process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET) as string
   const env = (process.env.PAYPAL_ENV || 'sandbox').toLowerCase()
-  if (!clientId || !secret) throw new Error('PAYPAL_CLIENT_ID or PAYPAL_SECRET missing')
+  if (!clientId || !secret) throw new Error('PAYPAL_CLIENT_ID or PAYPAL_SECRET / PAYPAL_CLIENT_SECRET missing')
   const base = env === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com'
   const res = await fetch(base + '/v1/oauth2/token', {
     method: 'POST',
