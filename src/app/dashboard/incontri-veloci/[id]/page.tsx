@@ -210,20 +210,40 @@ export default function EditQuickMeeting() {
     e.preventDefault();
     setSaving(true);
     try {
-      // Se ci sono nuove foto, caricale
-      let allPhotos = [...form.photos];
-      
-      if (photoFiles.length > 0) {
-        const toBase64 = (file: File) =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (ev) => resolve(ev.target?.result as string);
-            reader.onerror = () => reject(new Error('Errore lettura file'));
-            reader.readAsDataURL(file);
-          });
+      // Foto: NON inviare base64 nel PATCH. Carica i file e salva solo URL.
+      let allPhotos: string[] = Array.isArray(form.photos) ? [...form.photos] : [];
 
-        const encoded = await Promise.all(photoFiles.map((f) => toBase64(f)));
-        allPhotos = allPhotos.concat(encoded);
+      const token = localStorage.getItem('auth-token') || '';
+
+      if (photoFiles.length > 0) {
+        const uploadBatch = async (batch: File[]) => {
+          const fd = new FormData();
+          for (const f of batch) fd.append('files', f);
+          const upRes = await fetch(`/api/dashboard/quick-meetings/${id}/upload`, {
+            method: 'POST',
+            headers: {
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: fd,
+          });
+          const upJson = await upRes.json().catch(() => ({}));
+          if (!upRes.ok) {
+            throw new Error(upJson?.error || `Errore upload (status ${upRes.status})`);
+          }
+          const urls: string[] = Array.isArray(upJson?.uploaded)
+            ? upJson.uploaded.map((x: any) => x?.url).filter(Boolean)
+            : [];
+          if (urls.length === 0) throw new Error('Upload non riuscito: nessun URL restituito');
+          return urls;
+        };
+
+        // Batch per tenere piccola ogni request (scalabile anche a 200 foto)
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < photoFiles.length; i += BATCH_SIZE) {
+          const batch = photoFiles.slice(i, i + BATCH_SIZE);
+          const urls = await uploadBatch(batch);
+          allPhotos = allPhotos.concat(urls);
+        }
       }
 
       const body: any = {
@@ -237,8 +257,7 @@ export default function EditQuickMeeting() {
         photos: allPhotos,
         isActive: !!form.isActive
       };
-      
-      const token = localStorage.getItem('auth-token') || '';
+
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 120000);
       const res = await fetch(`/api/dashboard/quick-meetings/${id}`, {

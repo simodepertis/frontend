@@ -45,6 +45,7 @@ export default function NuovoIncontroVeloce() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [formData, setFormData] = useState<FormData>({
     category: '',
@@ -177,6 +178,8 @@ export default function NuovoIncontroVeloce() {
 
     const toUse = Array.from(files);
 
+    setPhotoFiles((prev) => [...prev, ...toUse]);
+
     toUse.forEach(file => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -190,6 +193,8 @@ export default function NuovoIncontroVeloce() {
 
   const handleFilesUpload = (files: FileList) => {
     const toUse = Array.from(files);
+
+    setPhotoFiles((prev) => [...prev, ...toUse]);
 
     toUse.forEach(file => {
       const reader = new FileReader();
@@ -227,6 +232,7 @@ export default function NuovoIncontroVeloce() {
 
   const removePhoto = (index: number) => {
     updateField('photos', formData.photos.filter((_, i) => i !== index));
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -240,6 +246,7 @@ export default function NuovoIncontroVeloce() {
 
     try {
       const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
+      // 1) Crea annuncio SENZA inviare base64
       const res = await fetch('/api/dashboard/quick-meetings', {
         method: 'POST',
         headers: { 
@@ -256,12 +263,58 @@ export default function NuovoIncontroVeloce() {
           phone: formData.phone,
           whatsapp: formData.whatsapp ? `https://wa.me/${formData.phone.replace(/\D/g, '')}` : null,
           age: formData.age ? parseInt(formData.age) : null,
-          photos: formData.photos,
+          photos: [],
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 giorni
         })
       });
 
       if (res.ok) {
+        const created = await res.json().catch(() => ({}));
+        const meetingId = created?.meeting?.id;
+
+        // 2) Upload foto a batch (se presenti) e patch con URL
+        if (meetingId && photoFiles.length > 0) {
+          const uploadBatch = async (batch: File[]) => {
+            const fd = new FormData();
+            for (const f of batch) fd.append('files', f);
+            const upRes = await fetch(`/api/dashboard/quick-meetings/${meetingId}/upload`, {
+              method: 'POST',
+              headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: fd,
+            });
+            const upJson = await upRes.json().catch(() => ({}));
+            if (!upRes.ok) throw new Error(upJson?.error || `Errore upload (status ${upRes.status})`);
+            const urls: string[] = Array.isArray(upJson?.uploaded)
+              ? upJson.uploaded.map((x: any) => x?.url).filter(Boolean)
+              : [];
+            if (urls.length === 0) throw new Error('Upload non riuscito: nessun URL restituito');
+            return urls;
+          };
+
+          let urls: string[] = [];
+          const BATCH_SIZE = 10;
+          for (let i = 0; i < photoFiles.length; i += BATCH_SIZE) {
+            const batch = photoFiles.slice(i, i + BATCH_SIZE);
+            const part = await uploadBatch(batch);
+            urls = urls.concat(part);
+          }
+
+          const patchRes = await fetch(`/api/dashboard/quick-meetings/${meetingId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ photos: urls }),
+          });
+          if (!patchRes.ok) {
+            const pj = await patchRes.json().catch(() => ({}));
+            throw new Error(pj?.error || 'Errore salvataggio foto');
+          }
+        }
+
         alert('✅ Annuncio creato con successo!');
         router.push('/dashboard/incontri-veloci');
       } else {
