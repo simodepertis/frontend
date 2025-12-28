@@ -51,7 +51,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!meeting) return res.status(404).json({ error: 'Annuncio non trovato' })
 
   try {
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'quick-meetings', String(meetingId))
+    const baseDir = process.env.PM2_CWD || process.cwd()
+    const uploadDir = path.join(baseDir, 'public', 'uploads', 'quick-meetings', String(meetingId))
     await mkdir(uploadDir, { recursive: true })
 
     const files = await new Promise<Array<{ filepath: string; originalFilename?: string; mimetype?: string; size?: number }>>(
@@ -100,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const dest = path.join(uploadDir, filename)
       await copyFile(f.filepath, dest)
 
-      const publicUrl = `/uploads/quick-meetings/${meetingId}/${filename}`
+      const publicUrl = `/api/uploads/quick-meetings/${meetingId}/${filename}`
       uploaded.push({ url: publicUrl, name: f.originalFilename || filename, size: Number(f.size) || 0 })
     }
 

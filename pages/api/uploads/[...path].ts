@@ -17,7 +17,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (segs[0] === 'uploads') segs = segs.slice(1)
 
     // Serve only from uploads directory
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+    const baseDir = process.env.PM2_CWD || process.cwd()
+    const uploadsDir = path.join(baseDir, 'public', 'uploads')
     let filePath = path.join(uploadsDir, ...segs)
 
     // Prevent path escape
