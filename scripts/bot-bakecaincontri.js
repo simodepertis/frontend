@@ -22,6 +22,34 @@ const path = require('path');
 const prisma = new PrismaClient();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function normalizePhone(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return null;
+  const digits = v.replace(/[^0-9+]/g, '');
+  if (!digits) return null;
+  if (digits.startsWith('+')) return digits;
+  if (digits.length >= 8 && digits.length <= 11) return `+39${digits}`;
+  return `+${digits}`;
+}
+
+function buildWhatsAppLink(phoneRaw, whatsappRaw) {
+  const v = String(whatsappRaw || '').trim();
+  let wa = null;
+  if (v) {
+    if (/^https?:\/\//i.test(v)) {
+      const m = v.match(/(\+?\d[0-9]{7,14})/);
+      wa = m ? m[1] : null;
+    } else {
+      wa = v;
+    }
+  }
+  const normalized = normalizePhone(wa) || normalizePhone(phoneRaw);
+  if (!normalized) return null;
+  const digitsOnly = normalized.replace(/\D/g, '');
+  if (!digitsOnly) return null;
+  return `https://wa.me/${digitsOnly}`;
+}
+
 const USER_ID = process.env.USER_ID ? parseInt(process.env.USER_ID, 10) : null;
 const CATEGORY = process.env.CATEGORY || 'DONNA_CERCA_UOMO';
 const CITY = process.env.CITY || 'Milano';
@@ -202,6 +230,10 @@ async function scrapeDettaglio(url) {
       whatsapp = waNumberMatch ? waNumberMatch[0] : waHref;
     }
 
+    // Normalizza sempre (così su sito tel:/wa.me funzionano)
+    phone = normalizePhone(phone);
+    whatsapp = buildWhatsAppLink(phone, whatsapp);
+
     let age = null;
     const m = $('body').text().match(/(\d{2})\s*anni|età\s*(\d{2})/i);
     if (m) age = parseInt(m[1] || m[2], 10);
@@ -297,8 +329,8 @@ async function salvaAnnuncio(data, sourceUrl, category, city) {
       description: data.description || data.title,
       category,
       city: city.toUpperCase(),
-      phone: data.phone || null,
-      whatsapp: data.whatsapp || null,
+      phone: normalizePhone(data.phone) || null,
+      whatsapp: buildWhatsAppLink(data.phone, data.whatsapp) || null,
       age: data.age || null,
       // Il cliente non vuole più le foto reali sugli annunci importati dal bot:
       // salviamo photos vuoto così il frontend usa solo il placeholder.

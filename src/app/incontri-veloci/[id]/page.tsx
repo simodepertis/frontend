@@ -55,6 +55,41 @@ const CATEGORIES = {
   GIGOLO: { label: "Gigolo", icon: "🕺", color: "bg-amber-500" }
 };
 
+function normalizePhone(raw?: string | null) {
+  const v = String(raw || '').trim();
+  if (!v) return null;
+  const digits = v.replace(/[^0-9+]/g, '');
+  if (!digits) return null;
+  // If already has +, keep
+  if (digits.startsWith('+')) return digits;
+  // If seems italian mobile/landline without country code, prefix +39
+  if (digits.length >= 8 && digits.length <= 11) return `+39${digits}`;
+  return `+${digits}`;
+}
+
+function buildTelHref(raw?: string | null) {
+  const p = normalizePhone(raw);
+  return p ? `tel:${p}` : null;
+}
+
+function extractWhatsAppNumber(raw?: string | null) {
+  const v = String(raw || '').trim();
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) {
+    const m = v.match(/(\+?\d[0-9]{7,14})/);
+    return m ? m[1] : null;
+  }
+  return normalizePhone(v);
+}
+
+function buildWhatsAppHref(phoneRaw?: string | null, whatsappRaw?: string | null) {
+  const wa = extractWhatsAppNumber(whatsappRaw) || normalizePhone(phoneRaw);
+  if (!wa) return null;
+  const digitsOnly = wa.replace(/\D/g, '');
+  if (!digitsOnly) return null;
+  return `https://wa.me/${digitsOnly}`;
+}
+
 export default function IncontroVeloceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -483,25 +518,35 @@ export default function IncontroVeloceDetailPage() {
             <h2 className="text-xl font-bold text-white mb-4">📞 Contatti</h2>
             
             <div className="space-y-3">
-              {meeting.phone && (
-                <a
-                  href={`tel:${meeting.phone}`}
-                  className="flex items-center gap-3 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  📞 <span>Chiama ora</span>
-                </a>
-              )}
-              
-              {meeting.whatsapp && (
-                <a
-                  href={meeting.whatsapp}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
-                >
-                  💬 <span>WhatsApp</span>
-                </a>
-              )}
+              {(() => {
+                const telHref = buildTelHref(meeting.phone);
+                const waHref = buildWhatsAppHref(meeting.phone, meeting.whatsapp);
+                const displayPhone = normalizePhone(meeting.phone);
+
+                return (
+                  <>
+                    {displayPhone && telHref && (
+                      <a
+                        href={telHref}
+                        className="flex items-center gap-3 w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                      >
+                        📞 <span>Chiama ora {displayPhone}</span>
+                      </a>
+                    )}
+
+                    {waHref && (
+                      <a
+                        href={waHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors"
+                      >
+                        💬 <span>WhatsApp</span>
+                      </a>
+                    )}
+                  </>
+                );
+              })()}
               
               {meeting.telegram && (
                 <a

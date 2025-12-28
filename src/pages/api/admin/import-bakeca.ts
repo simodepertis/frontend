@@ -25,7 +25,7 @@ async function scrapeBakeca(city: string, category: string, limit: number = 20) 
     
     // Parsing semplice HTML per estrarre link annunci
     const linkRegex = /href="(https?:\/\/[^"]+\/[^"\/]+\/[^"\/]+\/[^"\/]+\/)"/g;
-    const links = [];
+    const links: string[] = [];
     let match;
     
     while ((match = linkRegex.exec(html)) !== null && links.length < limit) {
@@ -65,11 +65,33 @@ async function scrapeDettaglio(url: string) {
     
     // Estrazione telefono
     const phoneMatch = html.match(/href="tel:([^"]+)"/i);
-    const phone = phoneMatch ? phoneMatch[1].trim() : null;
+    const phoneRaw = phoneMatch ? phoneMatch[1].trim() : null;
     
     // Estrazione WhatsApp
     const waMatch = html.match(/href="(https?:\/\/wa\.me\/[^"]+)"/i);
-    const whatsapp = waMatch ? waMatch[1] : null;
+    const whatsappRaw = waMatch ? waMatch[1] : null;
+
+    const normalizePhone = (raw: string | null) => {
+      const v = String(raw || '').trim();
+      if (!v) return null;
+      const digits = v.replace(/[^0-9+]/g, '');
+      if (!digits) return null;
+      if (digits.startsWith('+')) return digits;
+      if (digits.length >= 8 && digits.length <= 11) return `+39${digits}`;
+      return `+${digits}`;
+    };
+
+    const extractWhatsAppNumber = (raw: string | null) => {
+      const v = String(raw || '').trim();
+      if (!v) return null;
+      const m = v.match(/(\+?\d[0-9]{7,14})/);
+      if (m) return normalizePhone(m[1]);
+      return normalizePhone(v);
+    };
+
+    const phone = normalizePhone(phoneRaw);
+    const waNumber = extractWhatsAppNumber(whatsappRaw);
+    const whatsapp = waNumber ? `https://wa.me/${waNumber.replace(/\D/g, '')}` : null;
     
     // Estrazione età
     const ageMatch = html.match(/(\d{2})\s*anni|età\s*(\d{2})/i);
@@ -77,7 +99,7 @@ async function scrapeDettaglio(url: string) {
     
     // Estrazione foto
     const photoRegex = /<img[^>]*src="(https?:\/\/[^"]+\.(jpg|jpeg|png|webp))"/gi;
-    const photos = [];
+    const photos: string[] = [];
     let photoMatch;
     
     while ((photoMatch = photoRegex.exec(html)) !== null && photos.length < 10) {
@@ -176,7 +198,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             category: category as any,
             city: city.toUpperCase(),
             phone: data.phone || null,
-            whatsapp: data.whatsapp || null,
+            whatsapp: data.whatsapp || (data.phone ? `https://wa.me/${String(data.phone).replace(/\D/g, '')}` : null),
             age: data.age || null,
             photos: data.photos,
             sourceUrl: link,
