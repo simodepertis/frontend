@@ -59,11 +59,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!cap.ok || paypalData.status !== 'COMPLETED') {
       console.error('PayPal capture failed:', paypalData)
-      return res.status(400).json({ error: 'Pagamento non completato' })
+      return res.status(400).json({
+        error: 'Pagamento non completato',
+        details: paypalData,
+      })
     }
 
     // Aggiorna ordine + wallet + transazione
-    await prisma.$transaction(async (tx) => {
+    const newBalance = await prisma.$transaction(async (tx) => {
       const updatedOrder = await tx.creditOrder.update({
         where: { id: order.id },
         data: {
@@ -92,8 +95,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       })
 
-      res.status(200).json({ ok: true, newBalance: wallet.balance })
+      return wallet.balance
     })
+
+    return res.status(200).json({ ok: true, newBalance })
   } catch (e) {
     console.error('❌ /api/credits/paypal/capture-order error:', e)
     return res.status(500).json({ error: 'Errore interno' })

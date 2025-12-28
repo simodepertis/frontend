@@ -2,6 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 
+function getOrigin(req: NextApiRequest) {
+  const proto = (req.headers['x-forwarded-proto'] as string) || 'https'
+  const host = (req.headers['x-forwarded-host'] as string) || (req.headers.host as string) || ''
+  return host ? `${proto}://${host}` : ''
+}
+
 async function getPayPalAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID as string
   const secret = (process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET) as string
@@ -50,6 +56,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Crea ordine su PayPal
     const { token, base } = await getPayPalAccessToken()
+
+    const origin = (process.env.NEXT_PUBLIC_BASE_URL || '').trim() || getOrigin(req)
     const ppRes = await fetch(base + '/v2/checkout/orders', {
       method: 'POST',
       headers: {
@@ -65,19 +73,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description: `${qty} crediti`
           }
         ],
-        application_context: {
-          brand_name: 'IncontriEscort',
-          shipping_preference: 'NO_SHIPPING',
-          user_action: 'PAY_NOW',
-          return_url: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/credits/paypal/capture?orderId={orderID}&localOrderId=${order.id}`,
-          cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/dashboard/crediti?cancel=1`
-        }
+        ...(origin
+          ? {
+              application_context: {
+                brand_name: 'IncontriEscort',
+                shipping_preference: 'NO_SHIPPING',
+                user_action: 'PAY_NOW',
+                return_url: `${origin}/api/credits/paypal/capture?orderId={orderID}&localOrderId=${order.id}`,
+                cancel_url: `${origin}/dashboard/crediti?cancel=1`,
+              },
+            }
+          : {})
       })
     })
     if (!ppRes.ok) {
-      const txt = await ppRes.text()
-      console.error('PayPal create order error', txt)
-      return res.status(500).json({ error: 'Errore creazione ordine PayPal' })
+      const txt = await ppRes.text().catch(() => '')
+      console.error('PayPal create order error', ppRes.status, txt)
+      return res.status(500).json({
+        error: 'Errore creazione ordine PayPal',
+        details: txt || `HTTP ${ppRes.status}`,
+      })
     }
     const data = await ppRes.json() as any
 
