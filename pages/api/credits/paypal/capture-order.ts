@@ -16,7 +16,10 @@ async function getPayPalAccessToken() {
     },
     body: 'grant_type=client_credentials'
   })
-  if (!res.ok) throw new Error('PayPal token error')
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(`PayPal token error (HTTP ${res.status}) ${txt}`)
+  }
   const json = await res.json() as any
   return { token: json.access_token as string, base }
 }
@@ -101,6 +104,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ ok: true, newBalance })
   } catch (e) {
     console.error('❌ /api/credits/paypal/capture-order error:', e)
-    return res.status(500).json({ error: 'Errore interno' })
+    return res.status(500).json({ error: 'Errore interno', details: (e as any)?.message || String(e) })
   }
 }
