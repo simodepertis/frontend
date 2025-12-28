@@ -8,6 +8,13 @@ function getOrigin(req: NextApiRequest) {
   return host ? `${proto}://${host}` : ''
 }
 
+function getAuthToken(req: NextApiRequest) {
+  const authHeader = req.headers.authorization
+  if (authHeader && authHeader.startsWith('Bearer ')) return authHeader.substring(7)
+  const cookieToken = req.cookies?.['auth-token']
+  return cookieToken ? String(cookieToken) : ''
+}
+
 async function getPayPalAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID as string
   const secret = (process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET) as string
@@ -33,8 +40,7 @@ async function getPayPalAccessToken() {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   try {
-    const tokenHeader = req.headers.authorization?.replace('Bearer ', '')
-    const auth = verifyToken(tokenHeader || '')
+    const auth = verifyToken(getAuthToken(req))
     if (!auth) return res.status(401).json({ error: 'Non autenticato' })
 
     const { credits } = req.body || {}
@@ -59,8 +65,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Crea ordine su PayPal
     const { token, base } = await getPayPalAccessToken()
-
-    const origin = (process.env.NEXT_PUBLIC_BASE_URL || '').trim() || getOrigin(req)
     const ppRes = await fetch(base + '/v2/checkout/orders', {
       method: 'POST',
       headers: {
@@ -75,18 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             amount: { currency_code: 'EUR', value: total },
             description: `${qty} crediti`
           }
-        ],
-        ...(origin
-          ? {
-              application_context: {
-                brand_name: 'IncontriEscort',
-                shipping_preference: 'NO_SHIPPING',
-                user_action: 'PAY_NOW',
-                return_url: `${origin}/api/credits/paypal/capture?orderId={orderID}&localOrderId=${order.id}`,
-                cancel_url: `${origin}/dashboard/crediti?cancel=1`,
-              },
-            }
-          : {})
+        ]
       })
     })
     if (!ppRes.ok) {

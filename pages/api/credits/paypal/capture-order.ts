@@ -2,6 +2,13 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/auth'
 
+function getAuthToken(req: NextApiRequest) {
+  const authHeader = req.headers.authorization
+  if (authHeader && authHeader.startsWith('Bearer ')) return authHeader.substring(7)
+  const cookieToken = req.cookies?.['auth-token']
+  return cookieToken ? String(cookieToken) : ''
+}
+
 async function getPayPalAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID as string
   const secret = (process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET) as string
@@ -28,8 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const tokenHeader = req.headers.authorization?.replace('Bearer ', '')
-    const auth = verifyToken(tokenHeader || '')
+    const auth = verifyToken(getAuthToken(req))
     if (!auth) return res.status(401).json({ error: 'Non autenticato' })
 
     const { orderId } = req.body || {}
