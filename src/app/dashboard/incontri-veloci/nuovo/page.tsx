@@ -294,7 +294,7 @@ export default function NuovoIncontroVeloce() {
           };
 
           let urls: string[] = [];
-          const BATCH_SIZE = 10;
+          const BATCH_SIZE = 1;
           for (let i = 0; i < photoFiles.length; i += BATCH_SIZE) {
             const batch = photoFiles.slice(i, i + BATCH_SIZE);
             const part = await uploadBatch(batch);

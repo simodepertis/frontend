@@ -238,7 +238,7 @@ export default function EditQuickMeeting() {
         };
 
         // Batch per tenere piccola ogni request (scalabile anche a 200 foto)
-        const BATCH_SIZE = 10;
+        const BATCH_SIZE = 1;
         for (let i = 0; i < photoFiles.length; i += BATCH_SIZE) {
           const batch = photoFiles.slice(i, i + BATCH_SIZE);
           const urls = await uploadBatch(batch);
