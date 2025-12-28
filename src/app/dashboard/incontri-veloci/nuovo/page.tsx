@@ -274,32 +274,40 @@ export default function NuovoIncontroVeloce() {
 
         // 2) Upload foto a batch (se presenti) e patch con URL
         if (meetingId && photoFiles.length > 0) {
-          const uploadBatch = async (batch: File[]) => {
+          const uploadOne = async (file: File) => {
             const fd = new FormData();
-            for (const f of batch) fd.append('files', f);
+            fd.append('files', file);
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 120000);
             const upRes = await fetch(`/api/dashboard/quick-meetings/${meetingId}/upload`, {
               method: 'POST',
               headers: {
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
               },
               body: fd,
+              signal: controller.signal,
             });
+            clearTimeout(timeout);
+
             const upJson = await upRes.json().catch(() => ({}));
             if (!upRes.ok) throw new Error(upJson?.error || `Errore upload (status ${upRes.status})`);
-            const urls: string[] = Array.isArray(upJson?.uploaded)
-              ? upJson.uploaded.map((x: any) => x?.url).filter(Boolean)
-              : [];
-            if (urls.length === 0) throw new Error('Upload non riuscito: nessun URL restituito');
-            return urls;
+            const url = Array.isArray(upJson?.uploaded) ? upJson.uploaded?.[0]?.url : null;
+            if (!url) throw new Error('Upload non riuscito: nessun URL restituito');
+            return url as string;
           };
 
-          let urls: string[] = [];
-          const BATCH_SIZE = 1;
-          for (let i = 0; i < photoFiles.length; i += BATCH_SIZE) {
-            const batch = photoFiles.slice(i, i + BATCH_SIZE);
-            const part = await uploadBatch(batch);
-            urls = urls.concat(part);
-          }
+          const CONCURRENCY = 3;
+          const urls: string[] = [];
+          let idx = 0;
+          const workers = Array.from({ length: Math.min(CONCURRENCY, photoFiles.length) }, async () => {
+            while (idx < photoFiles.length) {
+              const current = photoFiles[idx++];
+              const url = await uploadOne(current);
+              urls.push(url);
+            }
+          });
+          await Promise.all(workers);
 
           const patchRes = await fetch(`/api/dashboard/quick-meetings/${meetingId}`, {
             method: 'PATCH',
