@@ -28,6 +28,8 @@ function normalizePhone(raw) {
   const digits = v.replace(/[^0-9+]/g, '');
   if (!digits) return null;
   if (digits.startsWith('+')) return digits;
+  // Se sembra già contenere il country code (es. 39xxxxxxxxxx) aggiungi solo il +
+  if (digits.startsWith('39') && digits.length >= 11 && digits.length <= 13) return `+${digits}`;
   if (digits.length >= 8 && digits.length <= 11) return `+39${digits}`;
   return `+${digits}`;
 }
@@ -198,6 +200,37 @@ async function scrapeDettaglio(url) {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
     await sleep(2000);
 
+    // Estrazione telefono/WhatsApp da DOM renderizzato (spesso il numero è testo nel bottone, non tel:)
+    const domContacts = await page.evaluate(() => {
+      const cleanDigits = (s) => (String(s || '').replace(/\D/g, '') || '');
+
+      // 1) tel:
+      const telA = document.querySelector('a[href^="tel:"]');
+      const telHref = telA ? telA.getAttribute('href') : null;
+
+      // 2) numero visibile nel bottone (riquadro rosa): cerca elementi con solo cifre (8-13)
+      let phoneText = null;
+      const candidates = Array.from(document.querySelectorAll('button, a, div, span'));
+      for (const el of candidates) {
+        const t = (el.textContent || '').trim();
+        if (!t) continue;
+        const digits = cleanDigits(t);
+        if (!digits) continue;
+        const nonDigits = t.replace(/[0-9\s\-\.]/g, '').trim();
+        if (nonDigits.length > 0) continue;
+        if (digits.length >= 8 && digits.length <= 13) {
+          phoneText = digits;
+          break;
+        }
+      }
+
+      // 3) WhatsApp link (wa.me / whatsapp)
+      const waA = document.querySelector('a[href*="wa.me"], a[href*="whatsapp"]');
+      const waHref = waA ? waA.getAttribute('href') : null;
+
+      return { telHref, phoneText, waHref };
+    });
+
     const html = await page.content();
     const $ = cheerio.load(html);
 
@@ -210,20 +243,13 @@ async function scrapeDettaglio(url) {
       phone = telHref.replace('tel:', '').replace(/[^0-9+]/g, '').trim();
     }
 
-    // Fallback: se non c'è link tel:, prova a trovare un numero nel testo (10+ cifre)
-    if (!phone) {
-      const bodyText = $('body').text();
-      const phoneMatch = bodyText.match(/(\+?\d[\s\-\.]*){8,14}/);
-      if (phoneMatch) {
-        const cleaned = phoneMatch[0].replace(/[^0-9+]/g, '');
-        if (cleaned.length >= 8) {
-          phone = cleaned;
-        }
-      }
+    // Fallback sicuro: numero visibile nel bottone (riquadro rosa)
+    if (!phone && domContacts && domContacts.phoneText) {
+      phone = String(domContacts.phoneText).trim();
     }
 
     let whatsapp = null;
-    const waHref = $('a[href*="wa.me"], a[href*="whatsapp"]').first().attr('href');
+    const waHref = $('a[href*="wa.me"], a[href*="whatsapp"]').first().attr('href') || (domContacts && domContacts.waHref);
     if (waHref) {
       // prova a estrarre il numero dall'URL (es. https://wa.me/39xxxxxxxxx o ?phone=39...)
       const waNumberMatch = waHref.match(/(\+?\d[0-9]{7,14})/);
