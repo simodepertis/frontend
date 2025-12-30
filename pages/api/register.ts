@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, validateEmail } from '@/lib/auth'
+import { generateOpaqueToken, getAppUrl, sendEmail, sha256Hex } from '@/lib/resend'
 
 function slugify(input: string) {
   return input
@@ -81,6 +82,30 @@ export default async function handler(
       select: { id: true, nome: true, email: true, ruolo: true, createdAt: true }
     })
 
+    const rawToken = generateOpaqueToken()
+    const tokenHash = sha256Hex(rawToken)
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24)
+    await (prisma as any).emailVerificationToken.create({
+      data: {
+        userId: created.id,
+        tokenHash,
+        expiresAt,
+      },
+    })
+
+    const appUrl = getAppUrl() || 'http://localhost:3000'
+    const verifyUrl = `${appUrl}/verify-email?token=${encodeURIComponent(rawToken)}`
+    await sendEmail({
+      to: created.email,
+      subject: 'Conferma la tua email',
+      html: `
+        <p>Ciao ${created.nome},</p>
+        <p>Per completare la registrazione, conferma la tua email cliccando qui:</p>
+        <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+        <p>Se non sei stato tu, ignora questa email.</p>
+      `,
+    })
+
     // Slug post-create per garantire unicità (nome-k + id)
     const base = slugify(created.nome)
     const uniqueSlug = base ? `${base}-${created.id}` : String(created.id)
@@ -91,9 +116,10 @@ export default async function handler(
       }) 
     } catch {}
 
-    return res.status(201).json({ 
-      message: 'Utente registrato con successo', 
-      user: created 
+    return res.status(201).json({
+      message: 'Registrazione completata. Controlla la tua email per confermare l’account.',
+      user: created,
+      verificationRequired: true,
     })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Errore'

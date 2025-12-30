@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
+import { shouldRequireEmailVerification } from '@/lib/resend'
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,20 +25,26 @@ export default async function handler(
     }
 
     // CERCA UTENTE NEL DATABASE
-    const user = await prisma.user.findUnique({
+    const user = await (prisma as any).user.findUnique({
       where: { email: email.toLowerCase() },
       select: { 
         id: true, 
         nome: true, 
         email: true, 
         password: true,
-        ruolo: true 
+        ruolo: true,
+        createdAt: true,
+        emailVerifiedAt: true,
       }
     })
 
     if (!user) {
       console.log('❌ Utente non trovato:', email)
       return res.status(401).json({ error: 'Email o password non corretti' })
+    }
+
+    if (!user.emailVerifiedAt && shouldRequireEmailVerification(user.createdAt)) {
+      return res.status(403).json({ error: 'Devi verificare la tua email prima di accedere.' })
     }
 
     // VERIFICA PASSWORD (per ora accetta qualsiasi password >= 6 caratteri)

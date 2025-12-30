@@ -412,6 +412,7 @@ model User {
   password     String
   ruolo        String
   suspended    Boolean  @default(false)
+  emailVerifiedAt DateTime?
   profileViews Int      @default(0)
   createdAt    DateTime @default(now())
 
@@ -469,6 +470,19 @@ model User {
 
   // Street Fireflies reviews
   streetFireflyReviews  StreetFireflyReview[]
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model EscortProfile {
