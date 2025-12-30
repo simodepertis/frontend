@@ -416,6 +416,8 @@ model User {
   profileViews Int      @default(0)
   createdAt    DateTime @default(now())
 
+  emailVerificationTokens EmailVerificationToken[]
+
   // Relation: one user can have one escort profile
   escortProfile EscortProfile?
 
