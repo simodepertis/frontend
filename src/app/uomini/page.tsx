@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SeoHead from "@/components/SeoHead";
 
 export default function UominiPage() {
   const cats = [
@@ -17,6 +18,18 @@ export default function UominiPage() {
     { t: "Riservatezza", d: "Usa chat e contatti ufficiali del profilo." },
   ];
   return (
+    <>
+      <SeoHead
+        title="Uomini | Incontriescort.org"
+        description="Consigli e categorie per trovare l'accompagnatrice(o) ideale e filtrare la ricerca."
+        canonicalPath="/uomini"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "Uomini",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/uomini",
+        }}
+      />
     <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-80px)]">
       {/* Hero */}
       <div className="mb-6">
@@ -59,5 +72,6 @@ export default function UominiPage() {
         </div>
       </div>
     </main>
+    </>
   );
 }

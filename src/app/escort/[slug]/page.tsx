@@ -610,7 +610,7 @@ export default function EscortDetailPage() {
               </div>
               <div className="flex items-center gap-2">
                 {Array.isArray(data.contacts.apps) && data.contacts.apps.includes('whatsapp') && (
-                  <a href={`https://wa.me/${String(data.contacts.phone).replace(/\D/g,'')}`} target="_blank" className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-1.5 text-sm">
+                  <a href={`https://wa.me/${String((data.contacts.whatsapp || data.contacts.phone) || '').replace(/\D/g,'')}?text=${encodeURIComponent('Ciao ti ho vista su incontriescort.org')}`} target="_blank" className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-1.5 text-sm">
                     <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
                   </a>
                 )}
@@ -685,7 +685,7 @@ export default function EscortDetailPage() {
           {data?.contacts && (
             <div className="mt-4 space-y-2">
               {data.contacts.whatsapp && (
-                <a href={`https://wa.me/${String(data.contacts.whatsapp).replace(/\D/g,'')}`} target="_blank" className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2.5 font-semibold text-center">WhatsApp</a>
+                <a href={`https://wa.me/${String(data.contacts.whatsapp).replace(/\D/g,'')}?text=${encodeURIComponent('Ciao ti ho vista su incontriescort.org')}`} target="_blank" className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2.5 font-semibold text-center">WhatsApp</a>
               )}
               {data.contacts.phone && (
                 <a href={`tel:${data.contacts.phone}`} className="block w-full bg-red-600 hover:bg-red-700 text-white rounded-md py-2.5 font-semibold text-center">Chiama</a>

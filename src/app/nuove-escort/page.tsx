@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import EscortCard from "@/components/EscortCard";
+import SeoHead from "@/components/SeoHead";
 
 export default function NuoveEscortPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -41,6 +42,18 @@ export default function NuoveEscortPage() {
   })), [items]);
 
   return (
+    <>
+      <SeoHead
+        title="Nuove Escort | Incontriescort.org"
+        description="Scopri gli ultimi profili pubblicati o aggiornati di recente."
+        canonicalPath="/nuove-escort"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Nuove Escort",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/nuove-escort",
+        }}
+      />
     <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-80px)]">
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-3xl font-bold text-white">Nuove Escort</h1>
@@ -64,5 +77,6 @@ export default function NuoveEscortPage() {
         </div>
       )}
     </main>
+    </>
   );
 }

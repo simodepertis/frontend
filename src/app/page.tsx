@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button } from "@/components/ui/button";
 import EscortCard from "@/components/EscortCard";
 import FilterBar from "@/components/FilterBar";
+import SeoHead from "@/components/SeoHead";
 
 // Usa l'ordine condiviso delle città
 const cittaOptions = CITIES_ORDER;
@@ -56,6 +57,18 @@ export default function Home() {
   }, [items, filtroCitta, filtroCapelli]);
 
   return (
+    <>
+      <SeoHead
+        title="Incontriescort.org - Escort, annunci e incontri"
+        description="Annunci, profili e incontri. Scopri escort, trans e incontri veloci per città su incontriescort.org."
+        canonicalPath="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Incontriescort.org",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/",
+        }}
+      />
     <main className="flex flex-col min-h-[calc(100vh-80px)] container mx-auto px-4 py-8">
       
       {/* SEZIONE FILTRI DI RICERCA */}
@@ -174,5 +187,6 @@ export default function Home() {
       </div>
 
     </main>
+    </>
   );
 }

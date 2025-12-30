@@ -7,6 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import SectionHeader from "@/components/SectionHeader";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import SeoHead from "@/components/SeoHead";
 
 export default function Top10Page() {
   const [city, setCity] = useState("");
@@ -45,6 +46,18 @@ export default function Top10Page() {
   }, [items, city, order, q]);
 
   return (
+    <>
+      <SeoHead
+        title="Top 10 | Incontriescort.org"
+        description="Top 10 profili: la classifica aggiornata in base alle preferenze dei membri."
+        canonicalPath="/top10"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Top 10",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/top10",
+        }}
+      />
     <main className="container mx-auto px-4 py-8">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Top 10" }]} />
       <SectionHeader title="Top 10 Ragazze: La Scelta Dei Membri" subtitle="La classifica aggiornata in base alle preferenze dei membri" />
@@ -106,5 +119,6 @@ export default function Top10Page() {
         ))}
       </div>
     </main>
+    </>
   );
 }

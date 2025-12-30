@@ -62,6 +62,7 @@ function normalizePhone(raw?: string | null) {
   if (!digits) return null;
   // If already has +, keep
   if (digits.startsWith('+')) return digits;
+  if (digits.startsWith('39') && digits.length >= 11 && digits.length <= 13) return `+${digits}`;
   // If seems italian mobile/landline without country code, prefix +39
   if (digits.length >= 8 && digits.length <= 11) return `+39${digits}`;
   return `+${digits}`;
@@ -87,7 +88,8 @@ function buildWhatsAppHref(phoneRaw?: string | null, whatsappRaw?: string | null
   if (!wa) return null;
   const digitsOnly = wa.replace(/\D/g, '');
   if (!digitsOnly) return null;
-  return `https://wa.me/${digitsOnly}`;
+  const text = encodeURIComponent('Ciao ti ho vista su incontriescort.org');
+  return `https://wa.me/${digitsOnly}?text=${text}`;
 }
 
 export default function IncontroVeloceDetailPage() {

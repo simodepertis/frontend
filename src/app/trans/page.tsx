@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faVenus, faHeart } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
 import FilterBar from "@/components/FilterBar";
+import SeoHead from "@/components/SeoHead";
 
 export default function TransPage() {
   const [escorts, setEscorts] = useState<any[]>([]);
@@ -55,6 +56,18 @@ export default function TransPage() {
   });
 
   return (
+    <>
+      <SeoHead
+        title="Trans | Incontriescort.org"
+        description="Sezione Trans: profili e annunci per incontri speciali."
+        canonicalPath="/trans"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Trans",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/trans",
+        }}
+      />
     <main className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-4 text-white flex items-center gap-3">
@@ -147,5 +160,6 @@ export default function TransPage() {
         </>
       )}
     </main>
+    </>
   );
 }

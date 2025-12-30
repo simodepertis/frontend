@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import EscortCard from "@/components/EscortCard";
 import FilterBar from "@/components/FilterBar";
+import SeoHead from "@/components/SeoHead";
 
 const cittaOptions = CITIES_ORDER;
 const capelliOptions = ["Biondi", "Castani", "Neri"];
@@ -53,6 +54,18 @@ export default function EscortListPage() {
   }, [items, filtroCapelli]);
 
   return (
+    <>
+      <SeoHead
+        title="Escort | Incontriescort.org"
+        description="Lista escort con filtri per città e nazione. Trova profili e annunci aggiornati."
+        canonicalPath="/escort"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Escort",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/escort",
+        }}
+      />
     <main className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-white">Escort</h1>
 
@@ -104,6 +117,7 @@ export default function EscortListPage() {
         ))}
       </div>
     </main>
+    </>
   );
 }
 

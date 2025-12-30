@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import EscortCard from "@/components/EscortCard";
+import SeoHead from "@/components/SeoHead";
 
 function kebab(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)+/g,'');
@@ -37,6 +38,18 @@ export default function CercaPage() {
   };
 
   return (
+    <>
+      <SeoHead
+        title="Cerca | Incontriescort.org"
+        description="Cerca annunci e profili per nome, città e preferenze."
+        canonicalPath="/cerca"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "SearchResultsPage",
+          name: "Cerca",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/cerca",
+        }}
+      />
     <main className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-white">Cerca</h1>
       <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 shadow-lg mb-8">
@@ -90,5 +103,6 @@ export default function CercaPage() {
         </div>
       )}
     </main>
+    </>
   );
 }

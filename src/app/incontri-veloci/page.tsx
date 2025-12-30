@@ -5,6 +5,7 @@ import Link from "next/link";
 import Watermark from "@/components/Watermark";
 import { COUNTRIES_CITIES, COUNTRY_LIST } from "@/lib/internationalCities";
 import { CITIES_ORDER } from "@/lib/cities";
+import SeoHead from "@/components/SeoHead";
 
 interface QuickMeeting {
   id: number;
@@ -120,6 +121,18 @@ export default function IncontriVelociPage() {
   };
 
   return (
+    <>
+      <SeoHead
+        title="Incontri Veloci | Incontriescort.org"
+        description="Annunci di incontri immediati aggiornati in tempo reale. Filtra per città e categoria."
+        canonicalPath="/incontri-veloci"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Incontri Veloci",
+          url: (process.env.NEXT_PUBLIC_SITE_URL || "https://incontriescort.org") + "/incontri-veloci",
+        }}
+      />
     <main className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
@@ -362,5 +375,6 @@ export default function IncontriVelociPage() {
         )}
       </div>
     </main>
+    </>
   );
 }
