@@ -6,7 +6,6 @@ import EscortPicker from "@/components/EscortPicker";
 import { Button } from "@/components/ui/button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCrown, faStar, faGem, faShieldHalved, faCircleCheck, faCircleExclamation, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons";
-import PayPalButton from "@/components/PayPalButton";
 
 function Copy({ text, label }: { text: string; label?: string }) {
   return (
@@ -95,7 +94,7 @@ export default function CreditiPage() {
   const [escortUserId, setEscortUserId] = useState<number>(0);
   const [actingPlacement, setActingPlacement] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [showPayPal, setShowPayPal] = useState(false);
+  const [startingStripe, setStartingStripe] = useState(false);
   const minCredits = 10;
   const [tab, setTab] = useState<'crediti' | 'ordini'>('crediti');
   const [orders, setOrders] = useState<Array<{ id: number; credits: number; method: string; status: string; createdAt: string; receiptUrl?: string; phone?: string }>>([]);
@@ -200,25 +199,39 @@ export default function CreditiPage() {
 
   async function buyCredits() {
     const qty = Number(creditsToBuy);
-    if (!Number.isFinite(qty) || qty < minCredits) { alert(`Minimo ${minCredits} crediti`); return; }
-    // Mostra opzioni di pagamento
-    setShowPayPal(true);
+    if (!Number.isFinite(qty) || qty < minCredits) {
+      alert(`Minimo ${minCredits} crediti`);
+      return;
+    }
+
+    setStartingStripe(true);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/credits/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ credits: qty }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data?.error || 'Errore creazione sessione Stripe');
+        return;
+      }
+      if (!data?.url) {
+        alert('Stripe URL mancante');
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      console.error('Stripe checkout error:', e);
+      alert('Errore Stripe. Riprova.');
+    } finally {
+      setStartingStripe(false);
+    }
   }
-
-  const handlePayPalSuccess = async (details: any) => {
-    setShowPayPal(false);
-    await loadAll();
-    setNotice({ type: 'success', msg: `Pagamento completato! Accreditati ${details.credits} crediti. Nuovo saldo: ${details.newBalance}` });
-  };
-
-  const handlePayPalError = (error: any) => {
-    console.error('PayPal error:', error);
-    setNotice({ type: 'error', msg: 'Errore durante il pagamento PayPal. Riprova.' });
-  };
-
-  const handlePayPalCancel = () => {
-    setNotice({ type: 'error', msg: 'Pagamento PayPal annullato.' });
-  };
 
   async function spend(code: string) {
     try {
@@ -397,32 +410,10 @@ export default function CreditiPage() {
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <input type="number" min={minCredits} value={creditsToBuy} onChange={(e) => setCreditsToBuy(Number(e.target.value))} className="bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2 w-28 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <Button onClick={buyCredits} className="h-10">Procedi al pagamento</Button>
+                <Button onClick={buyCredits} disabled={startingStripe} className="h-10">
+                  {startingStripe ? 'Apertura pagamento…' : 'Paga con carta'}
+                </Button>
               </div>
-              {showPayPal && (
-                <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">
-                  <div className="text-sm text-gray-300 mb-3">
-                    Acquisto {creditsToBuy} crediti - €{(creditsToBuy * 0.50).toFixed(2)}
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <PayPalButton
-                        credits={creditsToBuy}
-                        onSuccess={handlePayPalSuccess}
-                        onError={handlePayPalError}
-                        onCancel={handlePayPalCancel}
-                      />
-                    </div>
-                    <Button 
-                      variant="secondary" 
-                      onClick={() => setShowPayPal(false)}
-                      className="px-3"
-                    >
-                      Annulla
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
