@@ -296,7 +296,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Allego cover APPROVED + conteggi video, recensioni e commenti
       const withMeta = await Promise.all(filteredBase.map(async (it: any) => {
         const [cover, videoCount, reviewCount, commentCount] = await Promise.all([
-          prisma.photo.findFirst({ where: { userId: it.id, status: 'APPROVED' as any }, orderBy: { updatedAt: 'desc' } }),
+          prisma.photo.findFirst({ where: { userId: it.id, status: { in: ['APPROVED', 'IN_REVIEW'] } as any }, orderBy: { updatedAt: 'desc' } }),
           prisma.video.count({ where: { userId: it.id, status: 'APPROVED' as any } }),
           prisma.review.count({ where: { targetUserId: it.id, status: 'APPROVED' as any } }),
           prisma.comment.count({ where: { targetUserId: it.id, status: 'APPROVED' as any } })
