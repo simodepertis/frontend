@@ -235,6 +235,49 @@ export default function NuovoIncontroVeloce() {
     setPhotoFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const compressFile = (file: File, maxW = 1600, quality = 0.75): Promise<File> => {
+    return new Promise((resolve) => {
+      try {
+        if (!file?.type?.startsWith('image/')) return resolve(file);
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const ratio = img.width > maxW ? maxW / img.width : 1;
+              const w = Math.max(1, Math.round(img.width * ratio));
+              const h = Math.max(1, Math.round(img.height * ratio));
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return resolve(file);
+              ctx.drawImage(img, 0, 0, w, h);
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) return resolve(file);
+                  const name = (file.name || 'photo').replace(/\.[^/.]+$/, '') + '.jpg';
+                  resolve(new File([blob], name, { type: 'image/jpeg' }));
+                },
+                'image/jpeg',
+                quality
+              );
+            } catch {
+              resolve(file);
+            }
+          };
+          img.onerror = () => resolve(file);
+          img.src = String(reader.result || '');
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      } catch {
+        resolve(file);
+      }
+    });
+  };
+
   const handleSubmit = async () => {
     if (formData.photos.length === 0) {
       if (!confirm('Non hai caricato foto. Vuoi continuare comunque?')) {
@@ -275,11 +318,12 @@ export default function NuovoIncontroVeloce() {
         // 2) Upload foto a batch (se presenti) e patch con URL
         if (meetingId && photoFiles.length > 0) {
           const uploadOne = async (file: File) => {
+            const compressed = await compressFile(file);
             const fd = new FormData();
-            fd.append('files', file);
+            fd.append('files', compressed);
 
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 120000);
+            const timeout = setTimeout(() => controller.abort(), 300000);
             const upRes = await fetch(`/api/dashboard/quick-meetings/${meetingId}/upload`, {
               method: 'POST',
               headers: {
@@ -297,7 +341,7 @@ export default function NuovoIncontroVeloce() {
             return url as string;
           };
 
-          const CONCURRENCY = 3;
+          const CONCURRENCY = 1;
           const urls: string[] = [];
           let idx = 0;
           const workers = Array.from({ length: Math.min(CONCURRENCY, photoFiles.length) }, async () => {

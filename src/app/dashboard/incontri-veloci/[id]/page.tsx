@@ -135,6 +135,49 @@ export default function EditQuickMeeting() {
     }
   };
 
+  const compressFile = (file: File, maxW = 1600, quality = 0.75): Promise<File> => {
+    return new Promise((resolve) => {
+      try {
+        if (!file?.type?.startsWith('image/')) return resolve(file);
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const ratio = img.width > maxW ? maxW / img.width : 1;
+              const w = Math.max(1, Math.round(img.width * ratio));
+              const h = Math.max(1, Math.round(img.height * ratio));
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return resolve(file);
+              ctx.drawImage(img, 0, 0, w, h);
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) return resolve(file);
+                  const name = (file.name || 'photo').replace(/\.[^/.]+$/, '') + '.jpg';
+                  resolve(new File([blob], name, { type: 'image/jpeg' }));
+                },
+                'image/jpeg',
+                quality
+              );
+            } catch {
+              resolve(file);
+            }
+          };
+          img.onerror = () => resolve(file);
+          img.src = String(reader.result || '');
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      } catch {
+        resolve(file);
+      }
+    });
+  };
+
   const removePhoto = (index: number) => {
     setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
     setPhotoFiles(prev => prev.filter((_, i) => i !== index));
@@ -224,11 +267,12 @@ export default function EditQuickMeeting() {
 
       if (photoFiles.length > 0) {
         const uploadOne = async (file: File) => {
+          const compressed = await compressFile(file);
           const fd = new FormData();
-          fd.append('files', file);
+          fd.append('files', compressed);
 
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 120000);
+          const timeout = setTimeout(() => controller.abort(), 300000);
           const upRes = await fetch(`/api/dashboard/quick-meetings/${id}/upload`, {
             method: 'POST',
             headers: {
@@ -246,7 +290,7 @@ export default function EditQuickMeeting() {
           return url as string;
         };
 
-        const CONCURRENCY = 3;
+        const CONCURRENCY = 1;
         const results: string[] = [];
         let idx = 0;
         const workers = Array.from({ length: Math.min(CONCURRENCY, photoFiles.length) }, async () => {

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { mkdir, copyFile } from 'node:fs/promises'
 import path from 'node:path'
+import fs from 'node:fs'
 
 export const config = {
   api: {
@@ -109,6 +110,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const filename = `${safeBase}${ext}`
       const dest = path.join(uploadDir, filename)
       await copyFile(f.filepath, dest)
+
+      try {
+        await fs.promises.access(dest, fs.constants.R_OK)
+      } catch {
+        console.error('❌ Upload quick-meetings: file not persisted after copy', {
+          meetingId,
+          dest,
+          baseDir,
+          uploadDir,
+        })
+        throw new Error('File non salvato su disco dopo upload')
+      }
 
       const publicUrl = `/api/uploads/quick-meetings/${meetingId}/${filename}`
       uploaded.push({ url: publicUrl, name: f.originalFilename || filename, size: Number(f.size) || 0 })
