@@ -8,6 +8,16 @@ export const config = {
   },
 }
 
+function getProjectRootDir(): string {
+  const base = process.env.PM2_CWD || process.cwd()
+  const normalized = base.replace(/\\/g, '/')
+  // In Next.js standalone builds, the server often runs from .next/standalone
+  if (normalized.endsWith('/.next/standalone') || normalized.includes('/.next/standalone/')) {
+    return path.resolve(base, '..', '..')
+  }
+  return base
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     let segs = (req.query.path || []) as string[]
@@ -17,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (segs[0] === 'uploads') segs = segs.slice(1)
 
     // Serve only from uploads directory
-    const baseDir = process.env.PM2_CWD || process.cwd()
+    const baseDir = getProjectRootDir()
     const uploadsDir = path.join(baseDir, 'public', 'uploads')
     let filePath = path.join(uploadsDir, ...segs)
 
