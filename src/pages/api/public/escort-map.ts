@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       include: {
         escortProfile: true,
         photos: {
-          where: { status: 'APPROVED' },
+          where: { status: { in: ['APPROVED', 'IN_REVIEW'] } },
           take: 1,
           orderBy: { createdAt: 'desc' },
         },
