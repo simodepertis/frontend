@@ -7,8 +7,18 @@ import path from 'path'
 
 export const config = { api: { bodyParser: false } }
 
+function getProjectRootDir(): string {
+  const base = process.env.PM2_CWD || process.cwd()
+  const normalized = base.replace(/\\/g, '/')
+  if (normalized.endsWith('/.next/standalone') || normalized.includes('/.next/standalone/')) {
+    return path.resolve(base, '..', '..')
+  }
+  return base
+}
+
 async function parseForm(req: NextApiRequest): Promise<{ fields: formidable.Fields; files: formidable.Files; }> {
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+  const projectRoot = getProjectRootDir()
+  const uploadDir = path.join(projectRoot, 'public', 'uploads', '_tmp')
   await fs.promises.mkdir(uploadDir, { recursive: true })
   const form = formidable({ multiples: false, uploadDir, keepExtensions: true, maxFileSize: 8 * 1024 * 1024 })
   return await new Promise((resolve, reject) => {
@@ -44,8 +54,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const file = Array.isArray(f) ? f[0] : f
     if (!file) return res.status(400).json({ error: 'File mancante' })
 
-    const storedBasename = path.basename((file as any).filepath || (file as any).newFilename || file.originalFilename || `photo_${Date.now()}`)
-    const publicUrl = `/api/uploads/${storedBasename}`
+    const projectRoot = getProjectRootDir()
+    const destDir = path.join(projectRoot, 'public', 'uploads', 'escort-photos', String(escortUserId))
+    await fs.promises.mkdir(destDir, { recursive: true })
+
+    const srcPath = String((file as any).filepath || '')
+    const storedBasename = path.basename(
+      (file as any).newFilename ||
+      file.originalFilename ||
+      `photo_${Date.now()}`
+    )
+    const destPath = path.join(destDir, storedBasename)
+    if (srcPath) {
+      await fs.promises.copyFile(srcPath, destPath)
+      try { await fs.promises.unlink(srcPath) } catch {}
+    }
+
+    const publicUrl = `/api/uploads/escort-photos/${escortUserId}/${storedBasename}`
 
     const created = await prisma.photo.create({
       data: {
