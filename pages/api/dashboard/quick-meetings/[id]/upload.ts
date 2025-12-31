@@ -11,6 +11,15 @@ export const config = {
   },
 }
 
+function getProjectRootDir(): string {
+  const base = process.env.PM2_CWD || process.cwd()
+  const normalized = base.replace(/\\/g, '/')
+  if (normalized.endsWith('/.next/standalone') || normalized.includes('/.next/standalone/')) {
+    return path.resolve(base, '..', '..')
+  }
+  return base
+}
+
 function getUserFromToken(req: NextApiRequest): { userId: number } | null {
   try {
     let token: string | undefined
@@ -51,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!meeting) return res.status(404).json({ error: 'Annuncio non trovato' })
 
   try {
-    const baseDir = process.env.PM2_CWD || process.cwd()
+    const baseDir = getProjectRootDir()
     const uploadDir = path.join(baseDir, 'public', 'uploads', 'quick-meetings', String(meetingId))
     await mkdir(uploadDir, { recursive: true })
 

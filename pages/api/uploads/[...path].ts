@@ -18,6 +18,10 @@ function getProjectRootDir(): string {
   return base
 }
 
+function getRawCwdDir(): string {
+  return process.env.PM2_CWD || process.cwd()
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     let segs = (req.query.path || []) as string[]
@@ -35,17 +39,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const rel = path.relative(uploadsDir, filePath)
     if (rel.startsWith('..')) return res.status(403).end('Forbidden')
 
-    // Try primary path; if missing, try with only basename (legacy saved URLs)
+    // Try primary path; if missing, try raw cwd uploads (legacy standalone cwd) and then basename fallback
     try {
       await fs.promises.access(filePath, fs.constants.R_OK)
     } catch {
-      const base = path.basename(filePath)
-      const alt = path.join(uploadsDir, base)
       try {
-        await fs.promises.access(alt, fs.constants.R_OK)
-        filePath = alt
+        const rawBase = getRawCwdDir()
+        const rawUploadsDir = path.join(rawBase, 'public', 'uploads')
+        const rawFilePath = path.join(rawUploadsDir, ...segs)
+        const rawRel = path.relative(rawUploadsDir, rawFilePath)
+        if (!rawRel.startsWith('..')) {
+          await fs.promises.access(rawFilePath, fs.constants.R_OK)
+          filePath = rawFilePath
+        } else {
+          throw new Error('Forbidden')
+        }
       } catch {
-        return res.status(404).end('Not found')
+        const base = path.basename(filePath)
+        const alt = path.join(uploadsDir, base)
+        try {
+          await fs.promises.access(alt, fs.constants.R_OK)
+          filePath = alt
+        } catch {
+          return res.status(404).end('Not found')
+        }
       }
     }
 
