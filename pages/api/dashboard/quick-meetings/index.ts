@@ -11,13 +11,35 @@ function normalizeUploadUrl(u: string | null | undefined): string {
 }
 
 function sanitizePhotos(input: any): string[] {
-  if (!Array.isArray(input)) return [];
-  return input
+  let arr: any[] = [];
+  if (Array.isArray(input)) {
+    arr = input;
+  } else if (typeof input === 'string') {
+    const s = input.trim();
+    if (!s) return [];
+    if (s.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) arr = parsed;
+        else arr = [s];
+      } catch {
+        arr = [s];
+      }
+    } else {
+      arr = [s];
+    }
+  } else if (input && typeof input === 'object') {
+    // Prisma Json can come back as object wrappers in edge-cases
+    const maybe = (input as any).photos;
+    if (Array.isArray(maybe)) arr = maybe;
+  }
+
+  return arr
     .filter((x) => typeof x === 'string')
     .map((x) => String(x).trim())
     .filter((x) => x.length > 0)
     .filter((x) => !x.startsWith('data:'))
-    .filter((x) => x.length < 2048)
+    .filter((x) => x.length < 8192)
     .map((x) => normalizeUploadUrl(x));
 }
 
