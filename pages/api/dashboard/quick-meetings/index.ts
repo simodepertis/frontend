@@ -3,6 +3,24 @@ import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 import { QuickMeetingCategory } from '@prisma/client';
 
+function normalizeUploadUrl(u: string | null | undefined): string {
+  const s = String(u || '').trim();
+  if (!s) return '';
+  if (s.startsWith('/uploads/')) return `/api${s}`;
+  return s;
+}
+
+function sanitizePhotos(input: any): string[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter((x) => typeof x === 'string')
+    .map((x) => String(x).trim())
+    .filter((x) => x.length > 0)
+    .filter((x) => !x.startsWith('data:'))
+    .filter((x) => x.length < 2048)
+    .map((x) => normalizeUploadUrl(x));
+}
+
 // Consenti body JSON molto grande (foto in base64) per la creazione di annunci con molte immagini
 export const config = {
   api: {
@@ -56,7 +74,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         orderBy: { createdAt: 'desc' }
       });
 
-      return res.status(200).json({ meetings });
+      const safeMeetings = meetings.map((m) => ({
+        ...m,
+        photos: sanitizePhotos((m as any).photos),
+      }));
+
+      return res.status(200).json({ meetings: safeMeetings });
     } catch (error) {
       console.error('Errore caricamento:', error);
       return res.status(500).json({ error: 'Errore del server' });
@@ -87,6 +110,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Categoria non valida' });
       }
 
+      const safePhotos = sanitizePhotos(photos);
+
       const meeting = await prisma.quickMeeting.create({
         data: {
           title,
@@ -97,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           phone,
           whatsapp,
           age: age ? parseInt(age) : null,
-          photos: photos || [],
+          photos: safePhotos,
           userId,
           expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         }

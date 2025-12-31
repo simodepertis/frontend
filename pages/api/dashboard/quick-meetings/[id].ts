@@ -2,6 +2,24 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
+function normalizeUploadUrl(u: string | null | undefined): string {
+  const s = String(u || '').trim();
+  if (!s) return '';
+  if (s.startsWith('/uploads/')) return `/api${s}`;
+  return s;
+}
+
+function sanitizePhotos(input: any): string[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter((x) => typeof x === 'string')
+    .map((x) => String(x).trim())
+    .filter((x) => x.length > 0)
+    .filter((x) => !x.startsWith('data:'))
+    .filter((x) => x.length < 2048)
+    .map((x) => normalizeUploadUrl(x));
+}
+
 // Consenti un body JSON molto grande per aggiornare annunci con molte foto in base64
 export const config = {
   api: {
@@ -63,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Annuncio non trovato' });
       }
 
-      return res.status(200).json({ meeting });
+      return res.status(200).json({ meeting: { ...meeting, photos: sanitizePhotos((meeting as any).photos) } });
     } catch (error) {
       console.error('Errore:', error);
       return res.status(500).json({ error: 'Errore del server' });
@@ -80,12 +98,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Annuncio non trovato' });
       }
 
+      const body: any = req.body || {};
+      const data: any = { ...body };
+      if ('photos' in data) data.photos = sanitizePhotos(data.photos);
+
       const updated = await prisma.quickMeeting.update({
         where: { id: meetingId },
-        data: req.body
+        data
       });
 
-      return res.status(200).json({ meeting: updated });
+      return res.status(200).json({ meeting: { ...updated, photos: sanitizePhotos((updated as any).photos) } });
     } catch (error) {
       console.error('Errore:', error);
       return res.status(500).json({ error: 'Errore del server' });
