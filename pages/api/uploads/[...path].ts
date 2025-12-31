@@ -1,25 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import fs from 'fs'
 import path from 'path'
 
 export const config = {
   api: {
     bodyParser: false,
   },
-}
-
-function getProjectRootDir(): string {
-  const base = process.env.PM2_CWD || process.cwd()
-  const normalized = base.replace(/\\/g, '/')
-  // In Next.js standalone builds, the server often runs from .next/standalone
-  if (normalized.endsWith('/.next/standalone') || normalized.includes('/.next/standalone/')) {
-    return path.resolve(base, '..', '..')
-  }
-  return base
-}
-
-function getRawCwdDir(): string {
-  return process.env.PM2_CWD || process.cwd()
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -30,89 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     segs = segs.map(s => decodeURIComponent(s)).filter(Boolean)
     if (segs[0] === 'uploads') segs = segs.slice(1)
 
-    // Serve only from uploads directory
-    const baseDir = getProjectRootDir()
-    const uploadsDir = path.join(baseDir, 'public', 'uploads')
-    let filePath = path.join(uploadsDir, ...segs)
-
-    // Prevent path escape
-    const rel = path.relative(uploadsDir, filePath)
-    if (rel.startsWith('..')) return res.status(403).end('Forbidden')
-
-    // Try primary path; if missing, try raw cwd uploads (legacy standalone cwd) and then basename fallback
-    try {
-      await fs.promises.access(filePath, fs.constants.R_OK)
-    } catch {
-      try {
-        const rawBase = getRawCwdDir()
-        const rawUploadsDir = path.join(rawBase, 'public', 'uploads')
-        const rawFilePath = path.join(rawUploadsDir, ...segs)
-        const rawRel = path.relative(rawUploadsDir, rawFilePath)
-        if (!rawRel.startsWith('..')) {
-          await fs.promises.access(rawFilePath, fs.constants.R_OK)
-          filePath = rawFilePath
-        } else {
-          throw new Error('Forbidden')
-        }
-      } catch {
-        const base = path.basename(filePath)
-        const alt = path.join(uploadsDir, base)
-        try {
-          await fs.promises.access(alt, fs.constants.R_OK)
-          filePath = alt
-        } catch {
-          return res.status(404).end('Not found')
-        }
-      }
-    }
-
-    const ext = path.extname(filePath).toLowerCase()
-    const type = ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg'
-      : ext === '.png' ? 'image/png'
-      : ext === '.webp' ? 'image/webp'
-      : ext === '.gif' ? 'image/gif'
-      : ext === '.svg' ? 'image/svg+xml'
-      : ext === '.mp4' ? 'video/mp4'
-      : ext === '.webm' ? 'video/webm'
-      : ext === '.mov' ? 'video/quicktime'
-      : ext === '.mkv' ? 'video/x-matroska'
-      : ext === '.mp3' ? 'audio/mpeg'
-      : ext === '.wav' ? 'audio/wav'
-      : ext === '.pdf' ? 'application/pdf'
-      : 'application/octet-stream'
-
-    const stat = await fs.promises.stat(filePath)
-    const fileSize = stat.size
-    res.setHeader('Accept-Ranges', 'bytes')
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-
-    const range = req.headers.range
-    if (range && (type.startsWith('video/') || type.startsWith('audio/'))) {
-      const match = /bytes=(\d+)-(\d+)?/.exec(range)
-      let start = 0
-      let end = fileSize - 1
-      if (match) {
-        start = parseInt(match[1], 10)
-        if (match[2]) end = parseInt(match[2], 10)
-      }
-      if (start >= fileSize || end >= fileSize) {
-        res.status(416).setHeader('Content-Range', `bytes */${fileSize}`).end()
-        return
-      }
-      res.status(206)
-      res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`)
-      res.setHeader('Content-Length', String(end - start + 1))
-      res.setHeader('Content-Type', type)
-      const stream = fs.createReadStream(filePath, { start, end })
-      stream.pipe(res)
-      return
-    }
-
-    // Full content
-    res.setHeader('Content-Type', type)
-    res.setHeader('Content-Length', String(fileSize))
-    const stream = fs.createReadStream(filePath)
-    stream.pipe(res)
+    // Hotfix: serve uploads via static Next public/ folder.
+    // This avoids filesystem path issues in /api/uploads when running under PM2/Next builds.
+    const safePath = segs.map(s => s.replace(/\//g, '')).join('/')
+    const location = `/uploads/${safePath}`
+    res.setHeader('Cache-Control', 'no-cache')
+    res.redirect(307, location)
   } catch (e) {
     res.status(404).end('Not found')
   }
