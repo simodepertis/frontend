@@ -23,6 +23,13 @@ interface QuickMeeting {
   bumpPackage?: string;
 }
 
+function normalizeUploadUrl(u: string | null | undefined): string {
+  const s = String(u || '');
+  if (!s) return '/placeholder.svg';
+  if (s.startsWith('/uploads/')) return `/api${s}`;
+  return s;
+}
+
 const CATEGORIES = {
   DONNA_CERCA_UOMO: { label: "Donna cerca Uomo", icon: "👩‍❤️‍👨", color: "bg-pink-500" },
   TRANS: { label: "Trans", icon: "🏳️‍⚧️", color: "bg-purple-500" },
@@ -237,6 +244,7 @@ export default function IncontriVelociPage() {
               .filter((m) => m.bumpPackage === 'SUPERTOP')
               .map((meeting) => {
                 const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
+                const cover = normalizeUploadUrl(meeting.photos?.[0]);
                 return (
                   <Link
                     key={`super-${meeting.id}`}
@@ -248,14 +256,14 @@ export default function IncontriVelociPage() {
                         <>
                           <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
                             <img
-                              src={meeting.photos[0]}
+                              src={cover}
                               alt={meeting.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src = '/placeholder.svg';
                               }}
                             />
-                            {meeting.photos[0] && meeting.photos[0] !== '/placeholder.svg' && <Watermark />}
+                            {cover && cover !== '/placeholder.svg' && <Watermark />}
                             <div className="absolute bottom-2 left-2 flex items-center gap-2">
                               <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
                                 {category?.label}
@@ -293,6 +301,7 @@ export default function IncontriVelociPage() {
             .filter((m) => m.bumpPackage !== 'SUPERTOP')
             .map((meeting) => {
               const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
+              const cover = normalizeUploadUrl(meeting.photos?.[0]);
               return (
                 <Link key={meeting.id} href={`/incontri-veloci/${meeting.id}`} className="block group">
                   <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors">
@@ -302,7 +311,7 @@ export default function IncontriVelociPage() {
                         {meeting.photos[0] ? (
                           <>
                             <img
-                              src={meeting.photos[0]}
+                              src={cover}
                               alt={meeting.title}
                               className="w-full h-full object-cover"
                               onError={(e) => {

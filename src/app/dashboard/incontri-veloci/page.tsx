@@ -26,6 +26,13 @@ interface QuickMeetingProduct {
   creditsCost: number;
 }
 
+function normalizeUploadUrl(u: string | null | undefined): string {
+  const s = String(u || '');
+  if (!s) return '';
+  if (s.startsWith('/uploads/')) return `/api${s}`;
+  return s;
+}
+
 const CATEGORIES = {
   DONNA_CERCA_UOMO: "Donna cerca Uomo",
   TRANS: "Trans",
@@ -589,7 +596,7 @@ export default function IncontriVelociDashboard() {
                 <div className="w-32 h-32 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                   {meeting.photos[0] ? (
                     <img
-                      src={meeting.photos[0]}
+                      src={normalizeUploadUrl(meeting.photos[0])}
                       alt={meeting.title}
                       className="w-full h-full object-cover"
                     />

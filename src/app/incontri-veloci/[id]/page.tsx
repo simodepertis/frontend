@@ -47,6 +47,13 @@ interface QuickMeeting {
   sourceUrl?: string;
 }
 
+function normalizeUploadUrl(u: string | null | undefined): string {
+  const s = String(u || '');
+  if (!s) return '/placeholder.svg';
+  if (s.startsWith('/uploads/')) return `/api${s}`;
+  return s;
+}
+
 const CATEGORIES = {
   DONNA_CERCA_UOMO: { label: "Donna cerca Uomo", icon: "👩‍❤️‍👨", color: "bg-pink-500" },
   TRANS: { label: "Trans", icon: "🏳️‍⚧️", color: "bg-purple-500" },
@@ -303,6 +310,7 @@ export default function IncontroVeloceDetailPage() {
   const hasPhotos = Array.isArray(meeting.photos) && meeting.photos.length > 0;
   const visiblePhotos = hasPhotos
     ? (meeting.bumpPackage ? meeting.photos : (meeting.photos?.slice(0, 1) || []))
+        .map((p) => normalizeUploadUrl(p))
     : ["/placeholder.svg"];
 
   return (
@@ -380,7 +388,7 @@ export default function IncontroVeloceDetailPage() {
                 onClick={() => openLightbox(selectedPhoto)}
               >
                 <img
-                  src={visiblePhotos[selectedPhoto]}
+                  src={normalizeUploadUrl(visiblePhotos[selectedPhoto])}
                   alt={`${meeting.title} - Foto ${selectedPhoto + 1}`}
                   className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   onError={(e) => {
@@ -411,7 +419,7 @@ export default function IncontroVeloceDetailPage() {
                     }`}
                   >
                     <img
-                      src={photo}
+                      src={normalizeUploadUrl(photo)}
                       alt={`Miniatura ${index + 1}`}
                       className="w-full h-full object-cover transition-transform group-hover:scale-110"
                       onError={(e) => {
@@ -745,7 +753,7 @@ export default function IncontroVeloceDetailPage() {
           <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <div className="relative max-w-full max-h-full">
               <img
-                src={hasPhotos ? meeting.photos[lightboxIndex] : '/placeholder.svg'}
+                src={hasPhotos ? normalizeUploadUrl(meeting.photos[lightboxIndex]) : '/placeholder.svg'}
                 alt={`${meeting.title} - Foto ${lightboxIndex + 1}`}
                 className="max-w-full max-h-full object-contain rounded-lg"
                 onError={(e) => {

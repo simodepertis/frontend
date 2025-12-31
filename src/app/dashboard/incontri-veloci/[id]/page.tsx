@@ -40,6 +40,13 @@ export default function EditQuickMeeting() {
         if (!res.ok) return;
         const data = await res.json();
         const m = data.meeting;
+        const normalizeUploadUrl = (u: string | null | undefined) => {
+          const s = String(u || '');
+          if (!s) return '';
+          if (s.startsWith('/uploads/')) return `/api${s}`;
+          return s;
+        };
+
         setForm({
           title: m.title || "",
           description: m.description || "",
@@ -48,10 +55,10 @@ export default function EditQuickMeeting() {
           zone: m.zone || "",
           phone: m.phone || "",
           age: m.age || "",
-          photos: m.photos || [],
+          photos: Array.isArray(m.photos) ? m.photos.map((p: any) => normalizeUploadUrl(p)) : [],
           isActive: !!m.isActive
         });
-        setPhotoPreviews(m.photos || []);
+        setPhotoPreviews(Array.isArray(m.photos) ? m.photos.map((p: any) => normalizeUploadUrl(p)) : []);
 
         // verifica se esiste un pacchetto attivo per questo annuncio
         if (token) {
