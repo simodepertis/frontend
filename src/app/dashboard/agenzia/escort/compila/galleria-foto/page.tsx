@@ -128,8 +128,16 @@ function Inner() {
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {photos.map((p) => (
               <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-900">
-                <div className="aspect-[3/2] bg-gray-800 flex items-center justify-center">
+                <div className="relative aspect-[3/2] bg-gray-800 flex items-center justify-center">
                   <img src={p.url} alt={p.name} className="max-h-full max-w-full object-contain" />
+                  <div className="absolute top-2 left-2 flex gap-2">
+                    {p.isFace && (
+                      <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</span>
+                    )}
+                    {p.status && (
+                      <span className="text-xs font-bold bg-gray-900/80 text-white px-2 py-1 rounded">{p.status}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="p-2 text-xs text-gray-300 flex items-center justify-between">
                   <div className="truncate pr-2">{p.name}</div>
