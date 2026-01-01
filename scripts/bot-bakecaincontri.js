@@ -69,8 +69,8 @@ const CATEGORY_URLS = {
   UOMO_CERCA_UOMO: 'uomo-cerca-uomo'
 };
 
-// Lista città usata quando CITY=ALL
-const DEFAULT_CITIES = [
+// Fallback città usata quando CITY=ALL se il parsing della lista ufficiale fallisce
+const DEFAULT_CITIES_FALLBACK = [
   'Milano',
   'Roma',
   'Torino',
@@ -78,6 +78,54 @@ const DEFAULT_CITIES = [
   'Bologna',
   'Firenze',
 ];
+
+let _cachedAllCities = null;
+
+async function fetchBakecaCityCodes() {
+  // Prendiamo una pagina qualunque (Napoli) per leggere il JS che contiene: var cities=[{code:"..."},...]
+  const url = 'https://napoli.bakecaincontrii.com/donna-cerca-uomo/';
+  const r = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    }
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const html = await r.text();
+
+  const start = html.indexOf('var cities=[');
+  if (start === -1) throw new Error('cities array not found');
+
+  // Tagliamo una finestra ragionevole fino a un marker successivo noto
+  const afterStart = html.slice(start);
+  const endMarker = '];var functional_cookies';
+  const endIdx = afterStart.indexOf(endMarker);
+  const chunk = endIdx !== -1 ? afterStart.slice(0, endIdx) : afterStart.slice(0, 250000);
+
+  const codes = [];
+  const re = /code:"([a-z0-9-]+)"/gi;
+  let m;
+  while ((m = re.exec(chunk))) {
+    const code = String(m[1] || '').trim();
+    if (code && !codes.includes(code)) codes.push(code);
+  }
+  if (codes.length === 0) throw new Error('no city codes parsed');
+  return codes;
+}
+
+async function getAllCitiesForAllMode() {
+  if (Array.isArray(_cachedAllCities) && _cachedAllCities.length > 0) return _cachedAllCities;
+  try {
+    const codes = await fetchBakecaCityCodes();
+    _cachedAllCities = codes;
+    console.log(`🏙️ CITY=ALL: caricate ${codes.length} città dalla lista ufficiale Bakecaincontrii`);
+    return codes;
+  } catch (e) {
+    console.log(`⚠️ CITY=ALL: impossibile caricare lista città da Bakecaincontrii (${e?.message || e}). Uso fallback (${DEFAULT_CITIES_FALLBACK.length}).`);
+    _cachedAllCities = DEFAULT_CITIES_FALLBACK;
+    return DEFAULT_CITIES_FALLBACK;
+  }
+}
 
 function buildUrl(city, category) {
   // Struttura: {città}.bakecaincontrii.com/{categoria}/
@@ -474,7 +522,7 @@ async function runOnce() {
   }
 
   // Determina città
-  const cities = CITY === 'ALL' ? DEFAULT_CITIES : [CITY];
+  const cities = CITY === 'ALL' ? await getAllCitiesForAllMode() : [CITY];
 
   for (const city of cities) {
     for (const category of categories) {
