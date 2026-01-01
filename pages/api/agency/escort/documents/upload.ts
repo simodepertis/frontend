@@ -57,16 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const rawType = (Array.isArray(rawField) ? String(rawField[0] || '') : String(rawField || '')).toUpperCase()
     const type: any = ['ID_CARD_FRONT','ID_CARD_BACK','SELFIE_WITH_ID'].includes(rawType) ? rawType : 'ID_CARD_FRONT'
 
-    const created = await prisma.document.create({
-      data: {
-        userId: escortUserId,
-        type,
-        status: 'IN_REVIEW' as any,
-        url,
-      } as any,
-    })
-
-    return res.status(201).json({ document: created })
+    return res.status(201).json({ uploaded: true, url, type })
   } catch (e:any) {
     console.error('Agency document upload error', e)
     return res.status(500).json({ error: e?.message || 'Errore interno' })

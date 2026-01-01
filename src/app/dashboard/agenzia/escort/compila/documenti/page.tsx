@@ -19,6 +19,9 @@ function Inner() {
   const [saving, setSaving] = useState(false);
   const [documents, setDocuments] = useState<Array<any>>([]);
 
+  const [pendingDocs, setPendingDocs] = useState<Array<{ type: string; url: string }>>([]);
+  const [submittingPending, setSubmittingPending] = useState(false);
+
   const [type, setType] = useState<string>(TYPES[0].key);
   const [url, setUrl] = useState<string>("");
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -40,17 +43,34 @@ function Inner() {
   async function add() {
     if (!escortUserId) { alert('escortUserId mancante'); return; }
     if (!url) { alert('Inserisci URL del documento'); return; }
-    setSaving(true);
+    setPendingDocs(prev => [{ type, url }, ...prev]);
+    setUrl('');
+  }
+
+  async function submitPending() {
+    if (!escortUserId) { alert('escortUserId mancante'); return; }
+    if (pendingDocs.length === 0) { alert('Nessun documento da inviare'); return; }
+    setSubmittingPending(true);
     try {
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch('/api/agency/escort/documenti', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ escortUserId, type, url })
-      });
-      const j = await res.json();
-      if (!res.ok) { alert(j?.error || 'Errore invio documento'); }
-      else { setUrl(''); await load(); }
-    } finally { setSaving(false); }
+      for (const p of pendingDocs) {
+        const res = await fetch('/api/agency/escort/documenti', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ escortUserId, type: p.type, url: p.url })
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          alert(j?.error || 'Errore invio documenti');
+          return;
+        }
+      }
+      setPendingDocs([]);
+      await load();
+      alert('Documenti inviati in revisione');
+    } finally {
+      setSubmittingPending(false);
+    }
   }
 
   async function del(id: number) {
@@ -82,13 +102,17 @@ function Inner() {
             const token = localStorage.getItem('auth-token') || '';
             const res = await fetch('/api/agency/escort/documents/upload', { method: 'POST', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined, body: fd });
             if (!res.ok) { const j = await res.json().catch(()=>({})); alert(j?.error || 'Errore upload documento'); }
+            else {
+              const j = await res.json().catch(() => ({}));
+              const upUrl = String(j?.url || '');
+              const upType = String(j?.type || type);
+              if (upUrl) setPendingDocs(prev => [{ type: upType, url: upUrl }, ...prev]);
+            }
             (e.target as HTMLInputElement).value = '';
-            await load();
           }} />
           <div className="text-xs text-gray-400">Formati: JPG/PNG. Max 5MB.</div>
         </div>
 
-        {/* Upload da URL */}
         <div className="grid md:grid-cols-3 gap-3">
           <select value={type} onChange={(e)=> setType(e.target.value)} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2">
             {TYPES.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
@@ -96,6 +120,30 @@ function Inner() {
           <input value={url} onChange={(e)=> setUrl(e.target.value)} placeholder="URL documento" className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
           <Button onClick={add} disabled={saving || !url}>{saving ? 'Invio…' : 'Invia documento'}</Button>
         </div>
+
+        {pendingDocs.length > 0 && (
+          <div className="border border-gray-600 rounded-md p-3 bg-gray-900">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-gray-200">Documenti in bozza (da inviare): {pendingDocs.length}</div>
+              <Button onClick={submitPending} disabled={submittingPending || !escortUserId}>
+                {submittingPending ? 'Invio…' : 'Invia documenti'}
+              </Button>
+            </div>
+            <div className="mt-2 grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {pendingDocs.map((p, idx) => (
+                <div key={idx} className="border border-gray-700 rounded-md overflow-hidden bg-gray-950">
+                  <div className="aspect-[3/2] bg-gray-800 flex items-center justify-center">
+                    <img src={p.url.startsWith('/uploads/') ? `/api${p.url}` : p.url} alt={p.type} className="max-h-full max-w-full object-contain" />
+                  </div>
+                  <div className="p-2 text-xs text-gray-300 flex items-center justify-between">
+                    <span>{p.type}</span>
+                    <button className="text-red-300 hover:text-red-400" onClick={() => setPendingDocs(prev => prev.filter((_, i) => i !== idx))}>Rimuovi</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-sm text-gray-400">Caricamento…</div>
