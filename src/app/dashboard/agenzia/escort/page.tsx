@@ -32,7 +32,10 @@ export default function AgencyManageEscortsPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch('/api/agency/escorts');
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/agency/escorts', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (res.ok) {
         const data = await res.json();
         const list = data?.escorts || data?.items || [];
@@ -58,7 +61,10 @@ export default function AgencyManageEscortsPage() {
     if (!query || query.trim().length < 2) { setResults([]); return; }
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/agency/escorts/search?query=${encodeURIComponent(query)}`);
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch(`/api/agency/escorts/search?query=${encodeURIComponent(query)}`,
+          { headers: token ? { 'Authorization': `Bearer ${token}` } : {} }
+        );
         if (res.ok) {
           const { results } = await res.json();
           setResults((results || []).map((u: any) => ({ id: u.id, nome: u.nome, email: u.email, agencyId: u.escortProfile?.agencyId ?? null })));
@@ -76,7 +82,15 @@ export default function AgencyManageEscortsPage() {
         if (!ok) { setLinking(false); return; }
       }
       const body = action === 'link' ? { escortUserId: Number(escortUserId), action } : { escortUserId: id, action };
-      const res = await fetch('/api/agency/escorts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/agency/escorts', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(body)
+      });
       if (!res.ok) {
         const txt = await res.text();
         alert(`Operazione fallita: ${txt}`);
@@ -107,7 +121,15 @@ export default function AgencyManageEscortsPage() {
               <Button disabled={creating || !newName || !newEmail || newPassword.length < 6} onClick={async ()=>{
                 setCreating(true);
                 try {
-                  const res = await fetch('/api/agency/escorts/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: newName, email: newEmail, password: newPassword }) });
+                  const token = localStorage.getItem('auth-token') || '';
+                  const res = await fetch('/api/agency/escorts/create', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({ nome: newName, email: newEmail, password: newPassword })
+                  });
                   const j = await res.json();
                   if (!res.ok) { alert(j?.error || 'Errore creazione'); }
                   else {
