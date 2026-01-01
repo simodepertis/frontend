@@ -43,7 +43,7 @@ export default async function handler(
       return res.status(401).json({ error: 'Email o password non corretti' })
     }
 
-    if (!user.emailVerifiedAt && shouldRequireEmailVerification(user.createdAt)) {
+    if (user.ruolo !== 'admin' && !user.emailVerifiedAt && shouldRequireEmailVerification(user.createdAt)) {
       return res.status(403).json({ error: 'Devi verificare la tua email prima di accedere.' })
     }
 

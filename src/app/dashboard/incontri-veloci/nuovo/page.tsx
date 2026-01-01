@@ -184,11 +184,16 @@ export default function NuovoIncontroVeloce() {
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          updateField('photos', [...formData.photos, event.target.result as string]);
+          setFormData(prev => ({
+            ...prev,
+            photos: [...prev.photos, event.target?.result as string]
+          }));
         }
       };
       reader.readAsDataURL(file);
     });
+
+    e.currentTarget.value = '';
   };
 
   const handleFilesUpload = (files: FileList) => {
@@ -200,7 +205,10 @@ export default function NuovoIncontroVeloce() {
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          updateField('photos', [...formData.photos, event.target.result as string]);
+          setFormData(prev => ({
+            ...prev,
+            photos: [...prev.photos, event.target?.result as string]
+          }));
         }
       };
       reader.readAsDataURL(file);

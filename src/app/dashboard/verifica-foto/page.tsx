@@ -1,8 +1,8 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import NextImage from "next/image";
 import { Button } from "@/components/ui/button";
 
 export default function VerificaFotoPage() {
@@ -11,6 +11,7 @@ export default function VerificaFotoPage() {
   const [faceIndex, setFaceIndex] = useState<number>(-1); // Indice foto con volto
   const [submitting, setSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   // Documenti & Consenso (ripristino)
   type DocItem = { id: string; type: 'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'; url: string; status: 'in_review' | 'approvato' | 'rifiutato' };
@@ -141,7 +142,7 @@ export default function VerificaFotoPage() {
 
       const compressDataUrl = (srcDataUrl: string, maxW = 1200, quality = 0.7): Promise<string> => {
         return new Promise((resolve, reject) => {
-          const img = new Image();
+          const img = new window.Image();
           img.onload = () => {
             const ratio = img.width > maxW ? maxW / img.width : 1;
             const w = Math.round(img.width * ratio);
@@ -251,10 +252,15 @@ export default function VerificaFotoPage() {
             onChange={handlePhotoUpload}
             className="hidden"
             id="photo-upload"
+            ref={photoInputRef}
           />
-          <label htmlFor="photo-upload" className="inline-block">
-            <Button variant="secondary" type="button">Seleziona foto</Button>
-          </label>
+          <Button
+            variant="secondary"
+            type="button"
+            onClick={() => photoInputRef.current?.click()}
+          >
+            Seleziona foto
+          </Button>
         </div>
       </div>
 
@@ -268,7 +274,7 @@ export default function VerificaFotoPage() {
             {photos.map((photo, idx) => (
               <div key={idx} className="border border-gray-600 rounded-md overflow-hidden">
                 <div className="relative w-full h-56 bg-black">
-                  <Image src={photo} alt={`Foto ${idx + 1}`} fill className="object-contain" />
+                  <NextImage src={photo} alt={`Foto ${idx + 1}`} fill className="object-contain" />
                   {faceIndex === idx && (
                     <div className="absolute top-2 left-2 text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">
                       Volto

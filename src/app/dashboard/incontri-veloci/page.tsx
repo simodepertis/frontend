@@ -445,15 +445,18 @@ export default function IncontriVelociDashboard() {
     if (!confirm('Sei sicuro di voler eliminare questo annuncio?')) return;
 
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
       const res = await fetch(`/api/dashboard/quick-meetings/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       if (res.ok) {
         setMeetings(meetings.filter(m => m.id !== id));
         alert('Annuncio eliminato con successo');
       } else {
-        alert('Errore durante l\'eliminazione');
+        const e = await res.json().catch(() => ({}));
+        alert(e?.error || 'Errore durante l\'eliminazione');
       }
     } catch (error) {
       console.error('Errore:', error);
