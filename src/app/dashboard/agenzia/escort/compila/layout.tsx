@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import SectionHeader from "@/components/SectionHeader";
+import { Suspense } from "react";
 
 function AgencyEscortCompilaSidebar({ escortUserId }: { escortUserId: number }) {
   const pathname = usePathname() || "";
@@ -44,7 +45,7 @@ function AgencyEscortCompilaSidebar({ escortUserId }: { escortUserId: number }) 
   );
 }
 
-export default function AgencyEscortCompilaLayout({ children }: { children: React.ReactNode }) {
+function InnerLayout({ children }: { children: React.ReactNode }) {
   const params = useSearchParams();
   const escortUserId = Number(params?.get('escortUserId') || 0);
 
@@ -61,5 +62,13 @@ export default function AgencyEscortCompilaLayout({ children }: { children: Reac
         <main className="flex-1 space-y-6">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function AgencyEscortCompilaLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="text-sm text-gray-400">Caricamento...</div>}>
+      <InnerLayout>{children}</InnerLayout>
+    </Suspense>
   );
 }
