@@ -30,10 +30,12 @@ async function parseForm(req: NextApiRequest): Promise<{ fields: formidable.Fiel
 }
 
 function getUserIdFromAuth(req: NextApiRequest): number | null {
-  const auth = req.headers.authorization || ''
+  const auth = (req.headers.authorization || (req.headers as any).Authorization) as string | undefined
   const raw = typeof auth === 'string' && auth.startsWith('Bearer ') ? auth.slice(7) : ''
-  if (!raw) return null
-  const payload = verifyToken(raw)
+  const cookie = req.cookies['auth-token']
+  const token = raw || cookie || ''
+  if (!token) return null
+  const payload = verifyToken(token)
   return payload?.userId || null
 }
 
