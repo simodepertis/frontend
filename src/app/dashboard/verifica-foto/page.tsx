@@ -13,6 +13,10 @@ export default function VerificaFotoPage() {
   const [isDragging, setIsDragging] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
+  type ExistingPhoto = { id: number; url: string; status: 'DRAFT'|'IN_REVIEW'|'APPROVED'|'REJECTED'; isFace: boolean; createdAt?: string };
+  const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>([]);
+  const [loadingExisting, setLoadingExisting] = useState(false);
+
   // Documenti & Consenso (ripristino)
   type DocItem = { id: string; type: 'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'; url: string; status: 'in_review' | 'approvato' | 'rifiutato' };
   const [docs, setDocs] = useState<DocItem[]>([]);
@@ -27,6 +31,24 @@ export default function VerificaFotoPage() {
       try {
         const token = localStorage.getItem('auth-token') || '';
         if (!token) return;
+
+        // Existing photos
+        try {
+          setLoadingExisting(true);
+          const pr = await fetch('/api/escort/photos', { headers: { 'Authorization': `Bearer ${token}` } });
+          if (pr.ok) {
+            const j = await pr.json().catch(() => ({}));
+            const mapped = Array.isArray(j?.photos) ? j.photos.map((p: any) => ({
+              id: Number(p.id),
+              url: String(p.url || ''),
+              status: p.status,
+              isFace: !!p.isFace,
+              createdAt: p.createdAt ? String(p.createdAt) : undefined,
+            })) : [];
+            setExistingPhotos(mapped);
+          }
+        } catch {} finally { setLoadingExisting(false); }
+
         // Documents
         try {
           const dr = await fetch('/api/escort/documents', { headers: { 'Authorization': `Bearer ${token}` } });
@@ -53,6 +75,35 @@ export default function VerificaFotoPage() {
       } catch {}
     })();
   }, []);
+
+  const normalizeUploadUrl = (u: string | null | undefined) => {
+    const s = String(u || '');
+    if (!s) return '';
+    if (s.startsWith('/uploads/')) return `/api${s}`;
+    return s;
+  };
+
+  const deleteExistingPhoto = async (id: number) => {
+    if (!confirm('Vuoi eliminare questa foto?')) return;
+    const token = localStorage.getItem('auth-token') || '';
+    if (!token) { alert('Devi essere autenticato'); return; }
+    try {
+      const res = await fetch('/api/escort/photos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(j?.error || 'Errore eliminazione foto');
+        return;
+      }
+      setExistingPhotos(prev => prev.filter(p => p.id !== id));
+    } catch (e) {
+      console.error('Delete photo error', e);
+      alert('Errore eliminazione foto');
+    }
+  };
 
   // Upload foto - IDENTICO a incontri-veloci
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,6 +284,44 @@ export default function VerificaFotoPage() {
   return (
     <div className="space-y-6">
       <SectionHeader title="Verifica Foto" subtitle="Carica almeno 3 foto, segna 1 con volto" />
+
+      {/* Foto già caricate */}
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
+        <div className="font-semibold mb-3 text-white">Foto già caricate</div>
+        {loadingExisting ? (
+          <div className="text-sm text-gray-300">Caricamento…</div>
+        ) : existingPhotos.length === 0 ? (
+          <div className="text-sm text-gray-300">Nessuna foto caricata</div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {existingPhotos
+              .slice()
+              .sort((a, b) => (a.isFace === b.isFace ? 0 : a.isFace ? -1 : 1))
+              .map((p) => (
+                <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden">
+                  <div className="relative w-full h-56 bg-black">
+                    <NextImage src={normalizeUploadUrl(p.url) || '/placeholder.svg'} alt={`Foto ${p.id}`} fill className="object-contain" />
+                    <div className="absolute top-2 left-2 flex gap-2">
+                      {p.isFace && (
+                        <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</span>
+                      )}
+                      <span className="text-xs font-bold bg-gray-900/80 text-white px-2 py-1 rounded">{p.status}</span>
+                    </div>
+                  </div>
+                  <div className="p-2 flex gap-2">
+                    <Button
+                      variant="secondary"
+                      className="px-2 py-1 h-7 text-xs flex-1"
+                      onClick={() => deleteExistingPhoto(p.id)}
+                    >
+                      Elimina
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
 
       {/* Area upload */}
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
