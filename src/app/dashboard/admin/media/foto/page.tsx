@@ -2,7 +2,6 @@
 
 import SectionHeader from "@/components/SectionHeader";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 export default function AdminMediaFotoPage() {
@@ -11,6 +10,13 @@ export default function AdminMediaFotoPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [actingId, setActingId] = useState<number | null>(null);
+
+  const normalizeUploadUrl = (u: string | null | undefined) => {
+    const s = String(u || '');
+    if (!s) return '';
+    if (s.startsWith('/uploads/')) return `/api${s}`;
+    return s;
+  };
 
   async function load() {
     setLoading(true);
@@ -90,7 +96,18 @@ export default function AdminMediaFotoPage() {
           {items.map(it => (
             <div key={it.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-800">
               <div className="relative w-full aspect-[3/4]">
-                <Image src={it.url} alt={`Foto ${it.id}`} fill className="object-cover" />
+                <img
+                  src={normalizeUploadUrl(it.url)}
+                  alt={`Foto ${it.id}`}
+                  className="object-cover absolute inset-0 w-full h-full"
+                  onError={(e) => {
+                    const t = e.currentTarget;
+                    if (!t.dataset.fallback) {
+                      t.dataset.fallback = '1';
+                      t.src = '/placeholder.svg';
+                    }
+                  }}
+                />
                 {(it as any).isFace && (
                   <div title="Foto del volto" className="absolute top-2 left-2 z-10 px-2 py-1 rounded-full text-[10px] font-bold bg-blue-600 text-white shadow">
                     Volto
