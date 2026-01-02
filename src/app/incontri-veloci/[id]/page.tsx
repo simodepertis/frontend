@@ -529,9 +529,11 @@ export default function IncontroVeloceDetailPage() {
             
             <div className="space-y-3">
               {(() => {
-                const telHref = buildTelHref(meeting.phone);
+                const waNumber = extractWhatsAppNumber(meeting.whatsapp);
+                const phoneForTel = normalizePhone(meeting.phone) || normalizePhone(waNumber);
+                const telHref = phoneForTel ? `tel:${phoneForTel}` : null;
                 const waHref = buildWhatsAppHref(meeting.phone, meeting.whatsapp);
-                const displayPhone = normalizePhone(meeting.phone);
+                const displayPhone = phoneForTel;
 
                 return (
                   <>

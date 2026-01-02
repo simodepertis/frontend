@@ -83,15 +83,22 @@ let _cachedAllCities = null;
 
 async function fetchBakecaCityCodes() {
   // Prendiamo una pagina qualunque (Napoli) per leggere il JS che contiene: var cities=[{code:"..."},...]
+  // NOTA: in alcuni ambienti la fetch server-side viene bloccata (HTTP 403), quindi usiamo Puppeteer.
   const url = 'https://napoli.bakecaincontrii.com/donna-cerca-uomo/';
-  const r = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    }
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors']
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  const html = await r.text();
+  let html = '';
+  try {
+    const page = await browser.newPage();
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
+    await sleep(1500);
+    html = await page.content();
+  } finally {
+    await browser.close();
+  }
 
   const start = html.indexOf('var cities=[');
   if (start === -1) throw new Error('cities array not found');
@@ -256,7 +263,8 @@ async function scrapeDettaglio(url) {
       const telA = document.querySelector('a[href^="tel:"]');
       const telHref = telA ? telA.getAttribute('href') : null;
 
-      // 2) numero visibile nel bottone (riquadro rosa): cerca elementi con solo cifre (8-13)
+      // 2) numero visibile nel bottone (riquadro rosa):
+      // prova prima con elementi che contengono solo cifre, poi fallback su testo misto ("Chiama ora 333...")
       let phoneText = null;
       const candidates = Array.from(document.querySelectorAll('button, a, div, span'));
       for (const el of candidates) {
@@ -264,11 +272,26 @@ async function scrapeDettaglio(url) {
         if (!t) continue;
         const digits = cleanDigits(t);
         if (!digits) continue;
+
+        // Caso 1: testo composto solo da cifre/spazi/trattini
         const nonDigits = t.replace(/[0-9\s\-\.]/g, '').trim();
-        if (nonDigits.length > 0) continue;
-        if (digits.length >= 8 && digits.length <= 13) {
-          phoneText = digits;
-          break;
+        if (nonDigits.length === 0) {
+          if (digits.length >= 8 && digits.length <= 13) {
+            phoneText = digits;
+            break;
+          }
+          continue;
+        }
+
+        // Caso 2 (fallback): testo misto, estrai la prima sequenza 8-13 cifre
+        // es. "Chiama ora 333 123 4567" / "Telefono: 339..."
+        const m = t.match(/(\+?\d[\d\s\-\.]{7,14})/);
+        if (m && m[1]) {
+          const extracted = cleanDigits(m[1]);
+          if (extracted.length >= 8 && extracted.length <= 13) {
+            phoneText = extracted;
+            break;
+          }
         }
       }
 
@@ -472,6 +495,14 @@ async function runOnceFor(city, category) {
 
       if (!d.title || d.title.length < 5) {
         console.log(`⏭️ Skip: titolo troppo corto`);
+        skipped++;
+        continue;
+      }
+
+      // Se non riusciamo a ricavare nessun contatto (telefono/WhatsApp), non importiamo.
+      // Questo evita annunci senza contatti nella sidebar.
+      if (!d.phone && !d.whatsapp) {
+        console.log(`⏭️ Skip: nessun contatto (telefono/whatsapp)`);
         skipped++;
         continue;
       }
