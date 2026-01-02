@@ -61,6 +61,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           expiresAt: {
             gt: new Date()
           }
+        },
+        include: {
+          importedReviews: {
+            orderBy: {
+              reviewDate: 'desc'
+            },
+            select: {
+              id: true,
+              escortName: true,
+              reviewerName: true,
+              rating: true,
+              reviewText: true,
+              reviewDate: true,
+              sourceUrl: true,
+            }
+          }
         }
       })
 
@@ -68,7 +84,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Incontro non trovato' })
       }
 
-      return res.json({ meeting: { ...meeting, photos: sanitizePhotos((meeting as any).photos) } })
+      return res.json({
+        meeting: {
+          ...meeting,
+          photos: sanitizePhotos((meeting as any).photos),
+          reviewCount: Array.isArray((meeting as any).importedReviews) ? (meeting as any).importedReviews.length : 0,
+        }
+      })
     } catch (error) {
       console.error('Errore recupero incontro:', error)
       return res.status(500).json({ error: 'Errore interno del server' })
