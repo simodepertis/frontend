@@ -17,6 +17,24 @@ export default function EscortIndipendentiPage() {
   const [filtroEta, setFiltroEta] = useState("");
   const [filtroPrezzo, setFiltroPrezzo] = useState("");
 
+  type EscortItem = {
+    id: number;
+    slug: string;
+    nome: string;
+    eta?: number;
+    citta?: string;
+    cities?: string[];
+    capelli?: string;
+    prezzo?: number;
+    rank?: string;
+    verificata?: boolean;
+    pacchettoAttivo?: boolean;
+    videoCount?: number;
+    reviewCount?: number;
+    commentCount?: number;
+    foto?: string;
+  };
+
   // Opzioni per i filtri (ordine condiviso richiesto dal cliente)
   const cittaOptions = CITIES_ORDER;
   const capelliOptions = ["Biondi", "Castani", "Neri", "Rossi"];
@@ -40,7 +58,7 @@ export default function EscortIndipendentiPage() {
       
       if (data.success && data.escorts && data.escorts.length > 0) {
         // Filtra solo escort verificati con pacchetto attivo
-        const escortsVerificati = data.escorts.filter(escort => 
+        const escortsVerificati = data.escorts.filter((escort: any) => 
           escort.verificata && escort.pacchettoAttivo
         );
         setEscorts(escortsVerificati);
@@ -58,12 +76,14 @@ export default function EscortIndipendentiPage() {
   }
 
   // Funzione di filtro
-  const escortsFiltrate = escorts.filter((escort) => {
-    const matchCitta = !filtroCitta || escort.citta === filtroCitta;
+  const escortsFiltrate = (escorts as EscortItem[]).filter((escort: EscortItem) => {
+    const norm = (s: unknown) => String(s || '').trim().toLowerCase();
+    const cities = Array.isArray(escort.cities) ? escort.cities : [escort.citta];
+    const matchCitta = !filtroCitta || cities.some((c: any) => norm(c) === norm(filtroCitta));
     const matchCapelli = !filtroCapelli || escort.capelli === filtroCapelli;
     
     const matchEta = !filtroEta || (() => {
-      const eta = escort.eta;
+      const eta = escort.eta || 0;
       switch(filtroEta) {
         case "18-25": return eta >= 18 && eta <= 25;
         case "26-30": return eta >= 26 && eta <= 30;
@@ -75,7 +95,7 @@ export default function EscortIndipendentiPage() {
     })();
     
     const matchPrezzo = !filtroPrezzo || (() => {
-      const prezzo = escort.prezzo;
+      const prezzo = escort.prezzo || 0;
       switch(filtroPrezzo) {
         case "50-100": return prezzo >= 50 && prezzo <= 100;
         case "100-150": return prezzo >= 100 && prezzo <= 150;
@@ -228,9 +248,9 @@ export default function EscortIndipendentiPage() {
 
           {/* Griglia escort */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {escortsOrdinati.map((escort) => (
+            {escortsOrdinati.map((escort: EscortItem) => (
               <Link key={escort.id} href={`/escort/${escort.slug}`} className="relative block">
-                <EscortCard escort={{ id: escort.id, nome: escort.nome, eta: escort.eta, citta: escort.citta, prezzo: escort.prezzo, foto: escort.foto, rank: escort.rank, isVerified: escort.verificata, videoCount: escort.videoCount || 0, reviewCount: escort.reviewCount || 0, commentCount: escort.commentCount || 0 }} />
+                <EscortCard escort={{ id: escort.id, nome: escort.nome, eta: escort.eta ?? 0, citta: escort.citta ?? '', prezzo: escort.prezzo ?? 0, foto: escort.foto ?? '', rank: escort.rank ?? 'STANDARD', isVerified: escort.verificata ?? false, videoCount: escort.videoCount || 0, reviewCount: escort.reviewCount || 0, commentCount: escort.commentCount || 0 }} />
                 {/* Badge Indipendente */}
                 <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
                   <FontAwesomeIcon icon={faUserCheck} className="mr-1" />

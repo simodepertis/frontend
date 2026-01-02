@@ -100,10 +100,35 @@ export default async function handler(
     })
 
     const escortsFormatted = sortedEscorts.map((u) => {
-      const city = (() => {
-        const c = u.escortProfile?.cities as any
-        return (c && (c.base || c.city || c.baseCity)) || 'Milano'
+      const cities = (() => {
+        const raw = (u.escortProfile as any)?.cities
+        const obj = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {}
+        const agg: string[] = []
+
+        if (Array.isArray((obj as any).cities)) agg.push(...(obj as any).cities)
+        const baseCity = (obj as any).baseCity || (obj as any).base || (obj as any).city
+        const secondCity = (obj as any).secondCity
+        const thirdCity = (obj as any).thirdCity
+        const fourthCity = (obj as any).fourthCity
+        for (const c of [baseCity, secondCity, thirdCity, fourthCity]) {
+          if (c) agg.push(String(c))
+        }
+
+        if (Array.isArray(raw)) agg.push(...raw.map((x: any) => String(x)))
+
+        if (Array.isArray((obj as any).internationalCities)) {
+          for (const cityStr of (obj as any).internationalCities) {
+            if (typeof cityStr === 'string' && cityStr.includes(', ')) {
+              const [cityName] = cityStr.split(', ')
+              if (cityName) agg.push(cityName)
+            }
+          }
+        }
+
+        return Array.from(new Set(agg.filter(Boolean)))
       })()
+
+      const city = cities[0] || 'Milano'
       const fotoRaw = u.photos[0]?.url || '/images/placeholder.jpg'
       const foto = fotoRaw.startsWith('/uploads/') ? ('/api' + fotoRaw) : fotoRaw
       
@@ -132,6 +157,7 @@ export default async function handler(
         nome: displayName,
         eta: 25,
         citta: city,
+        cities,
         capelli: undefined,
         prezzo: 100,
         foto,
