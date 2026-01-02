@@ -83,6 +83,50 @@ export default function VerificaFotoPage() {
     return s;
   };
 
+  const setExistingCoverPhoto = async (id: number) => {
+    const token = localStorage.getItem('auth-token') || '';
+    if (!token) { alert('Devi essere autenticato'); return; }
+    try {
+      const res = await fetch('/api/escort/photos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id, setAsCover: true })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(j?.error || 'Errore impostazione foto vetrina');
+        return;
+      }
+      setExistingPhotos((prev) => {
+        const idx = prev.findIndex(p => p.id === id);
+        if (idx <= 0) return prev;
+        const next = [...prev];
+        const [item] = next.splice(idx, 1);
+        next.unshift(item);
+        return next;
+      });
+    } catch (e) {
+      console.error('Set cover photo error', e);
+      alert('Errore impostazione foto vetrina');
+    }
+  };
+
+  const setNewCoverPhoto = (index: number) => {
+    if (index === 0) return;
+    setPhotos((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(index, 1);
+      next.unshift(item);
+      return next;
+    });
+    setFaceIndex((prev) => {
+      if (prev === -1) return prev;
+      if (prev === index) return 0;
+      if (prev < index) return prev + 1;
+      return prev;
+    });
+  };
+
   const deleteExistingPhoto = async (id: number) => {
     if (!confirm('Vuoi eliminare questa foto?')) return;
     const token = localStorage.getItem('auth-token') || '';
@@ -294,31 +338,40 @@ export default function VerificaFotoPage() {
           <div className="text-sm text-gray-300">Nessuna foto caricata</div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {existingPhotos
-              .slice()
-              .sort((a, b) => (a.isFace === b.isFace ? 0 : a.isFace ? -1 : 1))
-              .map((p) => (
-                <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden">
-                  <div className="relative w-full h-56 bg-black">
-                    <NextImage src={normalizeUploadUrl(p.url) || '/placeholder.svg'} alt={`Foto ${p.id}`} fill className="object-contain" />
-                    <div className="absolute top-2 left-2 flex gap-2">
-                      {p.isFace && (
-                        <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</span>
-                      )}
-                      <span className="text-xs font-bold bg-gray-900/80 text-white px-2 py-1 rounded">{p.status}</span>
-                    </div>
-                  </div>
-                  <div className="p-2 flex gap-2">
-                    <Button
-                      variant="secondary"
-                      className="px-2 py-1 h-7 text-xs flex-1"
-                      onClick={() => deleteExistingPhoto(p.id)}
+            {existingPhotos.map((p, idx) => (
+              <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden">
+                <div className="relative w-full h-56 bg-black">
+                  <NextImage src={normalizeUploadUrl(p.url) || '/placeholder.svg'} alt={`Foto ${p.id}`} fill className="object-contain" />
+                  <div className="absolute top-2 left-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExistingCoverPhoto(p.id)}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${
+                        idx === 0
+                          ? 'bg-yellow-400 border-yellow-300 text-black'
+                          : 'bg-gray-900/80 border-yellow-400 text-yellow-300 hover:bg-yellow-400 hover:text-black'
+                      }`}
+                      title={idx === 0 ? 'Foto vetrina' : 'Imposta come foto vetrina'}
                     >
-                      Elimina
-                    </Button>
+                      ⭐
+                    </button>
+                    {p.isFace && (
+                      <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</span>
+                    )}
+                    <span className="text-xs font-bold bg-gray-900/80 text-white px-2 py-1 rounded">{p.status}</span>
                   </div>
                 </div>
-              ))}
+                <div className="p-2 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    className="px-2 py-1 h-7 text-xs flex-1"
+                    onClick={() => deleteExistingPhoto(p.id)}
+                  >
+                    Elimina
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -364,8 +417,22 @@ export default function VerificaFotoPage() {
               <div key={idx} className="border border-gray-600 rounded-md overflow-hidden">
                 <div className="relative w-full h-56 bg-black">
                   <NextImage src={photo} alt={`Foto ${idx + 1}`} fill className="object-contain" />
+                  <div className="absolute top-2 left-2">
+                    <button
+                      type="button"
+                      onClick={() => setNewCoverPhoto(idx)}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${
+                        idx === 0
+                          ? 'bg-yellow-400 border-yellow-300 text-black'
+                          : 'bg-gray-900/80 border-yellow-400 text-yellow-300 hover:bg-yellow-400 hover:text-black'
+                      }`}
+                      title={idx === 0 ? 'Foto vetrina' : 'Imposta come foto vetrina'}
+                    >
+                      ⭐
+                    </button>
+                  </div>
                   {faceIndex === idx && (
-                    <div className="absolute top-2 left-2 text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">
+                    <div className="absolute top-2 left-10 text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">
                       Volto
                     </div>
                   )}

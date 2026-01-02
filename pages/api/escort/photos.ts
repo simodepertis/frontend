@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!user) return res.status(401).json({ error: 'Non autenticato' })
 
   if (req.method === 'GET') {
-    const photos = await prisma.photo.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } })
+    const photos = await prisma.photo.findMany({ where: { userId: user.id }, orderBy: { updatedAt: 'desc' } })
     return res.json({ photos })
   }
 
@@ -39,11 +39,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PATCH') {
-    const { id, isFace } = req.body || {}
+    const { id, isFace, setAsCover } = req.body || {}
     const photoId = Number(id || 0)
-    if (!photoId || typeof isFace !== 'boolean') return res.status(400).json({ error: 'Parametri non validi' })
+    if (!photoId) return res.status(400).json({ error: 'Parametri non validi' })
     const p = await prisma.photo.findUnique({ where: { id: photoId } })
     if (!p || p.userId !== user.id) return res.status(404).json({ error: 'Non trovato' })
+
+    if (typeof setAsCover === 'boolean' && setAsCover === true) {
+      const updated = await prisma.photo.update({
+        where: { id: photoId },
+        data: { name: p.name, updatedAt: new Date() },
+      })
+      return res.json({ ok: true, photo: updated })
+    }
+
+    if (typeof isFace !== 'boolean') return res.status(400).json({ error: 'Parametri non validi' })
     const updated = await prisma.photo.update({ where: { id: photoId }, data: { isFace } })
     return res.json({ ok: true, photo: updated })
   }
