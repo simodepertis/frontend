@@ -352,36 +352,243 @@ function Inner() {
           <>
             <div className="grid md:grid-cols-2 gap-3">
               <Field label="Città principale">
-                <input
-                  value={form.baseCity}
-                  onChange={(e) => setForm((f: any) => ({ ...f, baseCity: e.target.value }))}
-                  className="inp"
-                  placeholder="Es. Milano"
-                />
+                <div className="relative">
+                  <input
+                    value={form.baseCity}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm((f: any) => ({ ...f, baseCity: v }));
+                      setCityQ((prev) => ({ ...prev, baseCity: v }));
+                      setOpenCity((p) => ({ ...p, baseCity: true }));
+                    }}
+                    className="inp w-full pr-9"
+                    placeholder="Es. Milano"
+                    autoComplete="off"
+                    onFocus={() => setOpenCity((p) => ({ ...p, baseCity: true }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOpenCity((p) => ({ ...p, baseCity: !p.baseCity }))}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300"
+                  >
+                    ⌄
+                  </button>
+                  {(cityRes.baseCity || []).length > 0 && (
+                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {(cityRes.baseCity || []).map((it: any, idx: number) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, baseCity: it.city }));
+                            setCityRes((p) => ({ ...p, baseCity: [] }));
+                            setOpenCity((p) => ({ ...p, baseCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {it.city}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {openCity.baseCity && (cityRes.baseCity || []).length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {CITIES_ORDER.filter((c) => c.toLowerCase().includes(String(form.baseCity || "").toLowerCase())).map((c, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, baseCity: c }));
+                            setOpenCity((p) => ({ ...p, baseCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Field>
+
               <Field label="Seconda città">
-                <input
-                  value={form.secondCity}
-                  onChange={(e) => setForm((f: any) => ({ ...f, secondCity: e.target.value }))}
-                  className="inp"
-                  placeholder="Es. Roma"
-                />
+                <div className="relative">
+                  <input
+                    value={form.secondCity}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm((f: any) => ({ ...f, secondCity: v }));
+                      setCityQ((prev) => ({ ...prev, secondCity: v }));
+                      setOpenCity((p) => ({ ...p, secondCity: true }));
+                    }}
+                    className="inp w-full pr-9"
+                    placeholder="Es. Roma"
+                    autoComplete="off"
+                    onFocus={() => setOpenCity((p) => ({ ...p, secondCity: true }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOpenCity((p) => ({ ...p, secondCity: !p.secondCity }))}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300"
+                  >
+                    ⌄
+                  </button>
+                  {(cityRes.secondCity || []).length > 0 && (
+                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {(cityRes.secondCity || []).map((it: any, idx: number) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, secondCity: it.city }));
+                            setCityRes((p) => ({ ...p, secondCity: [] }));
+                            setOpenCity((p) => ({ ...p, secondCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {it.city}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {openCity.secondCity && (cityRes.secondCity || []).length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {CITIES_ORDER.filter((c) => c.toLowerCase().includes(String(form.secondCity || "").toLowerCase())).map((c, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, secondCity: c }));
+                            setOpenCity((p) => ({ ...p, secondCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Field>
+
               <Field label="Terza città">
-                <input
-                  value={form.thirdCity}
-                  onChange={(e) => setForm((f: any) => ({ ...f, thirdCity: e.target.value }))}
-                  className="inp"
-                  placeholder="Es. Torino"
-                />
+                <div className="relative">
+                  <input
+                    value={form.thirdCity}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm((f: any) => ({ ...f, thirdCity: v }));
+                      setCityQ((prev) => ({ ...prev, thirdCity: v }));
+                      setOpenCity((p) => ({ ...p, thirdCity: true }));
+                    }}
+                    className="inp w-full pr-9"
+                    placeholder="Es. Torino"
+                    autoComplete="off"
+                    onFocus={() => setOpenCity((p) => ({ ...p, thirdCity: true }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOpenCity((p) => ({ ...p, thirdCity: !p.thirdCity }))}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300"
+                  >
+                    ⌄
+                  </button>
+                  {(cityRes.thirdCity || []).length > 0 && (
+                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {(cityRes.thirdCity || []).map((it: any, idx: number) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, thirdCity: it.city }));
+                            setCityRes((p) => ({ ...p, thirdCity: [] }));
+                            setOpenCity((p) => ({ ...p, thirdCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {it.city}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {openCity.thirdCity && (cityRes.thirdCity || []).length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {CITIES_ORDER.filter((c) => c.toLowerCase().includes(String(form.thirdCity || "").toLowerCase())).map((c, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, thirdCity: c }));
+                            setOpenCity((p) => ({ ...p, thirdCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Field>
+
               <Field label="Quarta città">
-                <input
-                  value={form.fourthCity}
-                  onChange={(e) => setForm((f: any) => ({ ...f, fourthCity: e.target.value }))}
-                  className="inp"
-                  placeholder="Es. Napoli"
-                />
+                <div className="relative">
+                  <input
+                    value={form.fourthCity}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm((f: any) => ({ ...f, fourthCity: v }));
+                      setCityQ((prev) => ({ ...prev, fourthCity: v }));
+                      setOpenCity((p) => ({ ...p, fourthCity: true }));
+                    }}
+                    className="inp w-full pr-9"
+                    placeholder="Es. Napoli"
+                    autoComplete="off"
+                    onFocus={() => setOpenCity((p) => ({ ...p, fourthCity: true }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setOpenCity((p) => ({ ...p, fourthCity: !p.fourthCity }))}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300"
+                  >
+                    ⌄
+                  </button>
+                  {(cityRes.fourthCity || []).length > 0 && (
+                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {(cityRes.fourthCity || []).map((it: any, idx: number) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, fourthCity: it.city }));
+                            setCityRes((p) => ({ ...p, fourthCity: [] }));
+                            setOpenCity((p) => ({ ...p, fourthCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {it.city}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {openCity.fourthCity && (cityRes.fourthCity || []).length === 0 && (
+                    <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                      {CITIES_ORDER.filter((c) => c.toLowerCase().includes(String(form.fourthCity || "").toLowerCase())).map((c, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setForm((f: any) => ({ ...f, fourthCity: c }));
+                            setOpenCity((p) => ({ ...p, fourthCity: false }));
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Field>
             </div>
 
