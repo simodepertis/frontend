@@ -1,107 +1,742 @@
 "use client";
 
 import SectionHeader from "@/components/SectionHeader";
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CITIES_ORDER } from "@/lib/cities";
+import { COUNTRIES_CITIES, COUNTRY_LIST } from "@/lib/internationalCities";
+
+function loadLeafletFromCDN(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") return reject(new Error("SSR"));
+    const w: any = window as any;
+    if (w.L) return resolve(w.L);
+    const cssId = "leaflet-css";
+    if (!document.getElementById(cssId)) {
+      const link = document.createElement("link");
+      link.id = cssId;
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+    const jsId = "leaflet-js";
+    if (!document.getElementById(jsId)) {
+      const s = document.createElement("script");
+      s.id = jsId;
+      s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      s.async = true;
+      s.onload = () => {
+        try {
+          const L = (window as any).L;
+          L.Icon.Default.mergeOptions({
+            iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+            shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+          });
+          resolve(L);
+        } catch (e) {
+          reject(e);
+        }
+      };
+      s.onerror = () => reject(new Error("Leaflet CDN load failed"));
+      document.body.appendChild(s);
+    } else {
+      const iv = setInterval(() => {
+        if ((window as any).L) {
+          clearInterval(iv);
+          const L = (window as any).L;
+          L.Icon.Default.mergeOptions({
+            iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+            shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+          });
+          resolve(L);
+        }
+      }, 50);
+      setTimeout(() => {
+        clearInterval(iv);
+        reject(new Error("Leaflet not available"));
+      }, 5000);
+    }
+  });
+}
 
 function Inner() {
+  const router = useRouter();
   const params = useSearchParams();
   const escortUserId = Number(params?.get("escortUserId") || 0);
+  const q = escortUserId ? `?escortUserId=${encodeURIComponent(String(escortUserId))}` : "";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [baseCity, setBaseCity] = useState("");
-  const [secondCity, setSecondCity] = useState("");
-  const [thirdCity, setThirdCity] = useState("");
-  const [fourthCity, setFourthCity] = useState("");
-  const [zones, setZones] = useState<string[]>([]);
+  const [form, setForm] = useState<any>({
+    baseCity: "",
+    secondCity: "",
+    thirdCity: "",
+    fourthCity: "",
+    zones: [] as string[],
+    countries: [] as string[],
+    internationalCities: [] as Array<{ country: string; city: string }>,
+    position: { lat: 41.9028, lng: 12.4964 },
+    availability: {
+      incall: { address: "", cap: "", type: "", other: "" },
+      outcall: { enabled: true, type: "", other: "" },
+    },
+  });
+
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const [leafletReady, setLeafletReady] = useState(false);
+  const [addrQuery, setAddrQuery] = useState("");
+  const [addrResults, setAddrResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const savePosTimer = useRef<any>(null);
+  const [cityQ, setCityQ] = useState<{ [k: string]: string }>({});
+  const [openCity, setOpenCity] = useState<{ [k: string]: boolean }>({});
+  const [cityRes, setCityRes] = useState<{ [k: string]: any[] }>({});
+  const [cityLoading, setCityLoading] = useState<{ [k: string]: boolean }>({});
+
+  async function savePositionDebounced(pos: { lat: number; lng: number }) {
+    setForm((f: any) => ({ ...f, position: { lat: pos.lat, lng: pos.lng } }));
+    if (savePosTimer.current) clearTimeout(savePosTimer.current);
+    savePosTimer.current = setTimeout(async () => {
+      try {
+        if (!escortUserId) return;
+        const token = localStorage.getItem("auth-token") || "";
+        await fetch("/api/agency/escort/citta", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ escortUserId, position: { lat: pos.lat, lng: pos.lng } }),
+        });
+      } catch {}
+    }, 500);
+  }
+
+  useEffect(() => {
+    const id = "leaflet-css";
+    if (!document.getElementById(id)) {
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
-      if (!escortUserId) { setLoading(false); return; }
       try {
-        const token = localStorage.getItem('auth-token') || '';
-        const res = await fetch(`/api/agency/escort/citta?escortUserId=${escortUserId}`, {
+        if (!escortUserId) return;
+        const token = localStorage.getItem("auth-token") || "";
+        const r = await fetch(`/api/agency/escort/citta?escortUserId=${encodeURIComponent(String(escortUserId))}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
-        if (res.ok) {
-          const j = await res.json();
-          const c = j.cities || {};
-          setBaseCity(c.baseCity || "");
-          setSecondCity(c.secondCity || "");
-          setThirdCity(c.thirdCity || "");
-          setFourthCity(c.fourthCity || "");
-          setZones(Array.isArray(c.zones) ? c.zones : []);
+        if (r.status === 401) {
+          window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+          return;
         }
-      } finally { setLoading(false); }
+        if (r.ok) {
+          const j = await r.json();
+          if (j?.cities) {
+            const intlCitiesRaw = Array.isArray((j.cities as any).internationalCities) ? (j.cities as any).internationalCities : [];
+            const intlCitiesConverted = intlCitiesRaw.map((cityStr: string) => {
+              if (cityStr.includes(", ")) {
+                const parts = cityStr.split(", ");
+                return { city: parts[0], country: parts[1] };
+              }
+              let countryCode = "";
+              for (const [code, data] of Object.entries(COUNTRIES_CITIES)) {
+                if ((data as any).cities?.includes(cityStr)) {
+                  countryCode = code;
+                  break;
+                }
+              }
+              return { country: countryCode, city: cityStr };
+            });
+            setForm((f: any) => ({
+              ...f,
+              ...j.cities,
+              countries: Array.isArray((j.cities as any).countries) ? (j.cities as any).countries : f.countries || [],
+              internationalCities: intlCitiesConverted,
+            }));
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [escortUserId]);
 
+  useEffect(() => {
+    if (!mapDivRef.current || mapRef.current || loading) return;
+    (async () => {
+      const L = await loadLeafletFromCDN();
+      const map = L.map(mapDivRef.current!).setView([form.position.lat, form.position.lng], 12);
+      mapRef.current = map;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors" }).addTo(map);
+      const marker = L.marker([form.position.lat, form.position.lng], { draggable: true }).addTo(map);
+      markerRef.current = marker;
+      marker.on("dragend", () => {
+        const p = marker.getLatLng();
+        savePositionDebounced({ lat: p.lat, lng: p.lng });
+      });
+      map.on("click", (e: any) => {
+        const p = e.latlng;
+        marker.setLatLng(p);
+        savePositionDebounced({ lat: p.lat, lng: p.lng });
+      });
+      setLeafletReady(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapDivRef.current, loading]);
+
+  useEffect(() => {
+    if (leafletReady && mapRef.current && markerRef.current) {
+      markerRef.current.setLatLng([form.position.lat, form.position.lng]);
+      mapRef.current.setView([form.position.lat, form.position.lng]);
+    }
+  }, [form.position, leafletReady]);
+
+  function setZoneInput(idx: number, val: string) {
+    setForm((f: any) => {
+      const z = [...(f.zones || [])];
+      z[idx] = val;
+      return { ...f, zones: z };
+    });
+  }
+
+  function addZone() {
+    setForm((f: any) => ({ ...f, zones: [...(f.zones || []), ""] }));
+  }
+
+  function removeZone(i: number) {
+    setForm((f: any) => ({ ...f, zones: (f.zones || []).filter((_: any, ix: number) => ix !== i) }));
+  }
+
+  function addCity() {
+    setForm((f: any) => ({ ...f, cities: [...(f.cities || []), ""] }));
+  }
+
+  function removeCity(i: number) {
+    setForm((f: any) => ({ ...f, cities: (f.cities || []).filter((_: any, ix: number) => ix !== i) }));
+  }
+
+  function setCityInput(i: number, value: string) {
+    setForm((f: any) => {
+      const cities = [...(f.cities || [])];
+      cities[i] = value;
+      return { ...f, cities };
+    });
+    setCityQ((prev) => ({ ...prev, [`city_${i}`]: value }));
+    setOpenCity((prev) => ({ ...prev, [`city_${i}`]: true }));
+  }
+
+  useEffect(() => {
+    const keys = Object.keys(cityQ);
+    if (keys.length === 0) return;
+    keys.forEach((k) => {
+      const q = (cityQ[k] || "").trim();
+      if (!q) {
+        setCityRes((prev) => ({ ...prev, [k]: [] }));
+        return;
+      }
+      setCityLoading((prev) => ({ ...prev, [k]: true }));
+      const ctrl = setTimeout(async () => {
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=it&q=${encodeURIComponent(q)}`;
+          const r = await fetch(url, { headers: { Accept: "application/json" } });
+          const j = await r.json();
+          const filtered = Array.isArray(j)
+            ? j
+                .filter((it: any) => it.class === "place" && ["city", "town", "village", "hamlet", "municipality"].includes(it.type))
+                .map((it: any) => ({
+                  label: it.display_name,
+                  city:
+                    it.address?.city ||
+                    it.address?.town ||
+                    it.address?.village ||
+                    it.address?.hamlet ||
+                    it.address?.municipality ||
+                    it.display_name.split(",")[0],
+                  lat: Number(it.lat),
+                  lon: Number(it.lon),
+                }))
+            : [];
+          setCityRes((prev) => ({ ...prev, [k]: filtered }));
+        } catch {
+          setCityRes((prev) => ({ ...prev, [k]: [] }));
+        } finally {
+          setCityLoading((prev) => ({ ...prev, [k]: false }));
+        }
+      }, 300);
+      return () => clearTimeout(ctrl as any);
+    });
+  }, [cityQ]);
+
+  function addInternationalCity() {
+    setForm((f: any) => ({ ...f, internationalCities: [...(f.internationalCities || []), { country: "", city: "" }] }));
+  }
+
+  function removeInternationalCity(i: number) {
+    setForm((f: any) => ({
+      ...f,
+      internationalCities: (f.internationalCities || []).filter((_: any, ix: number) => ix !== i),
+    }));
+  }
+
+  function setInternationalCity(i: number, field: "country" | "city", value: string) {
+    setForm((f: any) => {
+      const arr = [...(f.internationalCities || [])];
+      arr[i] = { ...(arr[i] || {}), [field]: value };
+      if (field === "country") arr[i].city = "";
+      return { ...f, internationalCities: arr };
+    });
+  }
+
   async function save() {
-    if (!escortUserId) { alert('escortUserId mancante'); return; }
+    if (!escortUserId) {
+      alert("escortUserId mancante");
+      return;
+    }
     setSaving(true);
     try {
-      const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch('/api/agency/escort/citta', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ escortUserId, baseCity, secondCity, thirdCity, fourthCity, zones })
+      const token = localStorage.getItem("auth-token") || "";
+
+      const intlCities = (form.internationalCities || [])
+        .filter((x: any) => x?.country && x?.city)
+        .map((x: any) => `${x.city}, ${x.country}`);
+
+      const payload = {
+        escortUserId,
+        ...form,
+        internationalCities: intlCities,
+      };
+
+      const r = await fetch("/api/agency/escort/citta", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(payload),
       });
-      const j = await res.json();
-      if (!res.ok) { alert(j?.error || 'Errore salvataggio'); }
-      else { alert('Città salvate'); }
-    } finally { setSaving(false); }
+      if (r.status === 401) {
+        window.location.href = `/autenticazione?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return;
+      }
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        alert(j?.error || "Errore salvataggio città di lavoro");
+        return;
+      }
+      router.push(`/dashboard/agenzia/escort/compila/servizi${q}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function toggleZone(z: string) {
-    setZones(prev => prev.includes(z) ? prev.filter(x => x !== z) : [...prev, z]);
+  if (!escortUserId && !loading) {
+    return (
+      <div className="space-y-6">
+        <SectionHeader title="Città di Lavoro (Escort)" subtitle="Missing escortUserId" />
+        <div className="text-sm text-gray-400">Seleziona prima una escort dall’hub.</div>
+      </div>
+    );
   }
-
-  const allZones = ["Centro","Stazione","Aeroporto","Porto","Periferia"];
 
   return (
     <div className="space-y-6">
-      <SectionHeader title="Città di Lavoro (Escort)" subtitle={escortUserId ? `User #${escortUserId}` : "Missing escortUserId"} />
+      <SectionHeader title="Città di Lavoro (Escort)" subtitle={escortUserId ? `User #${escortUserId}` : ""} />
 
-      <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 space-y-4">
+      <div className="rounded-lg border border-gray-600 bg-gray-800 p-5 space-y-4">
         {loading ? (
           <div className="text-sm text-gray-400">Caricamento…</div>
         ) : (
           <>
             <div className="grid md:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs mb-1 text-gray-300">Città principale</label>
-                <input value={baseCity} onChange={(e)=> setBaseCity(e.target.value)} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1 text-gray-300">Seconda città</label>
-                <input value={secondCity} onChange={(e)=> setSecondCity(e.target.value)} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1 text-gray-300">Terza città</label>
-                <input value={thirdCity} onChange={(e)=> setThirdCity(e.target.value)} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1 text-gray-300">Quarta città</label>
-                <input value={fourthCity} onChange={(e)=> setFourthCity(e.target.value)} className="bg-gray-800 border border-gray-600 text-white rounded-md px-3 py-2 w-full placeholder-gray-400" />
-              </div>
+              <Field label="Città principale">
+                <input
+                  value={form.baseCity}
+                  onChange={(e) => setForm((f: any) => ({ ...f, baseCity: e.target.value }))}
+                  className="inp"
+                  placeholder="Es. Milano"
+                />
+              </Field>
+              <Field label="Seconda città">
+                <input
+                  value={form.secondCity}
+                  onChange={(e) => setForm((f: any) => ({ ...f, secondCity: e.target.value }))}
+                  className="inp"
+                  placeholder="Es. Roma"
+                />
+              </Field>
+              <Field label="Terza città">
+                <input
+                  value={form.thirdCity}
+                  onChange={(e) => setForm((f: any) => ({ ...f, thirdCity: e.target.value }))}
+                  className="inp"
+                  placeholder="Es. Torino"
+                />
+              </Field>
+              <Field label="Quarta città">
+                <input
+                  value={form.fourthCity}
+                  onChange={(e) => setForm((f: any) => ({ ...f, fourthCity: e.target.value }))}
+                  className="inp"
+                  placeholder="Es. Napoli"
+                />
+              </Field>
             </div>
+
             <div>
-              <label className="block text-xs mb-1 text-gray-300">Zone</label>
-              <div className="flex flex-wrap gap-2">
-                {allZones.map(z => (
-                  <button key={z} type="button" onClick={()=> toggleZone(z)} className={`text-xs px-3 py-1 rounded border ${zones.includes(z) ? 'bg-blue-600 text-white border-blue-500' : 'bg-gray-700 text-gray-300 border-gray-600'}`}>{z}</button>
+              <div className="text-sm text-gray-300 mb-3">Città internazionali</div>
+              <div className="space-y-2">
+                {(form.internationalCities || []).map((x: any, i: number) => {
+                  const country = String(x?.country || "");
+                  const cities = country ? (COUNTRIES_CITIES as any)[country]?.cities || [] : [];
+                  return (
+                    <div key={i} className="grid md:grid-cols-[1fr,1fr,auto] gap-2 items-center">
+                      <select className="inp" value={x.country} onChange={(e) => setInternationalCity(i, "country", e.target.value)}>
+                        <option value="">Seleziona nazione</option>
+                        {COUNTRY_LIST.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="inp"
+                        value={x.city}
+                        onChange={(e) => setInternationalCity(i, "city", e.target.value)}
+                        disabled={!country}
+                      >
+                        <option value="">Seleziona città</option>
+                        {cities.map((cc: string) => (
+                          <option key={cc} value={cc}>
+                            {cc}
+                          </option>
+                        ))}
+                      </select>
+                      <Button variant="secondary" onClick={() => removeInternationalCity(i)}>
+                        Rimuovi
+                      </Button>
+                    </div>
+                  );
+                })}
+                <Button variant="secondary" onClick={addInternationalCity}>
+                  + Aggiungi città internazionale
+                </Button>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Seleziona prima la nazione, poi la città. Puoi aggiungere più città.</div>
+            </div>
+
+            <div>
+              <div className="text-sm text-gray-300 mb-3">Città aggiuntive</div>
+              <div className="space-y-3">
+                {(form.cities || []).map((city: string, i: number) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        value={city}
+                        onChange={(e) => setCityInput(i, e.target.value)}
+                        className="inp w-full pr-9"
+                        placeholder={`Città aggiuntiva #${i + 1}`}
+                        autoComplete="off"
+                        onFocus={() => setOpenCity((p) => ({ ...p, [`city_${i}`]: true }))}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setOpenCity((p) => ({ ...p, [`city_${i}`]: !p[`city_${i}`] }))}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center rounded-md bg-gray-700 border border-gray-600 text-gray-300"
+                      >
+                        ⌄
+                      </button>
+                      {openCity[`city_${i}`] && (
+                        <div className="absolute z-10 mt-1 w-full max-h-56 overflow-auto rounded-md border border-gray-600 divide-y divide-gray-700 bg-gray-900">
+                          {CITIES_ORDER.filter((c) => c.toLowerCase().includes(String(city || "").toLowerCase())).map((commonCity, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                setCityInput(i, commonCity);
+                                setOpenCity((p) => ({ ...p, [`city_${i}`]: false }));
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                            >
+                              {commonCity}
+                            </button>
+                          ))}
+                          {cityLoading[`city_${i}`] ? (
+                            <div className="px-3 py-2 text-sm text-gray-400">Caricamento…</div>
+                          ) : (
+                            (cityRes[`city_${i}`] || []).map((it: any, ix: number) => (
+                              <button
+                                key={`n_${ix}`}
+                                type="button"
+                                onClick={() => {
+                                  setCityInput(i, it.city);
+                                  setOpenCity((p) => ({ ...p, [`city_${i}`]: false }));
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                              >
+                                {it.city}
+                                <div className="text-xs text-gray-500">{it.label}</div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <Button variant="secondary" onClick={() => removeCity(i)}>
+                      Rimuovi
+                    </Button>
+                  </div>
                 ))}
+                <Button variant="secondary" onClick={addCity}>
+                  + Aggiungi città
+                </Button>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Aggiungi altre città oltre alle 4 principali</div>
+            </div>
+
+            <div>
+              <div className="text-sm text-gray-300 mb-1">Seleziona le tue zone (per la città base)</div>
+              <div className="space-y-2">
+                {(form.zones || []).map((z: string, i: number) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input value={z} onChange={(e) => setZoneInput(i, e.target.value)} className="inp flex-1" placeholder={`Zona #${i + 1}`} />
+                    <Button variant="secondary" onClick={() => removeZone(i)}>
+                      Rimuovi
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="secondary" onClick={addZone}>
+                  + Aggiungi zona
+                </Button>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Suggerimento: es. Centro, Navigli, Porta Romana…</div>
+            </div>
+
+            <div>
+              <div className="text-sm text-gray-300 mb-2">Posizione esatta sulla mappa</div>
+              <div className="grid md:grid-cols-[1fr,auto] gap-2 mb-2">
+                <input value={addrQuery} onChange={(e) => setAddrQuery(e.target.value)} className="inp" placeholder="Cerca indirizzo o luogo (es. Via Torino Milano)" />
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    const q2 = addrQuery.trim();
+                    if (!q2) {
+                      setAddrResults([]);
+                      return;
+                    }
+                    setSearching(true);
+                    try {
+                      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q2)}&limit=6`;
+                      const r = await fetch(url, { headers: { Accept: "application/json" } });
+                      const j = await r.json();
+                      if (Array.isArray(j)) setAddrResults(j);
+                    } finally {
+                      setSearching(false);
+                    }
+                  }}
+                >
+                  {searching ? "Cerco…" : "Cerca"}
+                </Button>
+              </div>
+              {addrResults.length > 0 && (
+                <div className="max-h-56 overflow-auto rounded-md border border-gray-600 mb-2 divide-y divide-gray-700 bg-gray-900">
+                  {addrResults.map((it: any, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        const lat = Number(it.lat);
+                        const lon = Number(it.lon);
+                        if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                          savePositionDebounced({ lat, lng: lon });
+                          setForm((f: any) => ({ ...f, baseCity: f.baseCity || (it.display_name?.split(",")[1]?.trim() || "") }));
+                          try {
+                            if (markerRef.current) markerRef.current.setLatLng([lat, lon]);
+                            if (mapRef.current) mapRef.current.setView([lat, lon], 13);
+                          } catch {}
+                        }
+                        setAddrResults([]);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-800 text-gray-200"
+                    >
+                      {it.display_name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div ref={mapDivRef} className="w-full h-[360px] rounded-md overflow-hidden border border-gray-600" />
+              <div className="grid md:grid-cols-2 gap-4 mt-2">
+                <Field label="Latitudine">
+                  <input
+                    value={form.position.lat}
+                    onChange={(e) =>
+                      setForm((f: any) => ({ ...f, position: { ...f.position, lat: Number(e.target.value) || 0 } }))
+                    }
+                    className="inp"
+                  />
+                </Field>
+                <Field label="Longitudine">
+                  <input
+                    value={form.position.lng}
+                    onChange={(e) =>
+                      setForm((f: any) => ({ ...f, position: { ...f.position, lng: Number(e.target.value) || 0 } }))
+                    }
+                    className="inp"
+                  />
+                </Field>
               </div>
             </div>
-            <div className="flex items-center justify-between gap-2">
-              <a href={`/dashboard/agenzia/escort/compila?escortUserId=${escortUserId}`} className="text-sm text-blue-400 hover:underline">« Torna all'hub</a>
-              <Button onClick={save} disabled={saving || !escortUserId}>{saving ? 'Salvataggio…' : 'Salva'}</Button>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="text-sm text-gray-300">Disponibile per Incall</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    value={form.availability.incall.address}
+                    onChange={(e) =>
+                      setForm((f: any) => ({
+                        ...f,
+                        availability: { ...f.availability, incall: { ...f.availability.incall, address: e.target.value } },
+                      }))
+                    }
+                    className="inp"
+                    placeholder="Indirizzo"
+                  />
+                  <input
+                    value={form.availability.incall.cap}
+                    onChange={(e) =>
+                      setForm((f: any) => ({
+                        ...f,
+                        availability: { ...f.availability, incall: { ...f.availability.incall, cap: e.target.value } },
+                      }))
+                    }
+                    className="inp"
+                    placeholder="CAP"
+                  />
+                </div>
+                <div className="grid md:grid-cols-2 gap-2">
+                  <select
+                    className="inp"
+                    value={form.availability.incall.type}
+                    onChange={(e) =>
+                      setForm((f: any) => ({
+                        ...f,
+                        availability: { ...f.availability, incall: { ...f.availability.incall, type: e.target.value } },
+                      }))
+                    }
+                  >
+                    <option value="">- non selezionato -</option>
+                    <option value="appartamento_privato">Appartamento privato</option>
+                    <option value="camera_albergo">Camera d'albergo</option>
+                    <option value="studio_club">Studio Club</option>
+                    <option value="altro">Altro (si prega di fornire dettagli)</option>
+                  </select>
+                  {form.availability.incall.type === "altro" && (
+                    <input
+                      className="inp"
+                      placeholder="Dettagli incall"
+                      value={form.availability.incall.other}
+                      onChange={(e) =>
+                        setForm((f: any) => ({
+                          ...f,
+                          availability: { ...f.availability, incall: { ...f.availability.incall, other: e.target.value } },
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm text-gray-300">Disponibile per Outcall</div>
+                <label className="text-sm text-gray-300 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={!!form.availability.outcall?.enabled}
+                    onChange={(e) =>
+                      setForm((f: any) => ({
+                        ...f,
+                        availability: {
+                          ...f.availability,
+                          outcall: { ...(f.availability.outcall || {}), enabled: e.target.checked },
+                        },
+                      }))
+                    }
+                  />
+                  Outcall attivo
+                </label>
+                <div className="grid md:grid-cols-2 gap-2">
+                  <select
+                    className="inp"
+                    value={form.availability.outcall?.type || ""}
+                    onChange={(e) =>
+                      setForm((f: any) => ({
+                        ...f,
+                        availability: {
+                          ...f.availability,
+                          outcall: { ...(f.availability.outcall || {}), type: e.target.value },
+                        },
+                      }))
+                    }
+                    disabled={!form.availability.outcall?.enabled}
+                  >
+                    <option value="">- non selezionato -</option>
+                    <option value="solo_hotel">All'uomo solo in hotel</option>
+                    <option value="solo_domicilio">All'uomo solo a domicilio</option>
+                    <option value="domicilio_e_hotel">All'uomo a domicilio e hotel</option>
+                    <option value="altro">Altro (si prega di fornire dettagli)</option>
+                  </select>
+                  {form.availability.outcall?.enabled && form.availability.outcall?.type === "altro" && (
+                    <input
+                      className="inp"
+                      placeholder="Dettagli outcall"
+                      value={form.availability.outcall?.other || ""}
+                      onChange={(e) =>
+                        setForm((f: any) => ({
+                          ...f,
+                          availability: {
+                            ...f.availability,
+                            outcall: { ...(f.availability.outcall || {}), other: e.target.value },
+                          },
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <a href={`/dashboard/agenzia/escort/compila${q}`} className="text-sm text-blue-400 hover:underline">
+                « Torna all'hub
+              </a>
+              <Button onClick={save} disabled={saving}>
+                {saving ? "Salvo…" : "Salva e continua"}
+              </Button>
             </div>
           </>
         )}
       </div>
+
+      <style jsx>{`
+        .inp {
+          background: #374151;
+          border: 1px solid #4b5563;
+          color: #fff;
+          border-radius: 0.375rem;
+          padding: 0.5rem 0.75rem;
+          width: 100%;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Field({ label, children, className = "" }: any) {
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      <label className="text-sm text-gray-300">{label}</label>
+      {children}
     </div>
   );
 }
