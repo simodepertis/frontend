@@ -7,12 +7,172 @@ import Watermark from "@/components/Watermark";
 
 interface ImportedReview {
   id: number;
-  escortName: string;
-  reviewerName?: string;
-  rating?: number;
-  reviewText?: string;
-  reviewDate?: string;
-  sourceUrl?: string;
+  escortName: string | null;
+  escortPhone: string | null;
+  reviewerName: string | null;
+  rating: number | null;
+  reviewText: string | null;
+  reviewDate: string | null;
+  sourceUrl: string;
+}
+
+function hash32(seed: number) {
+  let x = seed | 0;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  return x >>> 0;
+}
+
+function base36(n: number) {
+  return Math.abs(n).toString(36);
+}
+
+function toEaHandleRaw(input: unknown, seed: number) {
+  const raw = String(input || '').trim();
+  const looksLikeHandle = raw.length >= 3 && !raw.includes(' ') && /[0-9_\.]/.test(raw);
+
+  if (looksLikeHandle) {
+    const cleaned = raw.toLowerCase().replace(/[^a-z0-9_\.]/g, '').slice(0, 18);
+    return cleaned || `user_${base36(seed).slice(0, 6)}`;
+  }
+
+  const prefixes = [
+    'neo','meta','ultra','super','dark','quiet','wild','urban','lunar','solar','alpha','omega','delta','sigma','prime','zero','hyper','retro','steel','gold',
+    'mister','signor','capo','dr','mr','sir','il','lo','the','king','real','true','just','only','max','mini','big','tiny','fast','slow',
+    'blue','red','black','white','green','gray','night','day','sun','moon','star','nova','sky','deep','cold','hot','zen','koi','fox','wolf',
+    'hawk','raven','eagle','tiger','lion','bear','cobra','viper','shark','orca','puma','panther','storm','rain','wind','snow','fire','ice','rock','wave',
+  ];
+  const cores = [
+    'nico','marco','luca','alex','fede','mike','ste','dany','ivan','toni','vale','simo','ricky','tommy','kevin','roger','fabio','sam','leo','max',
+    'runner','driver','rider','walker','seeker','shadow','ghost','ninja','joker','vandal','pirate','viking','samurai','ronin','ranger','hunter','builder','maker','pilot','captain',
+    'atlas','orion','vega','zeus','thor','odin','ares','helios','cosmo','astro','omega','alpha','sigma','drake','blade','flash','spark','ember','stone','river',
+  ];
+  const suffixes = [
+    'it','x','xx','99','88','77','66','55','44','33','22','11','00','pro','vip','real','live','now','one','two','three','five','seven',
+    'north','south','east','west','city','zone','street','night','day','moon','sun','star','nova','lab','hub','club','crew','team','gang','base',
+  ];
+
+  const h = hash32(seed);
+  const p = prefixes[h % prefixes.length];
+  const c = cores[(h >>> 8) % cores.length];
+  const s = suffixes[(h >>> 16) % suffixes.length];
+  const digits = String(h % 1000).padStart(3, '0');
+  const tail = base36(h).padStart(6, '0').slice(0, 6);
+  const style = h % 7;
+
+  if (style === 0) return `${c}${digits}`.slice(0, 18);
+  if (style === 1) return `${c}_${digits}`.slice(0, 18);
+  if (style === 2) return `${p}${c}${digits}`.slice(0, 18);
+  if (style === 3) return `${p}_${c}${digits}`.slice(0, 18);
+  if (style === 4) return `${c}_${s}${digits}`.slice(0, 18);
+  if (style === 5) return `${p}_${c}_${s}`.slice(0, 18);
+  return `${c}${tail}`.slice(0, 18);
+}
+
+function toEaHandleUnique(input: unknown, seed: number, used: Set<string>, usedBases: Set<string>) {
+  let h = toEaHandleRaw(input, seed);
+
+  const basePart = (s: string) => {
+    const m = String(s || '').toLowerCase().match(/^[a-z]+/);
+    return m ? m[0] : '';
+  };
+  const base = basePart(h);
+
+  // If the base is already used in this announcement, force a different base via seed perturbation
+  if (base && usedBases.has(base)) {
+    for (let k = 1; k <= 10; k++) {
+      const alt = toEaHandleRaw(input, seed + k * 1337);
+      const altBase = basePart(alt);
+      if (altBase && !usedBases.has(altBase) && !used.has(alt)) {
+        usedBases.add(altBase);
+        used.add(alt);
+        return alt;
+      }
+    }
+  }
+
+  if (!used.has(h)) {
+    used.add(h);
+    if (base) usedBases.add(base);
+    return h;
+  }
+  // collision safeguard within the same announcement
+  for (let i = 1; i <= 5; i++) {
+    const extra = base36(hash32(seed + i * 997)).padStart(4, '0').slice(0, 4);
+    const candidate = `${h}_${extra}`.slice(0, 22);
+    if (!used.has(candidate)) {
+      used.add(candidate);
+      const cb = basePart(candidate);
+      if (cb) usedBases.add(cb);
+      return candidate;
+    }
+  }
+  const fallback = `user_${base36(hash32(seed + 9999)).slice(0, 8)}`;
+  used.add(fallback);
+  return fallback;
+}
+
+function cleanEaText(input: unknown) {
+  let s = String(input || '').trim();
+  s = s.replace(/^espandi\s+/i, '');
+  s = s.replace(/\s*ti\s*è\s*stata\s*utile\?\s*$/i, '');
+  const tailMarkers = [
+    /\bEspandi\b/i,
+    /\bInformazioni\s+personali\b/i,
+    /\bFoto\s+annuncio\s+reali\?\b/i,
+    /\bFoto\s+verificate\b/i,
+    /\bSegnala\b/i,
+    /\bEscort\s+Informazioni\b/i,
+  ];
+  for (const re of tailMarkers) {
+    const m = s.match(re);
+    if (m && typeof m.index === 'number' && m.index > 20) {
+      s = s.slice(0, m.index).trim();
+    }
+  }
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
+function eaFallbackRating(seed: number) {
+  // 3.0 .. 5.0 step 0.5 (3, 3.5, 4, 4.5, 5)
+  const options = [3, 3.5, 4, 4.5, 5];
+  const h = hash32(seed);
+  return options[h % options.length];
+}
+
+function Star({ filled }: { filled: boolean }) {
+  return <span className={filled ? 'text-yellow-400' : 'text-gray-500'}>★</span>;
+}
+
+function HalfStar() {
+  return (
+    <span className="relative inline-block">
+      <span className="text-gray-500">★</span>
+      <span className="absolute left-0 top-0 overflow-hidden text-yellow-400" style={{ width: '50%' }}>
+        ★
+      </span>
+    </span>
+  );
+}
+
+function Stars({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(5, value));
+  const full = Math.floor(v);
+  const hasHalf = v - full >= 0.5;
+  const empty = 5 - full - (hasHalf ? 1 : 0);
+  return (
+    <div className="flex items-center">
+      {Array.from({ length: full }).map((_, i) => (
+        <Star key={`f-${i}`} filled={true} />
+      ))}
+      {hasHalf ? <HalfStar /> : null}
+      {Array.from({ length: empty }).map((_, i) => (
+        <Star key={`e-${i}`} filled={false} />
+      ))}
+    </div>
+  );
 }
 
 interface Review {
@@ -108,6 +268,7 @@ export default function IncontroVeloceDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [relatedReviews, setRelatedReviews] = useState<ImportedReview[]>([]);
   const [reviewForm, setReviewForm] = useState({ title: '', rating: 5, reviewText: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
@@ -139,7 +300,11 @@ export default function IncontroVeloceDetailPage() {
   const loadMeeting = async (id: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/quick-meetings/${id}`);
+      const ts = Date.now();
+      const res = await fetch(`/api/quick-meetings/${id}?_=${ts}`, {
+        cache: 'no-store',
+        headers: { 'cache-control': 'no-cache' },
+      });
       if (res.ok) {
         const data = await res.json();
         setMeeting(data.meeting);
@@ -170,10 +335,30 @@ export default function IncontroVeloceDetailPage() {
 
   const loadReviews = async (id: string) => {
     try {
-      const res = await fetch(`/api/quick-meetings/${id}/reviews`);
+      const ts = Date.now();
+      const res = await fetch(`/api/quick-meetings/${id}/reviews?_=${ts}`, {
+        cache: 'no-store',
+        headers: { 'cache-control': 'no-cache' },
+      });
       if (res.ok) {
         const data = await res.json();
         setReviews(data.reviews || []);
+
+        // Recensioni Escort Advisor (con fallback globale): sempre visibili sotto il form
+        try {
+          const rr = await fetch(`/api/quick-meetings/${id}/related-reviews?limit=5&mode=global&_=${ts}`, {
+            cache: 'no-store',
+            headers: { 'cache-control': 'no-cache' },
+          });
+          if (rr.ok) {
+            const j = await rr.json().catch(() => ({}));
+            setRelatedReviews(Array.isArray(j?.reviews) ? j.reviews : []);
+          } else {
+            setRelatedReviews([]);
+          }
+        } catch {
+          setRelatedReviews([]);
+        }
       }
     } catch (error) {
       console.error('Errore caricamento recensioni:', error);
@@ -468,58 +653,6 @@ export default function IncontroVeloceDetailPage() {
               </div>
             </div>
           )}
-
-          {/* Sezione Recensioni */}
-          {meeting.importedReviews && meeting.importedReviews.length > 0 && (
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 mt-6">
-              <h2 className="text-xl font-bold text-white mb-4">
-                ⭐ Recensioni ({meeting.importedReviews.length})
-              </h2>
-              
-              <div className="space-y-4">
-                {meeting.importedReviews.map((review) => (
-                  <div key={review.id} className="bg-gray-700 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-white">
-                          {review.reviewerName || 'Utente anonimo'}
-                        </span>
-                        {review.rating && (
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <span key={i} className={i < review.rating! ? 'text-yellow-400' : 'text-gray-500'}>
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      {review.reviewDate && (
-                        <span className="text-xs text-gray-400">
-                          {new Date(review.reviewDate).toLocaleDateString('it-IT')}
-                        </span>
-                      )}
-                    </div>
-                    
-                    {review.reviewText && (
-                      <p className="text-gray-300 text-sm mb-2">{review.reviewText}</p>
-                    )}
-                    
-                    {review.sourceUrl && (
-                      <a
-                        href={review.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-400 hover:underline"
-                      >
-                        Fonte: Escort Advisor →
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Sidebar Contatti */}
@@ -679,33 +812,100 @@ export default function IncontroVeloceDetailPage() {
             )}
 
             {/* Lista Recensioni */}
-            {reviews.length > 0 ? (
+            {reviews.length > 0 || (meeting.importedReviews && meeting.importedReviews.length > 0) || relatedReviews.length > 0 ? (
               <div className="space-y-3">
-                {reviews.map((review) => (
-                  <div key={review.id} className="p-4 bg-gray-700 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-white">{review.title}</span>
-                          <div className="flex items-center">
-                            {[...Array(5)].map((_, i) => (
-                              <span key={i} className={i < review.rating ? 'text-yellow-400' : 'text-gray-500'}>
-                                ★
-                              </span>
-                            ))}
+                {(() => {
+                  const used = new Set<string>();
+                  const usedBases = new Set<string>();
+
+                  const eaImported = (meeting.importedReviews || []).map((r) => {
+                    const seed = (meeting?.id || 0) * 100000 + r.id;
+                    const name = toEaHandleUnique(r.reviewerName, seed, used, usedBases);
+                    const ratingVal = typeof r.rating === 'number' ? r.rating : eaFallbackRating(seed);
+                    return (
+                      <div key={`ea-imported-${r.id}`} className="p-4 bg-gray-700 rounded-lg border border-yellow-500/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-white">{name}</span>
+                              <Stars value={ratingVal} />
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {r.reviewDate ? new Date(r.reviewDate).toLocaleDateString('it-IT') : ''}
+                          </span>
+                        </div>
+                        {r.reviewText ? <p className="text-gray-300 text-sm mt-2">{cleanEaText(r.reviewText)}</p> : null}
+                        {r.sourceUrl ? (
+                          <a
+                            href={r.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-400 hover:underline"
+                          >
+                            Fonte: Escort Advisor →
+                          </a>
+                        ) : null}
+                      </div>
+                    );
+                  });
+
+                  const native = reviews.map((review) => (
+                    <div key={review.id} className="p-4 bg-gray-700 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-white">{review.title}</span>
+                            <div className="flex items-center">
+                              {[...Array(5)].map((_, i) => (
+                                <span key={i} className={i < review.rating ? 'text-yellow-400' : 'text-gray-500'}>
+                                  ★
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            di <span className="font-medium">{review.user.nome}</span>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          di <span className="font-medium">{review.user.nome}</span>
-                        </div>
+                        <span className="text-xs text-gray-400">
+                          {new Date(review.createdAt).toLocaleDateString('it-IT')}
+                        </span>
                       </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(review.createdAt).toLocaleDateString('it-IT')}
-                      </span>
+                      <p className="text-gray-300 text-sm mt-2">{review.reviewText}</p>
                     </div>
-                    <p className="text-gray-300 text-sm mt-2">{review.reviewText}</p>
-                  </div>
-                ))}
+                  ));
+
+                  const eaRelated = relatedReviews.map((r) => {
+                    const seed = (meeting?.id || 0) * 200000 + r.id;
+                    const name = toEaHandleUnique(r.reviewerName, seed, used, usedBases);
+                    const ratingVal = typeof r.rating === 'number' ? r.rating : eaFallbackRating(seed);
+                    return (
+                      <div key={`ea-${r.id}`} className="p-4 bg-gray-700 rounded-lg border border-yellow-500/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-bold text-white">{name}</span>
+                              <Stars value={ratingVal} />
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {r.reviewDate ? new Date(r.reviewDate).toLocaleDateString('it-IT') : ''}
+                          </span>
+                        </div>
+                        {r.reviewText ? <p className="text-gray-300 text-sm mt-2">{cleanEaText(r.reviewText)}</p> : null}
+                      </div>
+                    );
+                  });
+
+                  return (
+                    <>
+                      {eaImported}
+                      {native}
+                      {eaRelated}
+                    </>
+                  );
+                })()}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-400">

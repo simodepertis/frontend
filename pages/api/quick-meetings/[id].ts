@@ -1,6 +1,132 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
+const bannedPhrases = [
+  'grazie per la recensione',
+  'che bella recensione',
+  'grazie della recensione',
+  'grazie della tua recensione',
+  'grazie per questa recensione',
+  'ti ringrazio per la recensione',
+  'grazie per le tue parole',
+  'grazie per il vostro feedback',
+  'grazie per il tuo feedback',
+  'grazie per il feedback',
+  'mi dispiace se',
+  'mi dispiace',
+  'chiedo scusa',
+  'cercherò di migliorare',
+  'cerco sempre di offrire',
+  'cerco sempre di dare',
+  'ai miei ospiti',
+  'ai miei clienti',
+  'ti aspetto presto',
+  'grazie tesoro',
+  'un bacio',
+  'un bacio dolce',
+  'ti aspetto',
+  'a presto',
+  'mille baci',
+  'baci',
+  'grazie mille',
+  'grazie di cuore',
+]
+
+const clientSignals = [
+  'esperienza',
+  'incontro',
+  'appuntamento',
+  'incontrata',
+  'incontrato',
+  'consiglio',
+  'consigliata',
+  'consigliato',
+  'sono stato',
+  'sono andato',
+  'sono tornato',
+  'ho incontrato',
+  'ho visto',
+  'mi sono trovato',
+  'mi sono trovato bene',
+  'mi sono trovato benissimo',
+  'pulita',
+  'pulito',
+  'puntuale',
+  'gentile',
+  'brava',
+  'accogliente',
+  'riceve',
+  'riceve a',
+  'appartamento',
+  'location',
+  'zona',
+  'parcheggio',
+  'porta',
+  'foto',
+  'foto reali',
+  'reali',
+  'rispetta',
+]
+
+const bannedStart = [
+  'grazie',
+  'ciao',
+  'tesoro',
+  'amore',
+  'un bacio',
+  'baci',
+  'a presto',
+]
+
+const bannedStartRe = new RegExp(
+  `^\\s*(?:${bannedStart
+    .map((x) => x.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'))
+    .sort((a, b) => b.length - a.length)
+    .join('|')})(?:[\\s,!?.:;\"'()\\-]|$)`,
+  'i'
+)
+
+function stripEscortReply(t: unknown) {
+  let s = String(t || '').trim()
+  if (!s) return ''
+  const lower = s.toLowerCase()
+  const markers = [' ha risposto', '\nha risposto', 'risposta', ' ha risposto il', ' ha risposto:', ' risponde']
+  let cut = -1
+  for (const m of markers) {
+    const idx = lower.indexOf(m)
+    if (idx !== -1) {
+      cut = cut === -1 ? idx : Math.min(cut, idx)
+    }
+  }
+  if (cut !== -1) s = s.slice(0, cut).trim()
+  s = s.replace(/\s+/g, ' ').trim()
+  return s
+}
+
+function isBadText(t: unknown) {
+  const sRaw = stripEscortReply(t)
+  const s = String(sRaw || '').trim().toLowerCase()
+  if (!s) return true
+  if (s.length < 40) return true
+  for (const p of bannedPhrases) {
+    if (s.includes(p)) return true
+  }
+  for (const st of bannedStart) {
+    if (s.startsWith(st + ' ') || s === st) return true
+  }
+  if (bannedStartRe.test(String(sRaw || ''))) return true
+  if (/\bti\s*(ringrazio|aspetto|bacio|abbraccio)\b/.test(s)) return true
+  if (/\b(feedback|ospiti|clienti)\b/.test(s) && /\b(grazie|ringrazio|scusa|dispiace)\b/.test(s)) return true
+  if (/\bspero\s+di\s+vederti\s+presto\b/.test(s)) return true
+  if (/\b(sono|sar[oò])\s+qui\s+per\s+te\b/.test(s)) return true
+  if (/\bquando\s+vuoi\b/.test(s) && /\bti\s+aspetto\b/.test(s)) return true
+  if (/\b(miei|i\s*miei)\s*clienti\b/.test(s)) return true
+  if (/\b(recensione|stelline)\b/.test(s) && /\b(grazie|ringrazio)\b/.test(s)) return true
+  const hasClientSignal = clientSignals.some((k) => s.includes(k))
+  if (!hasClientSignal && s.length < 120) return true
+  return false
+}
+
 function normalizeUploadUrl(u: string | null | undefined): string {
   const s = String(u || '').trim()
   if (!s) return ''
@@ -84,11 +210,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Incontro non trovato' })
       }
 
+      const importedReviewsRaw = Array.isArray((meeting as any).importedReviews)
+        ? (meeting as any).importedReviews
+        : []
+
+      const importedReviews = importedReviewsRaw
+        .filter((r: any) => typeof r?.rating === 'number')
+        .map((r: any) => ({
+          ...r,
+          reviewText: stripEscortReply(r.reviewText),
+        }))
+        .filter((r: any) => !isBadText(r.reviewText))
+
       return res.json({
         meeting: {
           ...meeting,
           photos: sanitizePhotos((meeting as any).photos),
-          reviewCount: Array.isArray((meeting as any).importedReviews) ? (meeting as any).importedReviews.length : 0,
+          importedReviews,
+          reviewCount: importedReviews.length,
         }
       })
     } catch (error) {

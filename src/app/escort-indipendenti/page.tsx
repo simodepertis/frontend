@@ -250,19 +250,7 @@ export default function EscortIndipendentiPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {escortsOrdinati.map((escort: EscortItem) => (
               <Link key={escort.id} href={`/escort/${escort.slug}`} className="relative block">
-                <EscortCard escort={{ id: escort.id, nome: escort.nome, eta: escort.eta ?? 0, citta: escort.citta ?? '', prezzo: escort.prezzo ?? 0, foto: escort.foto ?? '', rank: escort.rank ?? 'STANDARD', isVerified: escort.verificata ?? false, videoCount: escort.videoCount || 0, reviewCount: escort.reviewCount || 0, commentCount: escort.commentCount || 0 }} />
-                {/* Badge Indipendente */}
-                <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                  <FontAwesomeIcon icon={faUserCheck} className="mr-1" />
-                  Indipendente
-                </div>
-                {/* Badge Verificata */}
-                {escort.verificata && (
-                  <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                    <FontAwesomeIcon icon={faUserCheck} className="mr-1" />
-                    Verificata
-                  </div>
-                )}
+                <EscortCard escort={{ id: escort.id, nome: escort.nome, eta: escort.eta ?? 0, citta: escort.citta ?? '', prezzo: escort.prezzo ?? 0, foto: escort.foto ?? '', rank: escort.rank ?? 'STANDARD', isVerified: escort.verificata ?? false, photoVerified: true, videoCount: escort.videoCount || 0, reviewCount: escort.reviewCount || 0, commentCount: escort.commentCount || 0 }} />
               </Link>
             ))}
           </div>

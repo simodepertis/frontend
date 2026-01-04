@@ -15,6 +15,7 @@ export type Escort = {
   foto: string;
   rank?: "VIP" | "ORO" | "ARGENTO" | "TITANIUM" | string;
   isVerified?: boolean;
+  photoVerified?: boolean;
   videoCount?: number;
   reviewCount?: number;
   commentCount?: number;
@@ -80,7 +81,14 @@ export default function EscortCard({ escort }: { escort: Escort }) {
         )}
       </div>
       <div className="p-4 text-white flex-grow flex flex-col">
-        <h3 className="text-lg font-bold mb-1">{escort.nome}, {escort.eta}</h3>
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="text-lg font-bold">{escort.nome}, {escort.eta}</h3>
+          {escort.photoVerified ? (
+            <span className="bg-emerald-600 text-white text-[10px] px-2 py-1 rounded-full font-semibold shadow whitespace-nowrap">
+              Foto verificate
+            </span>
+          ) : null}
+        </div>
         <p className="text-gray-300 text-sm mb-3">{escort.citta}</p>
         <div className="mt-auto flex justify-between items-center">
           <div className="flex items-center gap-2">
