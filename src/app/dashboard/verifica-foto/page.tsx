@@ -12,6 +12,7 @@ export default function VerificaFotoPage() {
   const [submitting, setSubmitting] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const [draggingExistingIndex, setDraggingExistingIndex] = useState<number | null>(null);
 
   type ExistingPhoto = { id: number; url: string; status: 'DRAFT'|'IN_REVIEW'|'APPROVED'|'REJECTED'; isFace: boolean; createdAt?: string };
   const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>([]);
@@ -109,6 +110,51 @@ export default function VerificaFotoPage() {
       console.error('Set cover photo error', e);
       alert('Errore impostazione foto vetrina');
     }
+  };
+
+  const persistExistingPhotosOrder = async (ordered: ExistingPhoto[]) => {
+    const token = localStorage.getItem('auth-token') || '';
+    if (!token) { alert('Devi essere autenticato'); return; }
+    try {
+      const res = await fetch('/api/escort/photos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ reorderIds: ordered.map(p => p.id) })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(j?.error || 'Errore salvataggio ordine foto');
+        return;
+      }
+    } catch (e) {
+      console.error('Reorder photos error', e);
+      alert('Errore salvataggio ordine foto');
+    }
+  };
+
+  const handleExistingPhotoDragStart = (e: React.DragEvent, index: number) => {
+    setDraggingExistingIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleExistingPhotoDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleExistingPhotoDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggingExistingIndex === null || draggingExistingIndex === dropIndex) {
+      setDraggingExistingIndex(null);
+      return;
+    }
+
+    const next = [...existingPhotos];
+    const [dragged] = next.splice(draggingExistingIndex, 1);
+    next.splice(dropIndex, 0, dragged);
+    setExistingPhotos(next);
+    setDraggingExistingIndex(null);
+    await persistExistingPhotosOrder(next);
   };
 
   const setNewCoverPhoto = (index: number) => {
@@ -339,7 +385,14 @@ export default function VerificaFotoPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {existingPhotos.map((p, idx) => (
-              <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden">
+              <div
+                key={p.id}
+                className="border border-gray-600 rounded-md overflow-hidden"
+                draggable
+                onDragStart={(e) => handleExistingPhotoDragStart(e, idx)}
+                onDragOver={handleExistingPhotoDragOver}
+                onDrop={(e) => handleExistingPhotoDrop(e, idx)}
+              >
                 <div className="relative w-full h-56 bg-black">
                   <NextImage src={normalizeUploadUrl(p.url) || '/placeholder.svg'} alt={`Foto ${p.id}`} fill className="object-contain" />
                   <div className="absolute top-2 left-2 flex gap-2">
