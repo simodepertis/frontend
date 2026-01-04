@@ -9,6 +9,10 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  res.setHeader('Pragma', 'no-cache')
+  res.setHeader('Expires', '0')
+
   console.log('🔍 API /api/public/escort-indipendenti chiamata')
   
   try {
@@ -26,7 +30,7 @@ export default async function handler(
         slug: true,
         createdAt: true,
         escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true, contacts: true, tierExpiresAt: true } },
-        photos: { where: { status: 'APPROVED' }, orderBy: { createdAt: 'desc' }, take: 1 },
+        photos: { where: { status: 'APPROVED' }, orderBy: { updatedAt: 'desc' }, take: 1 },
       },
       orderBy: [
         { escortProfile: { girlOfTheDayDate: 'desc' } as any }, // Prisma consente orderBy per relazioni 1-1

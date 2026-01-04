@@ -17,6 +17,8 @@ export default function VerificaFotoPage() {
   type ExistingPhoto = { id: number; url: string; status: 'DRAFT'|'IN_REVIEW'|'APPROVED'|'REJECTED'; isFace: boolean; createdAt?: string };
   const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>([]);
   const [loadingExisting, setLoadingExisting] = useState(false);
+  const [existingDirty, setExistingDirty] = useState(false);
+  const [existingSaving, setExistingSaving] = useState(false);
 
   // Documenti & Consenso (ripristino)
   type DocItem = { id: string; type: 'ID_CARD_FRONT' | 'ID_CARD_BACK' | 'SELFIE_WITH_ID'; url: string; status: 'in_review' | 'approvato' | 'rifiutato' };
@@ -84,32 +86,16 @@ export default function VerificaFotoPage() {
     return s;
   };
 
-  const setExistingCoverPhoto = async (id: number) => {
-    const token = localStorage.getItem('auth-token') || '';
-    if (!token) { alert('Devi essere autenticato'); return; }
-    try {
-      const res = await fetch('/api/escort/photos', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id, setAsCover: true })
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(j?.error || 'Errore impostazione foto vetrina');
-        return;
-      }
-      setExistingPhotos((prev) => {
-        const idx = prev.findIndex(p => p.id === id);
-        if (idx <= 0) return prev;
-        const next = [...prev];
-        const [item] = next.splice(idx, 1);
-        next.unshift(item);
-        return next;
-      });
-    } catch (e) {
-      console.error('Set cover photo error', e);
-      alert('Errore impostazione foto vetrina');
-    }
+  const setExistingCoverPhoto = (id: number) => {
+    setExistingPhotos((prev) => {
+      const idx = prev.findIndex((p) => p.id === id);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      next.unshift(item);
+      return next;
+    });
+    setExistingDirty(true);
   };
 
   const persistExistingPhotosOrder = async (ordered: ExistingPhoto[]) => {
@@ -126,9 +112,30 @@ export default function VerificaFotoPage() {
         alert(j?.error || 'Errore salvataggio ordine foto');
         return;
       }
+      if (Array.isArray(j?.photos)) {
+        const mapped = j.photos.map((p: any) => ({
+          id: Number(p.id),
+          url: String(p.url || ''),
+          status: p.status,
+          isFace: !!p.isFace,
+          createdAt: p.createdAt ? String(p.createdAt) : undefined,
+        }));
+        setExistingPhotos(mapped);
+      }
     } catch (e) {
       console.error('Reorder photos error', e);
       alert('Errore salvataggio ordine foto');
+    }
+  };
+
+  const saveExistingChanges = async () => {
+    if (!existingDirty) return;
+    setExistingSaving(true);
+    try {
+      await persistExistingPhotosOrder(existingPhotos);
+      setExistingDirty(false);
+    } finally {
+      setExistingSaving(false);
     }
   };
 
@@ -154,7 +161,7 @@ export default function VerificaFotoPage() {
     next.splice(dropIndex, 0, dragged);
     setExistingPhotos(next);
     setDraggingExistingIndex(null);
-    await persistExistingPhotosOrder(next);
+    setExistingDirty(true);
   };
 
   const setNewCoverPhoto = (index: number) => {
@@ -383,6 +390,14 @@ export default function VerificaFotoPage() {
         ) : existingPhotos.length === 0 ? (
           <div className="text-sm text-gray-300">Nessuna foto caricata</div>
         ) : (
+          <>
+            {existingDirty && (
+              <div className="flex justify-end mb-3">
+                <Button onClick={saveExistingChanges} disabled={existingSaving}>
+                  {existingSaving ? 'Salvataggio…' : 'Salva'}
+                </Button>
+              </div>
+            )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {existingPhotos.map((p, idx) => (
               <div
@@ -426,6 +441,7 @@ export default function VerificaFotoPage() {
               </div>
             ))}
           </div>
+          </>
         )}
       </div>
 
