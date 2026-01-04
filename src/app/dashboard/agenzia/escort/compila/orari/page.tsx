@@ -19,7 +19,10 @@ function Inner() {
     (async () => {
       if (!escortUserId) { setLoading(false); return; }
       try {
-        const res = await fetch(`/api/agency/escort/orari?escortUserId=${escortUserId}`, { credentials: 'include' });
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch(`/api/agency/escort/orari?escortUserId=${escortUserId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (res.ok) {
           const j = await res.json();
           setWorkingHours(j.workingHours || {});
@@ -36,10 +39,10 @@ function Inner() {
     if (!escortUserId) { alert('escortUserId mancante'); return; }
     setSaving(true);
     try {
+      const token = localStorage.getItem('auth-token') || '';
       const res = await fetch('/api/agency/escort/orari', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ escortUserId, workingHours })
       });
       const j = await res.json();

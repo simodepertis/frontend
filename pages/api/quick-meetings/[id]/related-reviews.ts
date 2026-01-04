@@ -194,7 +194,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ? 'ea_uomini_'
           : cat === 'TRANS'
             ? 'ea_trans_'
-            : ''
+            : cat === 'CENTRO_MASSAGGI'
+              ? 'ea_massaggi_'
+              : ''
 
     const where: any = {
       reviewText: { not: null },

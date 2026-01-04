@@ -34,7 +34,6 @@ export default async function handler(
         password: true,
         ruolo: true,
         createdAt: true,
-        emailVerifiedAt: true,
       }
     })
 
@@ -43,9 +42,12 @@ export default async function handler(
       return res.status(401).json({ error: 'Email o password non corretti' })
     }
 
-    if (user.ruolo !== 'admin' && !user.emailVerifiedAt && shouldRequireEmailVerification(user.createdAt)) {
-      return res.status(403).json({ error: 'Devi verificare la tua email prima di accedere.' })
-    }
+    try {
+      const emailVerifiedAt = (user as any)?.emailVerifiedAt
+      if (user.ruolo !== 'admin' && !emailVerifiedAt && shouldRequireEmailVerification(user.createdAt)) {
+        return res.status(403).json({ error: 'Devi verificare la tua email prima di accedere.' })
+      }
+    } catch {}
 
     // VERIFICA PASSWORD (per ora accetta qualsiasi password >= 6 caratteri)
     if (password.length < 6) {

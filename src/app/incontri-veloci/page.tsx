@@ -21,6 +21,41 @@ interface QuickMeeting {
   photos: string[];
   publishedAt: string;
   bumpPackage?: string;
+  avgRating?: number | null;
+  reviewCount?: number;
+}
+
+function Star({ filled }: { filled: boolean }) {
+  return <span className={filled ? 'text-yellow-400' : 'text-gray-500'}>★</span>;
+}
+
+function HalfStar() {
+  return (
+    <span className="relative inline-block">
+      <span className="text-gray-500">★</span>
+      <span className="absolute left-0 top-0 overflow-hidden text-yellow-400" style={{ width: '50%' }}>
+        ★
+      </span>
+    </span>
+  );
+}
+
+function Stars({ value }: { value: number }) {
+  const v = Math.max(0, Math.min(5, value));
+  const full = Math.floor(v);
+  const hasHalf = v - full >= 0.5;
+  const empty = 5 - full - (hasHalf ? 1 : 0);
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: full }).map((_, i) => (
+        <Star key={`f-${i}`} filled={true} />
+      ))}
+      {hasHalf ? <HalfStar /> : null}
+      {Array.from({ length: empty }).map((_, i) => (
+        <Star key={`e-${i}`} filled={false} />
+      ))}
+    </div>
+  );
 }
 
 function normalizeUploadUrl(u: string | null | undefined): string {
@@ -304,7 +339,7 @@ export default function IncontriVelociPage() {
               const cover = normalizeUploadUrl(meeting.photos?.[0]);
               return (
                 <Link key={meeting.id} href={`/incontri-veloci/${meeting.id}`} className="block group">
-                  <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors">
+                  <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors relative">
                     <div className="flex gap-3 items-stretch">
                       {/* Foto a sinistra, formato quadrato piccolo */}
                       <div className="w-24 h-24 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 relative">
@@ -352,6 +387,12 @@ export default function IncontriVelociPage() {
                         </div>
                       </div>
                     </div>
+
+                    {typeof meeting.avgRating === 'number' && meeting.avgRating > 0 ? (
+                      <div className="absolute bottom-2 right-3 flex items-center gap-1">
+                        <Stars value={meeting.avgRating} />
+                      </div>
+                    ) : null}
                   </div>
                 </Link>
               );

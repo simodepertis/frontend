@@ -51,17 +51,17 @@ async function main() {
     bakeEnv,
   );
 
-  // STEP 2: Centri Massaggi da Bakeca.it
+  // STEP 2: Centri Massaggi da MassaggioIT
   const massaggiEnv = {
     USER_ID: process.env.USER_ID || '4',
     CITY: process.env.MASSAGGI_CITY || process.env.CITY || 'Milano',
     LIMIT: process.env.MASSAGGI_LIMIT || '20',
-    LOOP: '0',
+    TAGS: process.env.MASSAGGI_TAGS || 'centri',
   };
 
   await runStep(
-    'Centri Massaggi da Bakeca.it',
-    'scripts/bot-bakeca-massaggi.js',
+    'Centri Massaggi da MassaggioIT',
+    'scripts/bot-massaggioit-centri.js',
     massaggiEnv,
   );
 

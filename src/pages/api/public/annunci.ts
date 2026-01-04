@@ -49,6 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ruolo: { in: ['escort', 'agency'] },
         suspended: false
       },
+      orderBy: { createdAt: 'desc' },
       include: {
         escortProfile: true,
         photos: {
@@ -57,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           orderBy: { createdAt: 'desc' }
         }
       },
-      take: 100
+      take: 500
     })
 
     const items = users

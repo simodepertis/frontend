@@ -8,11 +8,33 @@ const prisma = new PrismaClient();
 
 function normalizePhone(phone) {
   if (!phone) return null;
-  // Rimuovi spazi, trattini, parentesi, +39, 0039
-  return phone
-    .replace(/[\s\-\(\)]/g, '')
-    .replace(/^(\+39|0039)/, '')
-    .replace(/^0+/, '');
+
+  // Estrai solo cifre (gestisce anche whatsapp URL tipo https://wa.me/39333...)
+  let digits = String(phone).replace(/\D/g, '');
+  if (!digits) return null;
+
+  // Normalizza prefisso Italia
+  if (digits.startsWith('0039')) digits = digits.slice(4);
+  if (digits.startsWith('39') && digits.length > 10) digits = digits.slice(2);
+
+  // Se rimane più lungo, usa le ultime 10 cifre (tipico numero IT)
+  if (digits.length > 10) digits = digits.slice(-10);
+
+  // Rimuovi zeri iniziali residui
+  digits = digits.replace(/^0+/, '');
+
+  return digits || null;
+}
+
+function phoneSuffixMatch(a, b, min = 8) {
+  const da = normalizePhone(a);
+  const db = normalizePhone(b);
+  if (!da || !db) return false;
+  const la = da.length;
+  const lb = db.length;
+  const n = Math.min(la, lb);
+  if (n < min) return false;
+  return da.slice(-n) === db.slice(-n);
 }
 
 function normalizeName(name) {
@@ -70,6 +92,14 @@ function getEditDistance(s1, s2) {
 async function linkReviewsToQuickMeetings() {
   console.log('🔗 Inizio collegamento recensioni a Incontri Veloci...\n');
 
+  const MATCH_MODE = String(process.env.MATCH_MODE || '').toLowerCase();
+  const NAME_MIN_SIMILARITY = Number(process.env.NAME_MIN_SIMILARITY || '0.85');
+  const MIN_SCORE = Number(process.env.MIN_SCORE || (MATCH_MODE === 'name' ? '40' : '80'));
+  if (MATCH_MODE === 'name') {
+    console.log(`⚠️ MATCH_MODE=name attivo: collega recensioni anche senza telefono (solo nome).`);
+    console.log(`   NAME_MIN_SIMILARITY=${NAME_MIN_SIMILARITY} MIN_SCORE=${MIN_SCORE}\n`);
+  }
+
   try {
     // 1. Carica tutte le recensioni non ancora collegate
     const reviews = await prisma.importedReview.findMany({
@@ -103,26 +133,36 @@ async function linkReviewsToQuickMeetings() {
       for (const meeting of quickMeetings) {
         let score = 0;
 
-        // Match per telefono (priorità massima)
+        // Match per telefono (priorità massima) - sempre attivo
         if (reviewPhone && meeting.phone) {
           const meetingPhone = normalizePhone(meeting.phone);
-          if (reviewPhone === meetingPhone) {
+          if (reviewPhone === meetingPhone || phoneSuffixMatch(reviewPhone, meetingPhone)) {
             score += 100; // Match perfetto telefono
           }
         }
 
         if (reviewPhone && meeting.whatsapp) {
           const meetingWhatsapp = normalizePhone(meeting.whatsapp);
-          if (reviewPhone === meetingWhatsapp) {
+          if (reviewPhone === meetingWhatsapp || phoneSuffixMatch(reviewPhone, meetingWhatsapp)) {
             score += 100; // Match perfetto whatsapp
           }
         }
 
-        // Match per nome (secondaria)
+        // Match per nome (secondaria / o primaria in MATCH_MODE=name)
         if (reviewName && meeting.title) {
           const nameSimilarity = calculateSimilarity(reviewName, meeting.title);
-          if (nameSimilarity > 0.7) {
-            score += nameSimilarity * 50; // Max 50 punti per nome
+
+          // modalità default: contribuisce solo come boost
+          if (MATCH_MODE !== 'name') {
+            if (nameSimilarity > 0.7) {
+              score += nameSimilarity * 50; // Max 50 punti per nome
+            }
+          } else {
+            // modalità name-only: usa nome come metrica principale
+            // 0..1 => 0..100
+            if (nameSimilarity >= NAME_MIN_SIMILARITY) {
+              score += nameSimilarity * 100;
+            }
           }
         }
 
@@ -134,16 +174,22 @@ async function linkReviewsToQuickMeetings() {
       }
 
       // 4. Se trovato match con score sufficiente, collega
-      if (bestMatch && bestScore >= 80) {
+      if (bestMatch && bestScore >= MIN_SCORE) {
         await prisma.importedReview.update({
           where: { id: review.id },
           data: { quickMeetingId: bestMatch.id }
         });
 
-        console.log(`✅ Collegata recensione "${review.escortName}" → "${bestMatch.title}" (score: ${bestScore.toFixed(1)})`);
+        const path = `/incontri-veloci/${bestMatch.id}`;
+        console.log(`✅ Collegata recensione "${review.escortName}" → "${bestMatch.title}" (id: ${bestMatch.id}, score: ${bestScore.toFixed(1)})`);
+        console.log(`   🔎 Apri sul sito: ${path}`);
         linked++;
       } else {
-        console.log(`⏭️  Recensione "${review.escortName}" - nessun match trovato (best score: ${bestScore.toFixed(1)})`);
+        if (bestMatch && bestScore > 0) {
+          console.log(`⏭️  Recensione "${review.escortName}" - nessun match (best: "${bestMatch.title}" id ${bestMatch.id}, score: ${bestScore.toFixed(1)})`);
+        } else {
+          console.log(`⏭️  Recensione "${review.escortName}" - nessun match trovato (best score: ${bestScore.toFixed(1)})`);
+        }
         skipped++;
       }
     }
@@ -184,6 +230,14 @@ async function linkReviewsToQuickMeetings() {
 
   } catch (error) {
     console.error('❌ Errore durante il collegamento:', error);
+    const msg = String(error && error.message ? error.message : error || '');
+    if (msg.includes("Can't reach database server")) {
+      console.error('ℹ️ Prisma non riesce a raggiungere il DB. Controlla:');
+      console.error('   - variabile DATABASE_URL nel tuo ambiente/.env');
+      console.error('   - rete/firewall/VPN che blocca la porta 5432');
+      console.error('   - Neon/DB online');
+      console.error('   In alternativa esegui questi script direttamente su Hetzner/server dove il DB è raggiungibile.');
+    }
     throw error;
   } finally {
     await prisma.$disconnect();

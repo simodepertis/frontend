@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+import { createHash } from 'crypto';
 
 // Fetch diretto senza Puppeteer (più veloce e funziona su Vercel)
 async function scrapeBakeca(city: string, category: string, limit: number = 20) {
@@ -172,13 +173,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           continue;
         }
 
-        if (!data.photos || data.photos.length === 0) {
+        if (!data.phone) {
           skipped++;
           continue;
         }
 
         // Crea sourceId unico
-        const sourceId = `bot_${category}_${Buffer.from(link).toString('base64').slice(0, 20)}`;
+        const sourceId = `bakeca_${category}_${createHash('sha1').update(link).digest('hex')}`;
         
         // Controlla duplicati
         const exists = await prisma.quickMeeting.findFirst({
@@ -200,7 +201,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             phone: data.phone || null,
             whatsapp: data.whatsapp || (data.phone ? `https://wa.me/${String(data.phone).replace(/\D/g, '')}` : null),
             age: data.age || null,
-            photos: data.photos,
+            photos: data.photos && data.photos.length > 0 ? data.photos : [],
             sourceUrl: link,
             sourceId,
             userId: userId,

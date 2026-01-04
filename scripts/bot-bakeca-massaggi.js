@@ -30,6 +30,9 @@ const PROXY_USER = process.env.PROXY_USER || null;
 const PROXY_PASS = process.env.PROXY_PASS || null;
 const LIST_RETRIES = process.env.LIST_RETRIES ? parseInt(process.env.LIST_RETRIES, 10) : 3;
 const LIST_RETRY_BASE_MS = process.env.LIST_RETRY_BASE_MS ? parseInt(process.env.LIST_RETRY_BASE_MS, 10) : 7000;
+const CHALLENGE_WAIT_MS = process.env.CHALLENGE_WAIT_MS ? parseInt(process.env.CHALLENGE_WAIT_MS, 10) : 2 * 60 * 1000;
+const USE_BAKECAINCONTRII = process.env.USE_BAKECAINCONTRII === '1';
+const AUTO_FALLBACK_TO_BAKECAINCONTRII = process.env.AUTO_FALLBACK_TO_BAKECAINCONTRII === '1';
 
 function isChallengeError(err) {
   const msg = String(err && err.message ? err.message : err || '');
@@ -66,10 +69,19 @@ async function ensureNotChallenge(page, contextLabel) {
   });
 
   if (isChallenge) {
+    if (SKIP_ON_CHALLENGE) {
+      const e = new Error(
+        `Cloudflare/Turnstile challenge rilevato (${contextLabel}). ` +
+          `SKIP_ON_CHALLENGE=1: salto questa pagina e continuo.`
+      );
+      e.name = 'TurnstileChallengeError';
+      throw e;
+    }
+
     if (!HEADLESS) {
       console.log(
         `🛡️ Cloudflare/Turnstile challenge rilevato (${contextLabel}). ` +
-          `Completa il captcha nella finestra Chrome appena aperta. Attendo fino a 10 minuti...`
+          `Completa il captcha nella finestra Chrome appena aperta. Attendo fino a ${Math.round(CHALLENGE_WAIT_MS / 1000)}s...`
       );
 
       // Attendi finché la pagina non esce dal challenge
@@ -87,7 +99,7 @@ async function ensureNotChallenge(page, contextLabel) {
               html.includes('turnstile');
             return !isCh;
           },
-          { timeout: 10 * 60 * 1000 }
+          { timeout: CHALLENGE_WAIT_MS }
         );
       } catch (e) {
         const err = new Error(
@@ -187,10 +199,57 @@ if (!USER_ID) {
 }
 
 async function acceptCookies(page) {
+  const selectors = [
+    '.iubenda-cs-accept-btn',
+    '.iubenda-cs-btn-primary',
+    '#onetrust-accept-btn-handler',
+    '[data-testid="uc-accept-all-button"]',
+    '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
+    'button#accept, button.accept, button[aria-label*="accetta" i]'
+  ];
+
+  for (const sel of selectors) {
+    try {
+      const el = await page.$(sel);
+      if (!el) continue;
+      await el.click({ delay: 30 });
+      await sleep(800);
+      return;
+    } catch (e) {
+      // try next selector
+    }
+  }
+
+  // Fallback: prova a cliccare un bottone con testo tipo "Accetta" / "Accetta tutto" / "Accept all"
   try {
-    await page.waitForSelector('.iubenda-cs-accept-btn', { timeout: 2500 });
-    await page.click('.iubenda-cs-accept-btn');
-    await sleep(800);
+    const clicked = await page.evaluate(() => {
+      const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      const candidates = Array.from(document.querySelectorAll('button, a[role="button"], input[type="button"], input[type="submit"]'));
+      const wanted = [
+        'accetta',
+        'accetta tutto',
+        'accetta tutti',
+        'accetta all',
+        'accept',
+        'accept all',
+        'consenti',
+        'consenti tutti'
+      ];
+
+      for (const el of candidates) {
+        const text = norm(el.innerText || el.value || '');
+        if (!text) continue;
+        if (wanted.some((w) => text === w || text.includes(w))) {
+          (el).click();
+          return true;
+        }
+      }
+      return false;
+    });
+
+    if (clicked) {
+      await sleep(800);
+    }
   } catch (e) {
     // ignore
   }
@@ -644,6 +703,13 @@ async function runOnce() {
     return msg.toLowerCase().includes('detached frame');
   };
 
+  const buildCityUrl = (city, forceBakecaincontrii) => {
+    const useAlt = forceBakecaincontrii || USE_BAKECAINCONTRII;
+    return useAlt
+      ? `https://${city.toLowerCase()}.bakecaincontrii.com/donna-cerca-uomo/tag/massaggi-erotici/`
+      : `https://www.bakeca.it/annunci/massaggi-benessere/${city.toLowerCase()}/`;
+  };
+
   const initPage = async (p) => {
     await p.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
 
@@ -677,11 +743,35 @@ async function runOnce() {
     let page = await initPage(await browser.newPage());
 
     for (const city of cities) {
-      const cityUrl = `https://www.bakeca.it/annunci/massaggi-benessere/${city.toLowerCase()}/`;
+      const cityUrl = buildCityUrl(city, false);
+      console.log(`🌍 Base URL città ${city}: ${cityUrl}`);
       let items = [];
       try {
         items = await collectAllPages(page, cityUrl);
       } catch (e) {
+        // Se bakeca.it è bloccato su lista, riprova automaticamente con bakecaincontrii
+        if (
+          AUTO_FALLBACK_TO_BAKECAINCONTRII &&
+          !USE_BAKECAINCONTRII &&
+          (isChallengeError(e) || isConnectionClosedError(e) || isDetachedFrameError(e))
+        ) {
+          const fallbackUrl = buildCityUrl(city, true);
+          console.log(`🔁 Fallback automatico su bakecaincontrii per ${city}: ${fallbackUrl}`);
+          try {
+            try { await page.close(); } catch (e2) {}
+            page = await initPage(await browser.newPage());
+            items = await collectAllPages(page, fallbackUrl);
+          } catch (e2) {
+            console.log(`🛡️ Skip città anche in fallback: ${fallbackUrl}`);
+            cloudflareSkipped++;
+            continue;
+          }
+        } else if (SKIP_ON_CHALLENGE && isChallengeError(e)) {
+          console.log(`🛡️ Skip città (Cloudflare): ${cityUrl}`);
+          cloudflareSkipped++;
+          continue;
+        }
+
         if (SKIP_ON_CHALLENGE && isChallengeError(e)) {
           console.log(`🛡️ Skip città (Cloudflare): ${cityUrl}`);
           cloudflareSkipped++;
@@ -693,6 +783,14 @@ async function runOnce() {
           console.log(`♻️ Browser/Page chiuso (connection closed). Ricreo la pagina e continuo: ${cityUrl}`);
           try { await page.close(); } catch (e2) {}
           try { page = await initPage(await browser.newPage()); } catch (e3) { throw e; }
+          cloudflareSkipped++;
+          continue;
+        }
+
+        if (isDetachedFrameError(e)) {
+          console.log(`♻️ Tab corrotta (detached frame) durante la lista. Ricreo la pagina e salto città: ${cityUrl}`);
+          try { await page.close(); } catch (e2) {}
+          try { page = await initPage(await browser.newPage()); } catch (e3) {}
           cloudflareSkipped++;
           continue;
         }

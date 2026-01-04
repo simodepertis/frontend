@@ -3,6 +3,82 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const bannedPhrases = [
+  'grazie per la recensione',
+  'che bella recensione',
+  'grazie della recensione',
+  'grazie della tua recensione',
+  'grazie per questa recensione',
+  'ti ringrazio per la recensione',
+  'grazie tesoro',
+  'un bacio',
+  'un bacio dolce',
+  'ti aspetto',
+  'a presto',
+  'mille baci',
+  'baci',
+  'grazie mille',
+  'grazie di cuore',
+];
+
+const bannedStart = [
+  'grazie',
+  'ciao',
+  'tesoro',
+  'amore',
+  'un bacio',
+  'baci',
+  'a presto',
+];
+
+const bannedStartRe = new RegExp(
+  `^\\s*(?:${bannedStart
+    .map((x) => x.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'))
+    .sort((a, b) => b.length - a.length)
+    .join('|')})(?:[\\s,!?.:;\"'()\\-]|$)`,
+  'i'
+);
+
+const stripEscortReply = (t: unknown) => {
+  let s = String(t || '').trim();
+  if (!s) return '';
+  const lower = s.toLowerCase();
+  const markers = [' ha risposto', '\nha risposto', 'risposta', ' ha risposto il', ' ha risposto:', ' risponde'];
+  let cut = -1;
+  for (const m of markers) {
+    const idx = lower.indexOf(m);
+    if (idx !== -1) {
+      cut = cut === -1 ? idx : Math.min(cut, idx);
+    }
+  }
+  if (cut !== -1) {
+    s = s.slice(0, cut).trim();
+  }
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+};
+
+const isBadText = (t: unknown) => {
+  const sRaw = stripEscortReply(t);
+  const s = String(sRaw || '').trim().toLowerCase();
+  if (!s) return true;
+  if (s.length < 60) return true;
+  for (const p of bannedPhrases) {
+    if (s.includes(p)) return true;
+  }
+  for (const st of bannedStart) {
+    if (s.startsWith(st + ' ') || s === st) return true;
+  }
+  if (bannedStartRe.test(String(sRaw || ''))) return true;
+  if (/\bti\s*(ringrazio|aspetto|bacio|abbraccio)\b/.test(s)) return true;
+  if (/\bspero\s+di\s+vederti\s+presto\b/.test(s)) return true;
+  if (/\b(sono|sar[oò])\s+qui\s+per\s+te\b/.test(s)) return true;
+  if (/\bquando\s+vuoi\b/.test(s) && /\bti\s+aspetto\b/.test(s)) return true;
+  if (/\b(miei|i\s*miei)\s*clienti\b/.test(s)) return true;
+  if (/\b(recensione|stelline)\b/.test(s) && /\b(grazie|ringrazio)\b/.test(s)) return true;
+  return false;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
 
@@ -23,10 +99,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Incontro non trovato' });
       }
 
-      return res.status(200).json({ 
+      const filteredImported = (meeting.importedReviews || [])
+        .filter((r) => typeof r.rating === 'number')
+        .map((r) => ({
+          ...r,
+          reviewText: stripEscortReply(r.reviewText),
+        }))
+        .filter((r) => !isBadText(r.reviewText));
+
+      return res.status(200).json({
         meeting: {
           ...meeting,
-          reviewCount: meeting.importedReviews?.length || 0
+          importedReviews: filteredImported,
+          reviewCount: filteredImported.length || 0,
         }
       });
     } catch (error) {

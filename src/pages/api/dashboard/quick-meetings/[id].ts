@@ -71,13 +71,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Annuncio non trovato' });
       }
 
-      await prisma.quickMeeting.delete({
-        where: { id: meetingId }
-      });
+      // Prisma schema: alcune relazioni non sono in cascade (es. QuickMeetingPurchase -> QuickMeeting)
+      // quindi cancelliamo prima i record dipendenti per evitare errori FK.
+      await prisma.$transaction([
+        // Se esistono pacchetti attivi o storici, vanno rimossi prima del QuickMeeting.
+        // Gli schedule sono in cascade su QuickMeetingPurchase, quindi basta eliminare le purchase.
+        prisma.quickMeetingPurchase.deleteMany({ where: { meetingId } }),
+        // Queste tabelle dovrebbero essere già in cascade, ma le cancelliamo comunque per sicurezza.
+        prisma.quickMeetingReview.deleteMany({ where: { quickMeetingId: meetingId } }),
+        prisma.importedReview.deleteMany({ where: { quickMeetingId: meetingId } }),
+        prisma.bumpLog.deleteMany({ where: { quickMeetingId: meetingId } }),
+        prisma.quickMeeting.delete({ where: { id: meetingId } }),
+      ]);
 
       return res.status(200).json({ success: true });
     } catch (error) {
       console.error('Errore:', error);
+      const msg = String((error as any)?.message || '');
+      // Messaggio più utile in caso di vincoli DB
+      if (msg.toLowerCase().includes('foreign key') || msg.toLowerCase().includes('constraint')) {
+        return res.status(500).json({ error: 'Impossibile eliminare: esistono dati collegati (pacchetti/relazioni). Riprova tra qualche secondo.' });
+      }
       return res.status(500).json({ error: 'Errore del server' });
     }
   } 

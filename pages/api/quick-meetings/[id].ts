@@ -214,7 +214,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ? (meeting as any).importedReviews
         : []
 
+      const cat = String((meeting as any)?.category || '').toUpperCase()
+      const sectionPrefix =
+        cat === 'DONNA_CERCA_UOMO'
+          ? 'ea_donne_'
+          : cat === 'UOMO_CERCA_UOMO'
+            ? 'ea_uomini_'
+            : cat === 'TRANS'
+              ? 'ea_trans_'
+              : cat === 'CENTRO_MASSAGGI'
+                ? 'ea_massaggi_'
+                : ''
+
       const importedReviews = importedReviewsRaw
+        .filter((r: any) => {
+          if (!sectionPrefix) return true
+          const sid = String(r?.sourceId || '')
+          return sid.startsWith(sectionPrefix)
+        })
         .filter((r: any) => typeof r?.rating === 'number')
         .map((r: any) => ({
           ...r,

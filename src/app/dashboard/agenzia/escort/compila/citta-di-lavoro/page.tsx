@@ -21,7 +21,10 @@ function Inner() {
     (async () => {
       if (!escortUserId) { setLoading(false); return; }
       try {
-        const res = await fetch(`/api/agency/escort/citta?escortUserId=${escortUserId}`, { credentials: 'include' });
+        const token = localStorage.getItem('auth-token') || '';
+        const res = await fetch(`/api/agency/escort/citta?escortUserId=${escortUserId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (res.ok) {
           const j = await res.json();
           const c = j.cities || {};
@@ -39,10 +42,10 @@ function Inner() {
     if (!escortUserId) { alert('escortUserId mancante'); return; }
     setSaving(true);
     try {
+      const token = localStorage.getItem('auth-token') || '';
       const res = await fetch('/api/agency/escort/citta', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ escortUserId, baseCity, secondCity, thirdCity, fourthCity, zones })
       });
       const j = await res.json();

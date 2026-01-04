@@ -39,7 +39,8 @@ function Inner() {
         <div className="flex items-center justify-between mt-4">
           <div className="text-xs text-gray-400">Una volta completati tutti i passaggi, invia il profilo in revisione.</div>
           <form onSubmit={async (e)=>{ e.preventDefault(); if(!escortUserId) return; 
-            const res = await fetch('/api/agency/escort/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ escortUserId }) });
+            const token = localStorage.getItem('auth-token') || '';
+            const res = await fetch('/api/agency/escort/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId }) });
             const j = await res.json(); if(!res.ok){ alert(j?.error||'Errore invio'); } else { alert('Profilo inviato in revisione'); }
           }}>
             <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded" disabled={!escortUserId}>Invia in revisione</button>

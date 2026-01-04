@@ -38,8 +38,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prisma.quickMeeting.count({ where })
       ]);
 
+      const meetingIds = meetings.map((m) => m.id)
+      const ratingsAgg = meetingIds.length
+        ? await prisma.quickMeetingReview.groupBy({
+            by: ['quickMeetingId'],
+            where: {
+              quickMeetingId: { in: meetingIds },
+              isApproved: true,
+              isVisible: true,
+            },
+            _avg: { rating: true },
+            _count: { _all: true },
+          })
+        : []
+
+      const ratingByMeeting = new Map<number, { avg: number | null; count: number }>()
+      for (const r of ratingsAgg as any[]) {
+        ratingByMeeting.set(r.quickMeetingId, {
+          avg: r._avg?.rating ?? null,
+          count: r._count?._all ?? 0,
+        })
+      }
+
+      const meetingsWithRating = meetings.map((m: any) => {
+        const agg = ratingByMeeting.get(m.id)
+        return {
+          ...m,
+          avgRating: agg?.avg ?? null,
+          reviewCount: agg?.count ?? 0,
+        }
+      })
+
       return res.status(200).json({
-        meetings,
+        meetings: meetingsWithRating,
         pagination: {
           total,
           page: parseInt(page as string),

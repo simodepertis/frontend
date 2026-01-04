@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
-import { hashPassword, validateEmail, validatePassword, generateToken } from '@/lib/auth'
+import { hashPassword, validateEmail, validatePassword } from '@/lib/auth'
+import { generateOpaqueToken, getAppUrl, sendEmail, sha256Hex } from '@/lib/resend'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Metodo non consentito' })
@@ -33,10 +34,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
-    const token = generateToken(created.id, created.email)
+    const rawToken = generateOpaqueToken()
+    const tokenHash = sha256Hex(rawToken)
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24)
+    await (prisma as any).emailVerificationToken.create({
+      data: { userId: created.id, tokenHash, expiresAt }
+    })
+
+    const appUrl = getAppUrl() || 'http://localhost:3000'
+    const verifyUrl = `${appUrl}/verify-email?token=${encodeURIComponent(rawToken)}`
+    await sendEmail({
+      to: created.email,
+      subject: 'Conferma la tua email',
+      html: `
+        <p>Ciao ${created.nome},</p>
+        <p>Per completare la registrazione, conferma la tua email cliccando qui:</p>
+        <p><a href="${verifyUrl}">${verifyUrl}</a></p>
+        <p>Se non sei stato tu, ignora questa email.</p>
+      `,
+    })
+
     return res.status(201).json({
+      message: 'Registrazione completata. Controlla la tua email per confermare l’account.',
       user: { id: created.id, email: created.email, nome: created.nome, ruolo: created.ruolo },
-      token
+      verificationRequired: true,
     })
   } catch (err) {
     console.error('Errore /api/register:', err)

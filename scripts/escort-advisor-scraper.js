@@ -14,7 +14,7 @@ const SECTIONS_RAW = String(process.env.EA_SECTIONS || 'donne,trans,uomini').tri
 const EA_SECTIONS = SECTIONS_RAW.split(',')
   .map((s) => String(s || '').trim().toLowerCase())
   .filter(Boolean)
-  .filter((s) => ['donne', 'trans', 'uomini'].includes(s));
+  .filter((s) => ['donne', 'trans', 'uomini', 'massaggi'].includes(s));
 const CITIES_RAW = String(process.env.CITIES || 'ALL').trim();
 const CITIES = /^all$/i.test(CITIES_RAW)
   ? DEFAULT_CITIES
@@ -733,6 +733,7 @@ class EscortAdvisorScraper {
         try {
           const u = new URL(searchUrl);
           const p = String(u.pathname || '').toLowerCase();
+          if (p.startsWith('/massaggi/')) sectionKey = 'massaggi';
           if (p.startsWith('/uomini/')) sectionKey = 'uomini';
           else if (p.startsWith('/trans/')) sectionKey = 'trans';
           else if (p.startsWith('/donne/')) sectionKey = 'donne';
@@ -770,6 +771,7 @@ class EscortAdvisorScraper {
         donne: `${this.baseUrl}/donne/city/${encodeURIComponent(city)}`,
         trans: `${this.baseUrl}/trans/city/${encodeURIComponent(city)}`,
         uomini: `${this.baseUrl}/uomini/city/${encodeURIComponent(city)}`,
+        massaggi: `${this.baseUrl}/massaggi/${encodeURIComponent(city)}`,
       };
       const searchUrl = urlMap[section] || urlMap.donne;
 
