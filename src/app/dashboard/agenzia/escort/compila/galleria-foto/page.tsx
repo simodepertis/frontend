@@ -11,6 +11,9 @@ function Inner() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [orderSaving, setOrderSaving] = useState(false);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [photos, setPhotos] = useState<Array<any>>([]);
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
@@ -26,6 +29,7 @@ function Inner() {
       if (res.ok) {
         const j = await res.json();
         setPhotos(j.photos || []);
+        setDirty(false);
       }
     } finally { setLoading(false); }
   }
@@ -60,6 +64,63 @@ function Inner() {
     const res = await fetch('/api/agency/escort/foto', { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }, body: JSON.stringify({ escortUserId, id, isFace: v }) });
     if (res.ok) await load(); else alert('Errore aggiornamento');
   }
+
+  const setCoverPhoto = (id: number) => {
+    setPhotos((prev) => {
+      const idx = prev.findIndex((p: any) => p.id === id);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      const [item] = next.splice(idx, 1);
+      next.unshift(item);
+      return next;
+    });
+    setDirty(true);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggingIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === dropIndex) {
+      setDraggingIndex(null);
+      return;
+    }
+
+    const next = [...photos];
+    const [dragged] = next.splice(draggingIndex, 1);
+    next.splice(dropIndex, 0, dragged);
+    setPhotos(next);
+    setDraggingIndex(null);
+    setDirty(true);
+  };
+
+  const saveOrder = async () => {
+    if (!dirty) return;
+    if (!escortUserId) { alert('escortUserId mancante'); return; }
+    setOrderSaving(true);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/agency/escort/foto', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ escortUserId, reorderIds: photos.map((p: any) => p.id) }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) { alert(j?.error || 'Errore salvataggio ordine foto'); return; }
+      if (Array.isArray(j?.photos)) setPhotos(j.photos);
+      setDirty(false);
+    } finally {
+      setOrderSaving(false);
+    }
+  };
 
   async function sendForReview() {
     if (!escortUserId) { alert('escortUserId mancante'); return; }
@@ -125,33 +186,61 @@ function Inner() {
         {loading ? (
           <div className="text-sm text-gray-400">Caricamento…</div>
         ) : (
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {photos.map((p) => (
-              <div key={p.id} className="border border-gray-600 rounded-md overflow-hidden bg-gray-900">
-                <div className="relative aspect-[3/2] bg-gray-800 flex items-center justify-center">
-                  <img src={p.url} alt={p.name} className="max-h-full max-w-full object-contain" />
-                  <div className="absolute top-2 left-2 flex gap-2">
-                    {p.isFace && (
-                      <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</span>
-                    )}
-                    {p.status && (
-                      <span className="text-xs font-bold bg-gray-900/80 text-white px-2 py-1 rounded">{p.status}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="p-2 text-xs text-gray-300 flex items-center justify-between">
-                  <div className="truncate pr-2">{p.name}</div>
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-1">
-                      <input type="checkbox" checked={!!p.isFace} onChange={(e)=> toggleFace(p.id, e.target.checked)} />
-                      <span>Volto</span>
-                    </label>
-                    <button className="text-red-300 hover:text-red-400" onClick={()=> del(p.id)}>Elimina</button>
-                  </div>
-                </div>
+          <>
+            {dirty && (
+              <div className="flex justify-end">
+                <Button onClick={saveOrder} disabled={orderSaving}>
+                  {orderSaving ? 'Salvataggio…' : 'Salva'}
+                </Button>
               </div>
-            ))}
-          </div>
+            )}
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {photos.map((p, idx) => (
+                <div
+                  key={p.id}
+                  className="border border-gray-600 rounded-md overflow-hidden bg-gray-900"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, idx)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, idx)}
+                >
+                  <div className="relative aspect-[3/2] bg-gray-800 flex items-center justify-center">
+                    <img src={p.url} alt={p.name} className="max-h-full max-w-full object-contain" />
+                    <div className="absolute top-2 left-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCoverPhoto(p.id)}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border transition-colors ${
+                          idx === 0
+                            ? 'bg-yellow-400 border-yellow-300 text-black'
+                            : 'bg-gray-900/80 border-yellow-400 text-yellow-300 hover:bg-yellow-400 hover:text-black'
+                        }`}
+                        title={idx === 0 ? 'Foto vetrina' : 'Imposta come foto vetrina'}
+                      >
+                        ⭐
+                      </button>
+                      {p.isFace && (
+                        <span className="text-xs font-bold bg-blue-600 text-white px-2 py-1 rounded">Volto</span>
+                      )}
+                      {p.status && (
+                        <span className="text-xs font-bold bg-gray-900/80 text-white px-2 py-1 rounded">{p.status}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-2 text-xs text-gray-300 flex items-center justify-between">
+                    <div className="truncate pr-2">{p.name}</div>
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1">
+                        <input type="checkbox" checked={!!p.isFace} onChange={(e)=> toggleFace(p.id, e.target.checked)} />
+                        <span>Volto</span>
+                      </label>
+                      <button className="text-red-300 hover:text-red-400" onClick={()=> del(p.id)}>Elimina</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         <div className="flex items-center justify-between">

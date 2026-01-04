@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!prof || prof.agencyId !== payload.userId) return res.status(403).json({ error: 'Questa escort non è collegata alla tua agenzia' })
 
   if (req.method === 'GET') {
-    const photos = await prisma.photo.findMany({ where: { userId: escortUserId }, orderBy: { createdAt: 'desc' } })
+    const photos = await prisma.photo.findMany({ where: { userId: escortUserId }, orderBy: { updatedAt: 'desc' } })
     return res.json({ photos })
   }
 
@@ -44,7 +44,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === 'PATCH') {
-    const { id, isFace, action } = req.body || {}
+    const { id, isFace, action, reorderIds } = req.body || {}
+
+    if (Array.isArray(reorderIds) && reorderIds.length > 0) {
+      const ids = reorderIds.map((x: any) => Number(x)).filter((n: any) => Number.isFinite(n) && n > 0)
+      if (ids.length !== reorderIds.length) return res.status(400).json({ error: 'Parametri non validi' })
+
+      const owned = await prisma.photo.findMany({ where: { userId: escortUserId, id: { in: ids } }, select: { id: true } })
+      if (owned.length !== ids.length) return res.status(403).json({ error: 'Non autorizzato' })
+
+      const base = Date.now()
+      await prisma.$transaction(
+        ids.map((photoId: number, idx: number) =>
+          prisma.photo.update({
+            where: { id: photoId },
+            data: { updatedAt: new Date(base - idx) },
+          })
+        )
+      )
+
+      const photos = await prisma.photo.findMany({ where: { userId: escortUserId }, orderBy: { updatedAt: 'desc' } })
+      return res.json({ ok: true, photos })
+    }
+
     const photoId = Number(id || 0)
     if (!photoId) return res.status(400).json({ error: 'Parametri non validi' })
     const p = await prisma.photo.findUnique({ where: { id: photoId } })

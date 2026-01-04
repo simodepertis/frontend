@@ -16,6 +16,13 @@ interface QuickMeeting {
   isActive: boolean;
 }
 
+function normalizeUploadUrl(u: string | null | undefined): string {
+  const s = String(u || '');
+  if (!s) return '';
+  if (s.startsWith('/uploads/')) return `/api${s}`;
+  return s;
+}
+
 const CATEGORIES = {
   DONNA_CERCA_UOMO: "Donna cerca Uomo",
   TRANS: "Trans",
@@ -37,7 +44,10 @@ export default function IncontriVelociAgenzia() {
 
   const loadMeetings = async () => {
     try {
-      const res = await fetch('/api/dashboard/quick-meetings');
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
+      const res = await fetch('/api/dashboard/quick-meetings', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (res.ok) {
         const data = await res.json();
         setMeetings(data.meetings);
@@ -53,8 +63,10 @@ export default function IncontriVelociAgenzia() {
     if (!confirm('Sei sicuro di voler eliminare questo annuncio?')) return;
 
     try {
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
       const res = await fetch(`/api/dashboard/quick-meetings/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
       if (res.ok) {
@@ -71,9 +83,10 @@ export default function IncontriVelociAgenzia() {
 
   const toggleActive = async (id: number, isActive: boolean) => {
     try {
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
       const res = await fetch(`/api/dashboard/quick-meetings/${id}/toggle`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ isActive: !isActive })
       });
 
@@ -201,7 +214,7 @@ export default function IncontriVelociAgenzia() {
                 <div className="w-32 h-32 bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
                   {meeting.photos[0] ? (
                     <img
-                      src={meeting.photos[0]}
+                      src={normalizeUploadUrl(meeting.photos[0])}
                       alt={meeting.title}
                       className="w-full h-full object-cover"
                     />

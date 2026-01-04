@@ -42,6 +42,7 @@ export default function NuovoIncontroVeloceAgenzia() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [formData, setFormData] = useState<FormData>({
     category: '',
@@ -152,19 +153,69 @@ export default function NuovoIncontroVeloceAgenzia() {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
+    const toUse = Array.from(files);
+    setPhotoFiles((prev) => [...prev, ...toUse]);
+
+    toUse.forEach(file => {
       const reader = new FileReader();
       reader.onload = (event) => {
-        if (event.target?.result) {
-          updateField('photos', [...formData.photos, event.target.result as string]);
+        const r = event.target?.result;
+        if (r) {
+          setFormData((prev) => ({ ...prev, photos: [...prev.photos, r as string] }));
         }
       };
       reader.readAsDataURL(file);
     });
+
+    e.currentTarget.value = '';
   };
 
   const removePhoto = (index: number) => {
     updateField('photos', formData.photos.filter((_, i) => i !== index));
+    setPhotoFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const compressFile = (file: File, maxW = 1600, quality = 0.75): Promise<File> => {
+    return new Promise((resolve) => {
+      try {
+        if (!file?.type?.startsWith('image/')) return resolve(file);
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const ratio = img.width > maxW ? maxW / img.width : 1;
+              const w = Math.max(1, Math.round(img.width * ratio));
+              const h = Math.max(1, Math.round(img.height * ratio));
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return resolve(file);
+              ctx.drawImage(img, 0, 0, w, h);
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) return resolve(file);
+                  const name = (file.name || 'photo').replace(/\.[^/.]+$/, '') + '.jpg';
+                  resolve(new File([blob], name, { type: 'image/jpeg' }));
+                },
+                'image/jpeg',
+                quality
+              );
+            } catch {
+              resolve(file);
+            }
+          };
+          img.onerror = () => resolve(file);
+          img.src = String(reader.result || '');
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+      } catch {
+        resolve(file);
+      }
+    });
   };
 
   const handleSubmit = async () => {
@@ -177,9 +228,14 @@ export default function NuovoIncontroVeloceAgenzia() {
     setLoading(true);
 
     try {
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
+      // 1) Crea annuncio SENZA inviare base64
       const res = await fetch('/api/dashboard/quick-meetings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           title: formData.title,
           description: formData.description,
@@ -190,12 +246,67 @@ export default function NuovoIncontroVeloceAgenzia() {
           phone: formData.phone,
           whatsapp: formData.whatsapp ? `https://wa.me/${formData.phone.replace(/\D/g, '')}` : null,
           age: formData.age ? parseInt(formData.age) : null,
-          photos: formData.photos,
+          photos: [],
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 giorni
         })
       });
 
       if (res.ok) {
+        const created = await res.json().catch(() => ({}));
+        const meetingId = created?.meeting?.id;
+
+        // 2) Upload foto (se presenti) e PATCH con URL
+        if (meetingId && photoFiles.length > 0) {
+          const uploadOne = async (file: File) => {
+            const compressed = await compressFile(file);
+            const fd = new FormData();
+            fd.append('files', compressed);
+
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 300000);
+            const upRes = await fetch(`/api/dashboard/quick-meetings/${meetingId}/upload`, {
+              method: 'POST',
+              headers: {
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              },
+              body: fd,
+              signal: controller.signal,
+            });
+            clearTimeout(timeout);
+
+            const upJson = await upRes.json().catch(() => ({}));
+            if (!upRes.ok) throw new Error(upJson?.error || `Errore upload (status ${upRes.status})`);
+            const url = Array.isArray(upJson?.uploaded) ? upJson.uploaded?.[0]?.url : null;
+            if (!url) throw new Error('Upload non riuscito: nessun URL restituito');
+            return url as string;
+          };
+
+          const CONCURRENCY = 1;
+          const urls: string[] = [];
+          let idx = 0;
+          const workers = Array.from({ length: Math.min(CONCURRENCY, photoFiles.length) }, async () => {
+            while (idx < photoFiles.length) {
+              const current = photoFiles[idx++];
+              const url = await uploadOne(current);
+              urls.push(url);
+            }
+          });
+          await Promise.all(workers);
+
+          const patchRes = await fetch(`/api/dashboard/quick-meetings/${meetingId}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ photos: urls }),
+          });
+          if (!patchRes.ok) {
+            const pj = await patchRes.json().catch(() => ({}));
+            throw new Error(pj?.error || 'Errore salvataggio foto');
+          }
+        }
+
         alert('✅ Annuncio creato con successo!');
         router.push('/dashboard/agenzia/incontri-veloci');
       } else {
