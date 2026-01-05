@@ -14,6 +14,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const offset = (pageNum - 1) * limitNum
     const now = new Date()
 
+    // Auto-heal: se esistono acquisti SuperTop attivi, assicura bumpPackage='SUPERTOP' sul meeting.
+    // Serve per correggere acquisti storici quando il codice prodotto era 'SUPERTOP' (senza underscore)
+    // e non veniva riconosciuto dal backend.
+    try {
+      const superPurchases = await prisma.quickMeetingPurchase.findMany({
+        where: {
+          status: 'ACTIVE',
+          expiresAt: { gt: now },
+          OR: [
+            { product: { code: 'SUPERTOP' } },
+            { product: { code: { startsWith: 'SUPERTOP_' } } },
+          ],
+        },
+        select: { meetingId: true },
+        take: 500,
+      })
+      const ids = Array.from(new Set(superPurchases.map((p) => p.meetingId))).filter(Boolean)
+      if (ids.length) {
+        await prisma.quickMeeting.updateMany({
+          where: { id: { in: ids }, bumpPackage: { not: 'SUPERTOP' } },
+          data: { bumpPackage: 'SUPERTOP' },
+        })
+      }
+    } catch {
+      // non bloccare la lista pubblica se l'auto-heal fallisce
+    }
+
     // Costruisci filtri
     const where: any = {
       isActive: true,

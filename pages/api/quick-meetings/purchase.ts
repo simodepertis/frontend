@@ -48,7 +48,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (wallet.balance < product.creditsCost) return res.status(402).json({ error: 'Crediti insufficienti' })
 
     const now = new Date()
-    const isSuperTop = String(product.code).startsWith('SUPERTOP_')
+    const codeStr = String(product.code)
+    const isSuperTop = codeStr === 'SUPERTOP' || codeStr.startsWith('SUPERTOP_')
     // Per i pacchetti normali (DAY/NIGHT) il primo giorno utile è il giorno successivo all'acquisto
     const scheduleStart = product.code === 'IMMEDIATE' || isSuperTop ? now : addDays(now, 1)
     const expires = addDays(scheduleStart, product.durationDays)
@@ -88,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // SuperTop: nessuna schedule, l'annuncio viene fissato in alto per la durata del pacchetto
         await tx.quickMeeting.update({
           where: { id: mid },
-          data: { bumpPackage: 'SUPERTOP' }
+          data: { bumpPackage: isSuperTop ? 'SUPERTOP' : null }
         })
       } else {
         if (hasDays) {
