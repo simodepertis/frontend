@@ -89,6 +89,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const coverUrl = normalizeUrl(photos[0]?.url) || null
     const p: any = (user as any).escortProfile
 
+    const now = new Date()
+    const tier = String(p?.tier ?? 'STANDARD')
+    const tierExpiresAt = p?.tierExpiresAt ? new Date(p.tierExpiresAt) : null
+    const girlOfTheDay = p?.girlOfTheDayDate
+      ? (new Date(p.girlOfTheDayDate).toISOString().slice(0,10) === new Date().toISOString().slice(0,10))
+      : false
+    const hasActivePackage = (tier && tier !== 'STANDARD' && !!tierExpiresAt && tierExpiresAt.getTime() > now.getTime()) || girlOfTheDay
+
     return res.json({
       userId: user.id,
       nome: (()=>{
@@ -96,9 +104,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })(),
       slug: user.slug,
       cities: p?.cities ?? [],
-      tier: p?.tier ?? 'STANDARD',
+      tier,
       tierExpiresAt: p?.tierExpiresAt ?? null,
-      girlOfTheDay: p?.girlOfTheDayDate ? (new Date(p.girlOfTheDayDate).toISOString().slice(0,10) === new Date().toISOString().slice(0,10)) : false,
+      girlOfTheDay,
       updatedAt: p?.updatedAt ?? null,
       services: p?.services ?? [],
       rates: p?.rates ?? [],
@@ -118,6 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } : null,
       profileViews: user.profileViews || 0,
       coverUrl,
+      hasActivePackage,
     })
   } catch (e) {
     return res.status(500).json({ error: 'Errore interno' })

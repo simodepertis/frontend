@@ -16,6 +16,16 @@ interface QuickMeeting {
   isActive: boolean;
 }
 
+interface QuickMeetingProduct {
+  id: number;
+  code: string;
+  label: string;
+  type: "DAY" | "NIGHT" | string;
+  quantityPerWindow: number;
+  durationDays: number;
+  creditsCost: number;
+}
+
 function normalizeUploadUrl(u: string | null | undefined): string {
   const s = String(u || '');
   if (!s) return '';
@@ -38,6 +48,28 @@ export default function IncontriVelociAgenzia() {
   const [city, setCity] = useState<string>('Milano');
   const [limit, setLimit] = useState<number>(20);
 
+  const [promoMeeting, setPromoMeeting] = useState<QuickMeeting | null>(null);
+  const [packages, setPackages] = useState<QuickMeetingProduct[]>([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [purchaseLoadingCode, setPurchaseLoadingCode] = useState<string | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
+  const [meetingHasPackage, setMeetingHasPackage] = useState<Record<number, boolean>>({});
+  const [selectedPackage, setSelectedPackage] = useState<QuickMeetingProduct | null>(null);
+  const [activePurchase, setActivePurchase] = useState<{
+    id: number;
+    productCode: string;
+    productLabel: string;
+    type: string;
+    expiresAt: string;
+    durationDays: number;
+    startedAt: string;
+  } | null>(null);
+  const [daySlots, setDaySlots] = useState<{ date: string; slots: number[] }[]>([]);
+  const [scheduleSummary, setScheduleSummary] = useState<{ runAt: string; window: string }[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
+  const [superTopDays, setSuperTopDays] = useState<number>(3);
+
   useEffect(() => {
     loadMeetings();
   }, []);
@@ -51,11 +83,277 @@ export default function IncontriVelociAgenzia() {
       if (res.ok) {
         const data = await res.json();
         setMeetings(data.meetings);
+
+        // dopo aver caricato gli annunci, inizializza la mappa dei pacchetti attivi
+        if (token && Array.isArray(data.meetings) && data.meetings.length > 0) {
+          try {
+            const entries = await Promise.all(
+              data.meetings.map(async (m: QuickMeeting) => {
+                try {
+                  const r = await fetch(`/api/quick-meetings/schedule?meetingId=${m.id}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!r.ok) return [m.id, false] as const;
+                  const d = await r.json();
+                  return [m.id, !!d?.purchase] as const;
+                } catch {
+                  return [m.id, false] as const;
+                }
+              })
+            );
+
+            const map: Record<number, boolean> = {};
+            for (const [id, has] of entries) {
+              map[id] = has;
+            }
+            setMeetingHasPackage(map);
+          } catch {
+            // lascia mappa vuota
+          }
+        }
       }
     } catch (error) {
       console.error('Errore caricamento:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openPromo = async (meeting: QuickMeeting) => {
+    setPromoMeeting(meeting);
+    setPromoError(null);
+    setPromoSuccess(null);
+    setLoadingPackages(true);
+    setSelectedPackage(null);
+    setActivePurchase(null);
+    setDaySlots([]);
+    setScheduleSummary([]);
+    setLoadingSchedule(true);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+      const [resPackages] = await Promise.all([
+        fetch('/api/quick-meetings/packages'),
+        (async () => {
+          if (!token) return null;
+          try {
+            const r = await fetch(`/api/quick-meetings/schedule?meetingId=${meeting.id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!r.ok) return null;
+            const d = await r.json();
+            if (!d) return null;
+
+            if (d.purchase) {
+              setActivePurchase({
+                id: d.purchase.id,
+                productCode: d.purchase.productCode,
+                productLabel: d.purchase.productLabel,
+                type: d.purchase.type,
+                expiresAt: d.purchase.expiresAt,
+                durationDays: d.purchase.durationDays,
+                startedAt: d.purchase.startedAt,
+              });
+            } else {
+              setActivePurchase(null);
+            }
+
+            setMeetingHasPackage((prev) => ({
+              ...prev,
+              [meeting.id]: !!d.purchase,
+            }));
+
+            const schedules = Array.isArray(d.schedules) ? d.schedules : [];
+            setScheduleSummary(
+              schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
+            );
+
+            const today = new Date();
+            const todayIso = today.toISOString().slice(0, 10);
+            let templateHour: number | null = null;
+            if (schedules.length > 0) {
+              const preferred = schedules.find((s: any) => s.window === 'DAY') || schedules[0];
+              const dt = new Date(preferred.runAt);
+              templateHour = dt.getUTCHours();
+            }
+            const slots = templateHour !== null ? [templateHour] : [];
+            setDaySlots([{ date: todayIso, slots }]);
+          } catch {
+            return null;
+          }
+          return null;
+        })()
+      ]);
+
+      if (!resPackages.ok) {
+        const data = await resPackages.json().catch(() => ({}));
+        setPromoError(data.error || 'Impossibile caricare i pacchetti');
+        setPackages([]);
+        return;
+      }
+      const data = await resPackages.json();
+      setPackages(data.items || []);
+    } catch (e) {
+      console.error('Errore caricamento pacchetti', e);
+      setPromoError('Errore durante il caricamento dei pacchetti');
+    } finally {
+      setLoadingPackages(false);
+      setLoadingSchedule(false);
+    }
+  };
+
+  const closePromo = () => {
+    setPromoMeeting(null);
+    setPackages([]);
+    setPromoError(null);
+    setPromoSuccess(null);
+    setPurchaseLoadingCode(null);
+    setSelectedPackage(null);
+    setActivePurchase(null);
+    setDaySlots([]);
+    setScheduleSummary([]);
+  };
+
+  const toggleDaySlot = (date: string, hour: number) => {
+    setDaySlots((prev) => {
+      const copy = [...prev];
+      const idx = copy.findIndex((d) => d.date === date);
+      if (idx === -1) {
+        return prev;
+      }
+      const day = copy[idx];
+      let slots = day.slots || [];
+      const type = activePurchase?.type || selectedPackage?.type;
+      if (type === 'DAY') {
+        slots = slots.includes(hour) ? [] : [hour];
+      } else {
+        slots = slots.includes(hour)
+          ? slots.filter((h) => h !== hour)
+          : [...slots, hour];
+      }
+      copy[idx] = { ...day, slots };
+      return copy;
+    });
+  };
+
+  const handlePurchase = async (code: string) => {
+    if (!promoMeeting) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+    if (!token) {
+      alert('Devi effettuare il login per acquistare un pacchetto');
+      return;
+    }
+    setPromoError(null);
+    setPromoSuccess(null);
+
+    const isSuperTopPseudo = code === 'SUPERTOP';
+    let effectiveCode = code;
+
+    // Deriva i pacchetti SuperTop (SUPERTOP_*) e gli altri
+    const superTopPackages = packages.filter((p) => p.code.startsWith('SUPERTOP_'));
+    const superTopByDays: Record<number, QuickMeetingProduct> = {};
+    for (const p of superTopPackages) {
+      superTopByDays[p.durationDays] = p;
+    }
+    const availableSuperTopDays = Object.keys(superTopByDays)
+      .map((d) => Number(d))
+      .filter((d) => Number.isFinite(d))
+      .sort((a, b) => a - b);
+
+    if (isSuperTopPseudo) {
+      const target = superTopByDays[superTopDays] || availableSuperTopDays.map((d) => superTopByDays[d])[0];
+      if (!target) {
+        alert('Pacchetto SuperTop non disponibile');
+        return;
+      }
+      effectiveCode = target.code;
+    }
+
+    setPurchaseLoadingCode(effectiveCode);
+    const pkg = packages.find((p) => p.code === effectiveCode) || null;
+    if (!selectedPackage && pkg) {
+      setSelectedPackage(pkg);
+    }
+    try {
+      const res = await fetch('/api/quick-meetings/purchase', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(
+          effectiveCode === 'IMMEDIATE' || effectiveCode.startsWith('SUPERTOP_')
+            ? { meetingId: promoMeeting.id, code: effectiveCode, slots: [] }
+            : selectedPackage?.type === 'DAY' && daySlots.length > 0
+              ? { meetingId: promoMeeting.id, code: effectiveCode, slots: [], days: daySlots }
+              : { meetingId: promoMeeting.id, code: effectiveCode, slots: [] }
+        )
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPromoError(data.error || 'Impossibile completare l\'acquisto');
+        return;
+      }
+      setPromoSuccess('Pacchetto acquistato con successo');
+      setMeetingHasPackage((prev) =>
+        promoMeeting ? { ...prev, [promoMeeting.id]: true } : prev
+      );
+    } catch (e) {
+      console.error('Errore acquisto pacchetto', e);
+      setPromoError('Errore durante l\'acquisto del pacchetto');
+    } finally {
+      setPurchaseLoadingCode(null);
+    }
+  };
+
+  const handleUpdateSchedule = async () => {
+    if (!promoMeeting) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+    if (!token) {
+      alert('Devi effettuare il login per modificare le fasce orarie');
+      return;
+    }
+    setPromoError(null);
+    setPromoSuccess(null);
+    setLoadingSchedule(true);
+    try {
+      const res = await fetch('/api/quick-meetings/update-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          meetingId: promoMeeting.id,
+          days: daySlots,
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPromoError(data.error || 'Impossibile aggiornare la programmazione');
+        return;
+      }
+      setPromoSuccess('Programmazione aggiornata con successo');
+
+      const resSchedule = await fetch(`/api/quick-meetings/schedule?meetingId=${promoMeeting.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (resSchedule.ok) {
+        const d = await resSchedule.json();
+        if (d) {
+          const schedules = Array.isArray(d.schedules) ? d.schedules : [];
+          setScheduleSummary(
+            schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
+          );
+          const today = new Date();
+          const todayIso = today.toISOString().slice(0, 10);
+          setDaySlots([{ date: todayIso, slots: [] }]);
+        }
+      }
+    } catch (e) {
+      console.error('Errore update schedule', e);
+      setPromoError('Errore durante l\'aggiornamento delle fasce orarie');
+    } finally {
+      setLoadingSchedule(false);
     }
   };
 
@@ -279,6 +577,15 @@ export default function IncontriVelociAgenzia() {
                     >
                       👁️ Anteprima
                     </button>
+
+                    <button
+                      onClick={() => openPromo(meeting)}
+                      className="px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm rounded transition-colors"
+                    >
+                      {meetingHasPackage[meeting.id]
+                        ? '🚀 Gestisci pacchetto'
+                        : '🚀 Promuovi'}
+                    </button>
                     
                     <button
                       onClick={() => handleDelete(meeting.id)}
@@ -293,6 +600,215 @@ export default function IncontriVelociAgenzia() {
           ))}
         </div>
       )}
+
+      {promoMeeting && (() => {
+        const superTopPackages = packages.filter((p) => p.code.startsWith('SUPERTOP_'));
+        const nonSuperTopPackages = packages.filter((p) => !p.code.startsWith('SUPERTOP_'));
+        const superTopByDays: Record<number, QuickMeetingProduct> = {};
+        for (const p of superTopPackages) {
+          superTopByDays[p.durationDays] = p;
+        }
+        const availableSuperTopDays = Object.keys(superTopByDays)
+          .map((d) => Number(d))
+          .filter((d) => Number.isFinite(d))
+          .sort((a, b) => a - b);
+
+        return (
+          <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-50 overflow-y-auto">
+            <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-3xl w-full mx-4 mt-10 mb-10 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-1">Promuovi Incontro Veloce</h2>
+                  <p className="text-gray-400 text-sm">Annuncio: <span className="text-pink-400 font-semibold">{promoMeeting.title}</span></p>
+                </div>
+                <button onClick={closePromo} className="text-gray-400 hover:text-gray-200 text-xl">✕</button>
+              </div>
+
+              {promoError && (
+                <div className="mb-3 text-sm text-red-400 bg-red-900/30 border border-red-700 rounded px-3 py-2">
+                  {promoError}
+                </div>
+              )}
+              {promoSuccess && (
+                <div className="mb-3 text-sm text-emerald-300 bg-emerald-900/30 border border-emerald-700 rounded px-3 py-2">
+                  {promoSuccess}
+                </div>
+              )}
+
+              {loadingPackages ? (
+                <div className="py-10 text-center text-gray-400">Caricamento pacchetti...</div>
+              ) : packages.length === 0 ? (
+                <div className="py-10 text-center text-gray-400">Nessun pacchetto disponibile al momento.</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {superTopPackages.length > 0 && availableSuperTopDays.length > 0 && (
+                      (() => {
+                        const selectedDays = availableSuperTopDays.includes(superTopDays)
+                          ? superTopDays
+                          : availableSuperTopDays[0];
+                        const superPkg = superTopByDays[selectedDays];
+                        if (!superPkg) return null;
+                        const isSelected = !!selectedPackage && selectedPackage.code.startsWith('SUPERTOP_');
+                        return (
+                          <button
+                            key="supertop-virtual"
+                            type="button"
+                            onClick={() => {
+                              setSelectedPackage(superPkg);
+                              setSuperTopDays(selectedDays);
+                              setDaySlots([]);
+                            }}
+                            className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300 ${
+                              isSelected ? 'ring-2 ring-pink-400' : ''
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                  <span className="text-yellow-300">💎</span>
+                                  <span>SuperTop</span>
+                                </h3>
+                                <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">SuperTop</span>
+                              </div>
+                              <div className="text-sm text-gray-300 mb-2 space-y-1">
+                                <p>Metti il tuo annuncio in evidenza fissa in alto.</p>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="text-gray-300">Durata:</span>
+                                  <select
+                                    value={selectedDays}
+                                    onChange={(e) => {
+                                      const v = Number(e.target.value) || selectedDays;
+                                      setSuperTopDays(v);
+                                    }}
+                                    className="bg-black/40 border border-yellow-500/60 rounded px-2 py-1 text-xs text-yellow-200"
+                                  >
+                                    {availableSuperTopDays.map((d) => (
+                                      <option key={d} value={d}>
+                                        {d} {d === 1 ? 'giorno' : 'giorni'}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-4 flex items-center justify-between">
+                              <div className="text-lg font-bold text-pink-300">{superPkg.creditsCost} crediti</div>
+                              <span className="text-xs text-gray-300">{isSelected ? 'Selezionato' : 'Clicca per acquistare'}</span>
+                            </div>
+                          </button>
+                        );
+                      })()
+                    )}
+
+                    {nonSuperTopPackages.map((p) => {
+                      const isSelected = selectedPackage?.code === p.code;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedPackage(p);
+                            if (p.code === 'IMMEDIATE') {
+                              setDaySlots([]);
+                            } else if (p.type === 'DAY') {
+                              const today = new Date();
+                              const iso = today.toISOString().slice(0, 10);
+                              setDaySlots([{ date: iso, slots: [] }]);
+                            } else {
+                              setDaySlots([]);
+                            }
+                          }}
+                          className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
+                            p.type === 'DAY'
+                              ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
+                              : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
+                          } ${isSelected ? 'ring-2 ring-pink-400' : ''}`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-lg font-semibold text-white flex items-center gap-2"><span>{p.label}</span></h3>
+                              <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
+                                {p.code === 'IMMEDIATE' ? 'Risalita immediata' : p.type === 'DAY' ? 'Giorno' : 'Notte'}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-300 mb-2">
+                              {p.code === 'IMMEDIATE' ? (
+                                <span>Esegui una risalita immediata utilizzando 10 crediti.</span>
+                              ) : p.type === 'DAY' ? (
+                                <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
+                              ) : (
+                                <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
+                              )}
+                            </div>
+                            {p.code !== 'IMMEDIATE' && (
+                              <div className="text-sm text-gray-400">Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}</div>
+                            )}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between">
+                            <div className="text-lg font-bold text-pink-300">{p.creditsCost} crediti</div>
+                            <span className="text-xs text-gray-300">{isSelected ? 'Selezionato' : 'Clicca per selezionare'}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedPackage && (
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => handlePurchase(selectedPackage.code.startsWith('SUPERTOP_') ? 'SUPERTOP' : selectedPackage.code)}
+                        disabled={!!purchaseLoadingCode}
+                        className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-700 text-white text-sm rounded transition-colors"
+                      >
+                        {purchaseLoadingCode ? 'Acquisto…' : 'Acquista'}
+                      </button>
+                    </div>
+                  )}
+
+                  {daySlots.length > 0 && (
+                    <div className="mt-6 border-t border-gray-700 pt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-semibold text-white">Fasce orarie per giorno</h3>
+                        <button
+                          onClick={handleUpdateSchedule}
+                          disabled={loadingSchedule}
+                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white text-xs rounded"
+                        >
+                          {loadingSchedule ? 'Salvo…' : 'Salva fasce'}
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {daySlots.map((day) => (
+                          <div key={day.date} className="border border-gray-700/70 rounded-lg p-3 bg-black/20">
+                            <div className="text-xs text-gray-300 mb-2">{new Date(day.date + 'T00:00:00').toLocaleDateString('it-IT')}</div>
+                            <div className="grid grid-cols-6 gap-2">
+                              {Array.from({ length: 16 }).map((_, i) => {
+                                const hour = i + 8;
+                                const selected = day.slots.includes(hour);
+                                return (
+                                  <button
+                                    key={hour}
+                                    type="button"
+                                    onClick={() => toggleDaySlot(day.date, hour)}
+                                    className={`text-xs px-2 py-1 rounded border ${selected ? 'bg-pink-600 border-pink-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'}`}
+                                  >
+                                    {String(hour).padStart(2, '0')}:00
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

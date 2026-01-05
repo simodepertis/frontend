@@ -201,6 +201,7 @@ interface QuickMeeting {
   photos: string[];
   publishedAt: string;
   bumpPackage?: string;
+  hasActivePackage?: boolean;
   views: number;
   importedReviews?: ImportedReview[];
   reviewCount?: number;
@@ -493,8 +494,9 @@ export default function IncontroVeloceDetailPage() {
   const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
   const isImported = !!meeting.sourceUrl;
   const hasPhotos = Array.isArray(meeting.photos) && meeting.photos.length > 0;
+  const allowAllPhotos = !!meeting.hasActivePackage || !!meeting.bumpPackage;
   const visiblePhotos = hasPhotos
-    ? (meeting.bumpPackage ? meeting.photos : (meeting.photos?.slice(0, 1) || []))
+    ? (allowAllPhotos ? meeting.photos : (meeting.photos?.slice(0, 1) || []))
         .map((p) => normalizeUploadUrl(p))
     : ["/placeholder.svg"];
 

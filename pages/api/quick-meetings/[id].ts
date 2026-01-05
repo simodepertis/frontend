@@ -180,12 +180,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
+      const now = new Date()
       const meeting = await prisma.quickMeeting.findFirst({
         where: {
           id: meetingId,
           isActive: true,
           expiresAt: {
-            gt: new Date()
+            gt: now
           }
         },
         include: {
@@ -239,12 +240,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }))
         .filter((r: any) => !isBadText(r.reviewText))
 
+      const hasActivePurchase = await prisma.quickMeetingPurchase.findFirst({
+        where: {
+          meetingId,
+          status: 'ACTIVE',
+          expiresAt: { gt: now },
+        },
+        select: { id: true },
+      })
+
       return res.json({
         meeting: {
           ...meeting,
           photos: sanitizePhotos((meeting as any).photos),
           importedReviews,
           reviewCount: importedReviews.length,
+          hasActivePackage: !!((meeting as any)?.bumpPackage) || !!hasActivePurchase,
         }
       })
     } catch (error) {

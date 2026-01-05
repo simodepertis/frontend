@@ -384,6 +384,20 @@ export default function EscortDetailPage() {
     })();
   }, [data?.userId]);
 
+  const allowAllPhotos = useMemo(() => {
+    try { return !!(data as any)?.hasActivePackage; } catch { return false; }
+  }, [data]);
+
+  const visiblePhotos = useMemo<string[]>(() => {
+    const arr = Array.isArray(escort.foto) ? escort.foto : [];
+    if (arr.length === 0) return ["/placeholder.svg"];
+    return allowAllPhotos ? arr : arr.slice(0, 1);
+  }, [escort.foto, allowAllPhotos]);
+
+  useEffect(() => {
+    if (active > visiblePhotos.length - 1) setActive(0);
+  }, [active, visiblePhotos.length]);
+
   // Se il container non è pronto al primo giro, ritenta tra 300ms
   useEffect(() => {
     if (!mapRef.current && !mapDivRef.current) {
@@ -551,7 +565,7 @@ export default function EscortDetailPage() {
           <div className="max-w-[820px] mx-auto">
           <div className="relative w-full rounded-lg overflow-hidden" style={{ paddingTop: `${mainAspectPct}%` }}>
             <img
-              src={(escort.foto[active] || escort.foto[0] || '/placeholder.svg')}
+              src={(visiblePhotos[active] || visiblePhotos[0] || '/placeholder.svg')}
               alt={`${escort.nome} principale`}
               className="object-contain absolute inset-0 w-full h-full cursor-zoom-in bg-gray-900"
               onClick={()=>setLightboxOpen(true)}
@@ -569,7 +583,7 @@ export default function EscortDetailPage() {
               onError={(e)=>{ const t=e.currentTarget as HTMLImageElement; if (t.src.indexOf('/placeholder.svg')===-1) t.src='/placeholder.svg'; }}
             />
             {/* Watermark centrale come nelle card */}
-            {escort.foto[active] && escort.foto[active] !== '/placeholder.svg' && (
+            {visiblePhotos[active] && visiblePhotos[active] !== '/placeholder.svg' && (
               <Watermark />
             )}
             {escort.girlOfTheDay && (
@@ -581,7 +595,7 @@ export default function EscortDetailPage() {
             )}
           </div>
           <div className="mt-3 grid grid-cols-4 sm:grid-cols-6 gap-2">
-            {escort.foto.map((src, idx) => (
+            {visiblePhotos.map((src, idx) => (
               <button
                 key={idx}
                 onClick={() => setActive(idx)}
@@ -1169,7 +1183,7 @@ export default function EscortDetailPage() {
           </Button>
           <Button 
             className="bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700" 
-            onClick={()=>{ setReportPhotoUrl(escort.foto[active]||""); setReportReason(""); setShowReportPhoto(true); }}
+            onClick={()=>{ setReportPhotoUrl(visiblePhotos[active]||""); setReportReason(""); setShowReportPhoto(true); }}
           >
             Segnala foto
           </Button>
@@ -1205,7 +1219,7 @@ export default function EscortDetailPage() {
             <div className="text-lg font-semibold text-white mb-2">Segnala foto</div>
             <div className="text-sm text-gray-300 mb-2">Stai segnalando la foto corrente.</div>
             <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-gray-700 mb-3">
-              <img src={reportPhotoUrl || escort.foto[active] || '/placeholder.svg'} alt="Foto da segnalare" className="object-cover absolute inset-0 w-full h-full" />
+              <img src={reportPhotoUrl || visiblePhotos[active] || '/placeholder.svg'} alt="Foto da segnalare" className="object-cover absolute inset-0 w-full h-full" />
               <Watermark />
             </div>
             <input value={reportReason} onChange={e=>setReportReason(e.target.value)} placeholder="Motivo (opzionale)" className="w-full bg-gray-700 border border-gray-600 text-white rounded-md px-3 py-2" />
@@ -1214,7 +1228,7 @@ export default function EscortDetailPage() {
               <Button onClick={async()=>{
                 try{
                   const token = localStorage.getItem('auth-token')||'';
-                  const r = await fetch('/api/report/photo', { method:'POST', headers:{ 'Content-Type':'application/json', ...(token? { Authorization:`Bearer ${token}` }: {}) }, body: JSON.stringify({ slug, photoUrl: reportPhotoUrl || escort.foto[active], reason: reportReason }) });
+                  const r = await fetch('/api/report/photo', { method:'POST', headers:{ 'Content-Type':'application/json', ...(token? { Authorization:`Bearer ${token}` }: {}) }, body: JSON.stringify({ slug, photoUrl: reportPhotoUrl || visiblePhotos[active], reason: reportReason }) });
                   const j = await r.json().catch(()=>({}));
                   if(!r.ok){ alert(j?.error||'Errore invio segnalazione foto'); return; }
                   alert('Segnalazione foto inviata'); setShowReportPhoto(false); setReportReason("");
@@ -1228,7 +1242,7 @@ export default function EscortDetailPage() {
       {lightboxOpen && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center" onClick={()=>setLightboxOpen(false)}>
           <img
-            src={(escort.foto[active] || escort.foto[0] || '/placeholder.svg')}
+            src={(visiblePhotos[active] || visiblePhotos[0] || '/placeholder.svg')}
             alt={`${escort.nome} fullscreen`}
             className="max-w-[96vw] max-h-[96vh] object-contain"
           />
