@@ -300,7 +300,7 @@ export default function IncontriVelociPage() {
             </h2>
             <p className="text-xs md:text-sm text-gray-400">Sempre in alto, visibilità massima</p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-[320px]">
             {meetings
               .filter((m) => m.bumpPackage === 'SUPERTOP')
               .map((meeting) => {
@@ -314,9 +314,9 @@ export default function IncontriVelociPage() {
                     href={`/incontri-veloci/${meeting.id}`}
                     className="block group"
                   >
-                    <div className="bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors">
+                    <div className="h-full bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors flex flex-col">
                       <>
-                        <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
+                        <div className="relative w-full h-44 bg-gray-700 overflow-hidden flex-shrink-0">
                           <img
                             src={cover || '/placeholder.svg'}
                             alt={meeting.title}
@@ -338,8 +338,8 @@ export default function IncontriVelociPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="p-3 space-y-2">
-                          <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-yellow-300">
+                        <div className="p-3 space-y-2 flex-1 flex flex-col">
+                          <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-yellow-300">
                             {meeting.title}
                           </h3>
                           <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
@@ -348,30 +348,32 @@ export default function IncontriVelociPage() {
                             {meeting.age && <span> {meeting.age} anni</span>}
                           </div>
 
-                          {(phone || whatsapp) && (
-                            <div className="flex items-center gap-2 pt-1">
-                              {phone && (
-                                <a
-                                  href={`tel:${phone}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="px-2 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white"
-                                >
-                                  Chiama
-                                </a>
-                              )}
-                              {whatsapp && (
-                                <a
-                                  href={`https://wa.me/${whatsapp.replace('+','')}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="px-2 py-1 text-[11px] font-semibold rounded bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                  WhatsApp
-                                </a>
-                              )}
-                            </div>
-                          )}
+                          <div className="mt-auto">
+                            {(phone || whatsapp) && (
+                              <div className="flex items-center gap-2 pt-1">
+                                {phone && (
+                                  <a
+                                    href={`tel:${phone}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="px-2 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  >
+                                    Chiama
+                                  </a>
+                                )}
+                                {whatsapp && (
+                                  <a
+                                    href={`https://wa.me/${whatsapp.replace('+','')}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="px-2 py-1 text-[11px] font-semibold rounded bg-green-600 hover:bg-green-700 text-white"
+                                  >
+                                    WhatsApp
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </>
                     </div>

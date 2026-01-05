@@ -145,8 +145,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Annuncio non trovato' });
       }
 
-      await prisma.quickMeeting.delete({
-        where: { id: meetingId }
+      await prisma.$transaction(async (tx) => {
+        // Elimina prima le schedules collegate alle purchases del meeting (FK)
+        await tx.quickMeetingBumpSchedule.deleteMany({
+          where: {
+            purchase: {
+              meetingId,
+            },
+          },
+        });
+
+        // Elimina le purchases collegate (FK)
+        await tx.quickMeetingPurchase.deleteMany({
+          where: {
+            meetingId,
+          },
+        });
+
+        // Infine elimina il meeting (altre relazioni hanno onDelete: Cascade nello schema)
+        await tx.quickMeeting.delete({
+          where: { id: meetingId },
+        });
       });
 
       return res.status(200).json({ success: true });

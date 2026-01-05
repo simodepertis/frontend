@@ -718,6 +718,22 @@ export default function IncontriVelociAgenzia() {
                 <button onClick={closePromo} className="text-gray-400 hover:text-gray-200 text-xl">✕</button>
               </div>
 
+              {activePurchase && (
+                <div className="mb-3 text-sm text-gray-200 bg-gray-800/80 border border-gray-700 rounded px-3 py-2">
+                  <div className="font-semibold text-pink-300 mb-1">Pacchetto attivo</div>
+                  <div className="text-xs text-gray-200">
+                    <div>{activePurchase.productLabel}</div>
+                    <div>
+                      Tipo: {activePurchase.type === 'DAY' ? 'Giorno' : 'Notte'} · Durata: {activePurchase.durationDays}{' '}
+                      {activePurchase.durationDays === 1 ? 'giorno' : 'giorni'}
+                    </div>
+                    <div>
+                      Scadenza: {new Date(activePurchase.expiresAt).toLocaleString('it-IT')}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {promoError && (
                 <div className="mb-3 text-sm text-red-400 bg-red-900/30 border border-red-700 rounded px-3 py-2">
                   {promoError}
@@ -753,6 +769,7 @@ export default function IncontriVelociAgenzia() {
                                 onClick={() => {
                                   setSelectedPackage(superPkg);
                                   setSuperTopDays(selectedDays);
+                                  // per SuperTop non ci sono fasce orarie
                                   setDaySlots([]);
                                 }}
                                 className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300 ${
@@ -805,13 +822,14 @@ export default function IncontriVelociAgenzia() {
                               type="button"
                               onClick={() => {
                                 setSelectedPackage(p);
-                                if (p.code === 'IMMEDIATE') {
+                                if (!activePurchase && p.code === 'IMMEDIATE') {
+                                  // Per la risalita immediata non devono mai esserci fasce orarie
                                   setDaySlots([]);
-                                } else if (p.type === 'DAY') {
+                                } else if (!activePurchase && p.type === 'DAY') {
                                   const today = new Date();
                                   const iso = today.toISOString().slice(0, 10);
                                   setDaySlots([{ date: iso, slots: [] }]);
-                                } else {
+                                } else if (!activePurchase && p.type !== 'DAY') {
                                   setDaySlots([]);
                                 }
                               }}
@@ -849,60 +867,157 @@ export default function IncontriVelociAgenzia() {
                           );
                         })}
                       </div>
-
-                      {selectedPackage && (
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => handlePurchase(selectedPackage.code.startsWith('SUPERTOP_') ? 'SUPERTOP' : selectedPackage.code)}
-                            disabled={!!purchaseLoadingCode}
-                            className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-700 text-white text-sm rounded transition-colors"
-                          >
-                            {purchaseLoadingCode ? 'Acquisto…' : 'Acquista'}
-                          </button>
-                        </div>
-                      )}
                     </>
                   )}
 
-                  {daySlots.length > 0 && (
-                    <div className="mt-6 border-t border-gray-700 pt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-semibold text-white">Fasce orarie per giorno</h3>
-                        <button
-                          onClick={handleUpdateSchedule}
-                          disabled={loadingSchedule}
-                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 text-white text-xs rounded"
-                        >
-                          {loadingSchedule ? 'Salvo…' : 'Salva fasce'}
-                        </button>
+                  {/* Fasce orarie: solo per pacchetti GIORNO non SuperTop */}
+                  {(() => {
+                    const currentType = activePurchase?.type || selectedPackage?.type;
+                    const currentCode = activePurchase?.productCode || selectedPackage?.code || '';
+                    const isSuperTopCurrent = currentCode.startsWith('SUPERTOP_');
+                    return currentType === 'DAY' && !isSuperTopCurrent && daySlots.length > 0;
+                  })() && (
+                    <div className="mb-4 border-t border-gray-700 pt-4">
+                      <h3 className="text-sm font-semibold text-white mb-2">Fasce orarie per giorno</h3>
+                      <p className="text-xs text-gray-400 mb-3">
+                        {(activePurchase?.type || selectedPackage?.type) === 'DAY'
+                          ? 'Per ogni giorno del pacchetto seleziona una fascia oraria (08:00 - 24:00) in cui avverrà la risalita.'
+                          : 'Per ogni notte del pacchetto seleziona una o più fasce orarie notturne (22:00 - 08:00). Le risalite verranno distribuite tra gli orari scelti.'}
+                      </p>
+
+                      <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                        {daySlots.map((day) => {
+                          const dateLabel = new Date(day.date + 'T00:00:00').toLocaleDateString('it-IT');
+                          return (
+                            <div key={day.date} className="border border-gray-700/70 rounded-lg p-3 bg-black/20">
+                              <div className="text-xs font-semibold text-gray-200 mb-2">
+                                Giorno: {dateLabel}
+                              </div>
+                              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 text-xs">
+                                {Array.from({ length: 24 }).map((_, h) => {
+                                  const labelStart = h.toString().padStart(2, '0') + ':00';
+                                  const labelEnd = ((h + 1) % 24).toString().padStart(2, '0') + ':00';
+
+                                  const isDaySlot = h >= 8 && h <= 23;
+                                  const isNightSlot = h >= 22 || h <= 7;
+
+                                  const type = activePurchase?.type || selectedPackage?.type;
+                                  const canEditSlots = !activePurchase;
+                                  const enabled = canEditSlots && (type === 'DAY' ? isDaySlot : isNightSlot);
+                                  const checked = day.slots.includes(h);
+
+                                  if (!enabled) {
+                                    return (
+                                      <div
+                                        key={h}
+                                        className="flex items-center gap-1 px-2 py-1 rounded bg-gray-800/60 text-gray-600 cursor-default border border-gray-700/60"
+                                      >
+                                        <span
+                                          className={`w-3 h-3 rounded border ${
+                                            checked ? 'bg-white border-white' : 'border-gray-400'
+                                          }`}
+                                        />
+                                        <span>
+                                          {labelStart} - {labelEnd}
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={h}
+                                      onClick={() => toggleDaySlot(day.date, h)}
+                                      className={`flex items-center gap-1 px-2 py-1 rounded border text-left transition-colors ${
+                                        checked
+                                          ? 'bg-pink-600/80 border-pink-400 text-white'
+                                          : 'bg-gray-800/80 border-gray-600 text-gray-100 hover:border-pink-400'
+                                      }`}
+                                    >
+                                      <span
+                                        className={`w-3 h-3 rounded border ${
+                                          checked ? 'bg-white border-white' : 'border-gray-400'
+                                        }`}
+                                      />
+                                      <span>
+                                        {labelStart} - {labelEnd}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="space-y-3">
-                        {daySlots.map((day) => (
-                          <div key={day.date} className="border border-gray-700/70 rounded-lg p-3 bg-black/20">
-                            <div className="text-xs text-gray-300 mb-2">{new Date(day.date + 'T00:00:00').toLocaleDateString('it-IT')}</div>
-                            <div className="grid grid-cols-6 gap-2">
-                              {Array.from({ length: 16 }).map((_, i) => {
-                                const hour = i + 8;
-                                const selected = day.slots.includes(hour);
-                                return (
-                                  <button
-                                    key={hour}
-                                    type="button"
-                                    onClick={() => toggleDaySlot(day.date, hour)}
-                                    className={`text-xs px-2 py-1 rounded border ${selected ? 'bg-pink-600 border-pink-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'}`}
-                                  >
-                                    {String(hour).padStart(2, '0')}:00
-                                  </button>
-                                );
-                              })}
+                    </div>
+                  )}
+
+                  {/* Programmazione risalite */}
+                  <div className="mt-4 border-t border-gray-700 pt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-white">Programmazione risalite</h3>
+                      {loadingSchedule && (
+                        <span className="text-xs text-gray-400">Aggiornamento...</span>
+                      )}
+                    </div>
+                    {scheduleSummary.length === 0 ? (
+                      <p className="text-xs text-gray-500">
+                        Nessuna risalita futura programmata al momento. Acquista un pacchetto o aggiorna le fasce orarie per generare la programmazione.
+                      </p>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto rounded border border-gray-700/60 bg-black/20 p-2 text-xs text-gray-200">
+                        {Object.entries(
+                          scheduleSummary.reduce((acc: Record<string, string[]>, s) => {
+                            const d = new Date(s.runAt);
+                            const isNight = (activePurchase?.type || selectedPackage?.type) === 'NIGHT';
+                            const displayDate = isNight ? d : new Date(d.getTime());
+                            const dateKey = displayDate.toLocaleDateString('it-IT');
+                            const h = d.getUTCHours().toString().padStart(2, '0');
+                            const m = d.getUTCMinutes().toString().padStart(2, '0');
+                            const time = `${h}:${m}`;
+                            if (!acc[dateKey]) acc[dateKey] = [];
+                            acc[dateKey].push(time);
+                            return acc;
+                          }, {})
+                        ).map(([day, times]) => (
+                          <div key={day} className="mb-1">
+                            <div className="font-semibold text-gray-100">{day}</div>
+                            <div className="text-gray-300">
+                              {times.sort().join(', ')}
                             </div>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </>
               )}
+
+              <div className="flex items-center justify-between mt-2 gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  {!activePurchase && (
+                    <button
+                      onClick={() => selectedPackage && handlePurchase(selectedPackage.code)}
+                      disabled={!selectedPackage || purchaseLoadingCode !== null}
+                      className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+                    >
+                      {!selectedPackage
+                        ? 'Seleziona un pacchetto'
+                        : purchaseLoadingCode
+                          ? 'Acquisto in corso...'
+                          : 'Acquista pacchetto'}
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={closePromo}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors"
+                >
+                  Chiudi
+                </button>
+              </div>
             </div>
           </div>
         );
