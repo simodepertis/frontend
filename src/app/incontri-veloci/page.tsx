@@ -393,8 +393,6 @@ export default function IncontriVelociPage() {
             .map((meeting) => {
               const category = CATEGORIES[meeting.category as keyof typeof CATEGORIES];
               const cover = normalizeUploadUrl(meeting.photos?.[0]);
-              const phone = normalizePhone(meeting.phone || '');
-              const whatsapp = normalizePhone(meeting.whatsapp || meeting.phone || '');
               return (
                 <Link key={meeting.id} href={`/incontri-veloci/${meeting.id}`} className="block group">
                   <div className="bg-gray-800 rounded-xl border border-gray-700 p-3 hover:border-gray-600 transition-colors relative">
@@ -446,31 +444,6 @@ export default function IncontriVelociPage() {
                             {meeting.age && <span> {meeting.age} anni</span>}
                           </div>
                         </div>
-
-                        {(phone || whatsapp) && (
-                          <div className="mt-2 flex items-center gap-2">
-                            {phone && (
-                              <a
-                                href={`tel:${phone}`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="px-2 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white"
-                              >
-                                Chiama
-                              </a>
-                            )}
-                            {whatsapp && (
-                              <a
-                                href={`https://wa.me/${whatsapp.replace('+','')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="px-2 py-1 text-[11px] font-semibold rounded bg-green-600 hover:bg-green-700 text-white"
-                              >
-                                WhatsApp
-                              </a>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
 

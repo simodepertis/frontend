@@ -12,13 +12,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const pageNum = Math.max(1, parseInt(page as string))
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string)))
     const offset = (pageNum - 1) * limitNum
+    const now = new Date()
 
     // Costruisci filtri
     const where: any = {
       isActive: true,
-      expiresAt: {
-        gt: new Date() // Solo annunci non scaduti
-      }
+      // Mostra annunci non scaduti. Se expiresAt è null, consideralo non scaduto.
+      OR: [
+        { expiresAt: null },
+        { expiresAt: { gt: now } },
+      ],
     }
 
     if (category && category !== 'ALL') {
@@ -73,7 +76,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       by: ['category'],
       where: {
         isActive: true,
-        expiresAt: { gt: new Date() }
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: now } },
+        ],
       },
       _count: true
     })
@@ -83,7 +89,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       by: ['city'],
       where: {
         isActive: true,
-        expiresAt: { gt: new Date() }
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: now } },
+        ],
       },
       _count: true,
       orderBy: {
