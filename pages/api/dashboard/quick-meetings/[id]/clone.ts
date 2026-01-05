@@ -4,7 +4,17 @@ import jwt from 'jsonwebtoken';
 
 function getUserFromToken(req: NextApiRequest): { userId: number } | null {
   try {
-    const token = req.cookies['auth-token'];
+    let token: string | undefined;
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+
+    if (!token) {
+      token = req.cookies['auth-token'];
+    }
+
     if (!token) return null;
 
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';

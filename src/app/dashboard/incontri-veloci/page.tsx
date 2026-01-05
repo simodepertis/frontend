@@ -122,24 +122,23 @@ export default function IncontriVelociDashboard() {
     if (!confirm('Vuoi clonare questo annuncio?')) return;
 
     try {
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
       const res = await fetch(`/api/dashboard/quick-meetings/${id}/clone`, {
         method: 'POST',
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
-      if (!res.ok) {
+      if (res.ok) {
+        alert('✅ Annuncio clonato!');
+        loadMeetings();
+      } else {
         const e = await res.json().catch(() => ({}));
-        alert(`Errore durante la clonazione: ${e.error || res.statusText}`);
-        return;
-      }
-
-      const data = await res.json();
-      if (data && data.meeting) {
-        setMeetings((prev) => [data.meeting, ...prev]);
-        alert('Annuncio clonato con successo');
+        alert(`Errore durante la clonazione: ${e.error || 'Errore'}`);
       }
     } catch (error) {
-      console.error('Errore clonazione:', error);
-      alert('Errore durante la clonazione dell\'annuncio');
+      console.error('Errore clone:', error);
+      alert('Errore durante la clonazione');
     }
   };
 
