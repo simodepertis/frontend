@@ -315,67 +315,65 @@ export default function IncontriVelociPage() {
                     className="block group"
                   >
                     <div className="bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors">
-                      {meeting.photos.length > 0 && (
-                        <>
-                          <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
-                            <img
-                              src={cover}
-                              alt={meeting.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/placeholder.svg';
-                              }}
-                            />
-                            {cover && cover !== '/placeholder.svg' && <Watermark />}
-                            <div className="absolute top-2 left-2">
-                              {getBumpBadge('SUPERTOP')}
-                            </div>
-                            <div className="absolute bottom-2 left-2 flex items-center gap-2">
-                              <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
-                                {category?.label}
-                              </span>
-                              <span className="text-[11px] text-gray-200 bg-black/60 px-2 py-0.5 rounded-full">
-                                {formatTimeAgo(meeting.publishedAt)}
-                              </span>
-                            </div>
+                      <>
+                        <div className="relative w-full h-44 bg-gray-700 overflow-hidden">
+                          <img
+                            src={cover || '/placeholder.svg'}
+                            alt={meeting.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/placeholder.svg';
+                            }}
+                          />
+                          {cover && cover !== '/placeholder.svg' ? <Watermark /> : <Watermark variant="cover" />}
+                          <div className="absolute top-2 left-2">
+                            {getBumpBadge('SUPERTOP')}
                           </div>
-                          <div className="p-3 space-y-2">
-                            <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-yellow-300">
-                              {meeting.title}
-                            </h3>
-                            <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
-                              <span> {meeting.city}</span>
-                              {meeting.zone && <span> {meeting.zone}</span>}
-                              {meeting.age && <span> {meeting.age} anni</span>}
-                            </div>
+                          <div className="absolute bottom-2 left-2 flex items-center gap-2">
+                            <span className={`px-2 py-0.5 text-[11px] font-bold text-white rounded-full ${category?.color}`}>
+                              {category?.label}
+                            </span>
+                            <span className="text-[11px] text-gray-200 bg-black/60 px-2 py-0.5 rounded-full">
+                              {formatTimeAgo(meeting.publishedAt)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-3 space-y-2">
+                          <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-yellow-300">
+                            {meeting.title}
+                          </h3>
+                          <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
+                            <span> {meeting.city}</span>
+                            {meeting.zone && <span> {meeting.zone}</span>}
+                            {meeting.age && <span> {meeting.age} anni</span>}
+                          </div>
 
-                            {(phone || whatsapp) && (
-                              <div className="flex items-center gap-2 pt-1">
-                                {phone && (
-                                  <a
-                                    href={`tel:${phone}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="px-2 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white"
-                                  >
-                                    Chiama
-                                  </a>
-                                )}
-                                {whatsapp && (
-                                  <a
-                                    href={`https://wa.me/${whatsapp.replace('+','')}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="px-2 py-1 text-[11px] font-semibold rounded bg-green-600 hover:bg-green-700 text-white"
-                                  >
-                                    WhatsApp
-                                  </a>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
+                          {(phone || whatsapp) && (
+                            <div className="flex items-center gap-2 pt-1">
+                              {phone && (
+                                <a
+                                  href={`tel:${phone}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="px-2 py-1 text-[11px] font-semibold rounded bg-emerald-600 hover:bg-emerald-700 text-white"
+                                >
+                                  Chiama
+                                </a>
+                              )}
+                              {whatsapp && (
+                                <a
+                                  href={`https://wa.me/${whatsapp.replace('+','')}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="px-2 py-1 text-[11px] font-semibold rounded bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  WhatsApp
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </>
                     </div>
                   </Link>
                 );

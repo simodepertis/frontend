@@ -1,6 +1,45 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
+function normalizeUploadUrl(u: string | null | undefined): string {
+  const s = String(u || '').trim()
+  if (!s) return ''
+  if (s.startsWith('/uploads/')) return `/api${s}`
+  return s
+}
+
+function sanitizePhotos(input: any): string[] {
+  let arr: any[] = []
+  if (Array.isArray(input)) {
+    arr = input
+  } else if (typeof input === 'string') {
+    const s = input.trim()
+    if (!s) return []
+    if (s.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(s)
+        if (Array.isArray(parsed)) arr = parsed
+        else arr = [s]
+      } catch {
+        arr = [s]
+      }
+    } else {
+      arr = [s]
+    }
+  } else if (input && typeof input === 'object') {
+    const maybe = (input as any).photos
+    if (Array.isArray(maybe)) arr = maybe
+  }
+
+  return arr
+    .filter((x) => typeof x === 'string')
+    .map((x) => String(x).trim())
+    .filter((x) => x.length > 0)
+    .filter((x) => !x.startsWith('data:'))
+    .filter((x) => x.length < 8192)
+    .map((x) => normalizeUploadUrl(x))
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -42,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Costruisci filtri
-    const where: any = {
+    const whereBase: any = {
       isActive: true,
       // Mostra annunci non scaduti. Se expiresAt è null, consideralo non scaduto.
       OR: [
@@ -52,61 +91,101 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (category && category !== 'ALL') {
-      where.category = category
+      whereBase.category = category
     }
 
     if (city && city !== 'ALL') {
-      where.city = {
+      whereBase.city = {
         equals: city,
         mode: 'insensitive'
       }
     }
 
+    const whereSuperTop: any = {
+      ...whereBase,
+      bumpPackage: 'SUPERTOP',
+    }
+
+    const whereNormal: any = {
+      ...whereBase,
+      OR: [
+        // mantieni la regola di scadenza
+        ...(Array.isArray(whereBase.OR) ? whereBase.OR : []),
+      ],
+      AND: [
+        {
+          OR: [
+            { bumpPackage: null },
+            { bumpPackage: { not: 'SUPERTOP' } },
+          ],
+        },
+      ],
+    }
+
     // Conta totale
-    const total = await prisma.quickMeeting.count({ where })
+    const [superTopTotal, normalTotal] = await Promise.all([
+      prisma.quickMeeting.count({ where: whereSuperTop }),
+      prisma.quickMeeting.count({ where: whereNormal }),
+    ])
+
+    const total = superTopTotal + normalTotal
 
     // Recupera annunci ordinati per bump e data
-    const meetings = await prisma.quickMeeting.findMany({
-      where,
-      orderBy: [
-        // Prima i promossi: bumpPackage valorizzato (SUPERTOP e altri) deve stare in alto
-        { bumpPackage: 'desc' },
-        // Poi i più recenti
-        { publishedAt: 'desc' },
-        { createdAt: 'desc' }
-      ],
-      skip: offset,
-      take: limitNum,
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        category: true,
-        city: true,
-        zone: true,
-        phone: true,
-        whatsapp: true,
-        telegram: true,
-        age: true,
-        price: true,
-        photos: true,
-        publishedAt: true,
-        bumpPackage: true,
-        bumpCount: true,
-        maxBumps: true,
-        views: true
-      }
-    })
+    const selectFields = {
+      id: true,
+      title: true,
+      description: true,
+      category: true,
+      city: true,
+      zone: true,
+      phone: true,
+      whatsapp: true,
+      telegram: true,
+      age: true,
+      price: true,
+      photos: true,
+      publishedAt: true,
+      bumpPackage: true,
+      bumpCount: true,
+      maxBumps: true,
+      views: true,
+    } as const
+
+    const [superTopMeetings, normalMeetings] = await Promise.all([
+      prisma.quickMeeting.findMany({
+        where: whereSuperTop,
+        orderBy: [
+          { publishedAt: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        take: 50,
+        select: selectFields,
+      }),
+      prisma.quickMeeting.findMany({
+        where: whereNormal,
+        orderBy: [
+          // Prima i promossi (escluso SUPERTOP): bumpPackage valorizzato deve stare in alto
+          { bumpPackage: 'desc' },
+          // Poi i più recenti
+          { publishedAt: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        skip: offset,
+        take: limitNum,
+        select: selectFields,
+      }),
+    ])
+
+    const meetings = [...superTopMeetings, ...normalMeetings].map((m: any) => ({
+      ...m,
+      photos: sanitizePhotos(m?.photos),
+    }))
 
     // Statistiche per categoria
     const categoryStats = await prisma.quickMeeting.groupBy({
       by: ['category'],
       where: {
-        isActive: true,
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: now } },
-        ],
+        ...whereBase,
       },
       _count: true
     })
@@ -115,11 +194,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const cityStats = await prisma.quickMeeting.groupBy({
       by: ['city'],
       where: {
-        isActive: true,
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: now } },
-        ],
+        ...whereBase,
       },
       _count: true,
       orderBy: {
@@ -135,7 +210,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         page: pageNum,
         limit: limitNum,
         total,
-        pages: Math.ceil(total / limitNum)
+        // Paginazione basata sugli annunci normali. I SuperTop sono sempre aggiunti in cima.
+        pages: Math.ceil(normalTotal / limitNum)
       },
       stats: {
         categories: categoryStats,
