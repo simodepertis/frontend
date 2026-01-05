@@ -91,11 +91,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const now = new Date()
     const tier = String(p?.tier ?? 'STANDARD')
+    const tierNorm = tier.trim().toUpperCase()
     const tierExpiresAt = p?.tierExpiresAt ? new Date(p.tierExpiresAt) : null
     const girlOfTheDay = p?.girlOfTheDayDate
       ? (new Date(p.girlOfTheDayDate).toISOString().slice(0,10) === new Date().toISOString().slice(0,10))
       : false
-    const hasActivePackage = (tier && tier !== 'STANDARD' && !!tierExpiresAt && tierExpiresAt.getTime() > now.getTime()) || girlOfTheDay
+    const hasActivePackage = (tierNorm !== 'STANDARD' && !!tierExpiresAt && tierExpiresAt.getTime() > now.getTime()) || girlOfTheDay
 
     return res.json({
       userId: user.id,

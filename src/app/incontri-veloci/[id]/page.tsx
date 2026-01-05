@@ -457,7 +457,7 @@ export default function IncontroVeloceDetailPage() {
   };
 
   const nextPhoto = () => {
-    if (meeting && lightboxIndex < meeting.photos.length - 1) {
+    if (lightboxIndex < visiblePhotos.length - 1) {
       setLightboxIndex(lightboxIndex + 1);
     }
   };
@@ -499,6 +499,8 @@ export default function IncontroVeloceDetailPage() {
     ? (allowAllPhotos ? meeting.photos : (meeting.photos?.slice(0, 1) || []))
         .map((p) => normalizeUploadUrl(p))
     : ["/placeholder.svg"];
+
+  const lightboxPhotos = visiblePhotos;
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -957,7 +959,7 @@ export default function IncontroVeloceDetailPage() {
           <div className="max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <div className="relative max-w-full max-h-full">
               <img
-                src={hasPhotos ? normalizeUploadUrl(meeting.photos[lightboxIndex]) : '/placeholder.svg'}
+                src={lightboxPhotos[lightboxIndex] || '/placeholder.svg'}
                 alt={`${meeting.title} - Foto ${lightboxIndex + 1}`}
                 className="max-w-full max-h-full object-contain rounded-lg"
                 onError={(e) => {
@@ -969,7 +971,7 @@ export default function IncontroVeloceDetailPage() {
           </div>
 
           {/* Freccia Destra */}
-          {lightboxIndex < meeting.photos.length - 1 && (
+          {lightboxIndex < lightboxPhotos.length - 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
               className="absolute right-4 text-white text-5xl hover:text-gray-300 transition-colors z-10"
@@ -979,9 +981,9 @@ export default function IncontroVeloceDetailPage() {
           )}
 
           {/* Contatore foto */}
-          {hasPhotos && (
+          {lightboxPhotos.length > 1 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full">
-              {lightboxIndex + 1} / {meeting.photos.length}
+              {lightboxIndex + 1} / {lightboxPhotos.length}
             </div>
           )}
         </div>
