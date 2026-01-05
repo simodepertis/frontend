@@ -74,6 +74,33 @@ export default function IncontriVelociAgenzia() {
     loadMeetings();
   }, []);
 
+  const handleClone = async (id: number) => {
+    if (!confirm('Vuoi clonare questo annuncio?')) return;
+
+    try {
+      const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
+      const res = await fetch(`/api/dashboard/quick-meetings/${id}/clone`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        alert(`Errore durante la clonazione: ${e.error || res.statusText}`);
+        return;
+      }
+
+      const data = await res.json();
+      if (data && data.meeting) {
+        setMeetings((prev) => [data.meeting, ...prev]);
+        alert('Annuncio clonato con successo');
+      }
+    } catch (error) {
+      console.error('Errore clonazione:', error);
+      alert('Errore durante la clonazione dell\'annuncio');
+    }
+  };
+
   const loadMeetings = async () => {
     try {
       const token = typeof window !== 'undefined' ? (localStorage.getItem('auth-token') || '') : '';
@@ -293,7 +320,67 @@ export default function IncontriVelociAgenzia() {
         setPromoError(data.error || 'Impossibile completare l\'acquisto');
         return;
       }
-      setPromoSuccess('Pacchetto acquistato con successo');
+
+      // Risalita immediata: esegui bump subito (come dashboard normale)
+      if (effectiveCode === 'IMMEDIATE') {
+        const bumpRes = await fetch('/api/quick-meetings/bump-now', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ meetingId: promoMeeting.id }),
+        });
+        const bumpData = await bumpRes.json().catch(() => ({}));
+        if (!bumpRes.ok) {
+          setPromoError(bumpData.error || 'Risalita immediata non disponibile');
+          return;
+        }
+        setPromoSuccess('Risalita immediata acquistata ed eseguita con successo');
+      } else {
+        setPromoSuccess('Pacchetto acquistato con successo');
+
+        // dopo l'acquisto, ricarica i dettagli del pacchetto attivo e la programmazione
+        try {
+          const resSchedule = await fetch(`/api/quick-meetings/schedule?meetingId=${promoMeeting.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (resSchedule.ok) {
+            const d = await resSchedule.json();
+            if (d && d.purchase) {
+              setActivePurchase({
+                id: d.purchase.id,
+                productCode: d.purchase.productCode,
+                productLabel: d.purchase.productLabel,
+                type: d.purchase.type,
+                expiresAt: d.purchase.expiresAt,
+                durationDays: d.purchase.durationDays,
+                startedAt: d.purchase.startedAt,
+              });
+
+              const schedules = Array.isArray(d.schedules) ? d.schedules : [];
+              setScheduleSummary(
+                schedules.map((s: any) => ({ runAt: s.runAt, window: s.window }))
+              );
+
+              // dopo l'acquisto, mostra un solo giorno (oggi) con la fascia template selezionata
+              const today = new Date();
+              const todayIso = today.toISOString().slice(0, 10);
+              let templateHour: number | null = null;
+              if (schedules.length > 0) {
+                const preferred = schedules.find((s: any) => s.window === 'DAY') || schedules[0];
+                const dt = new Date(preferred.runAt);
+                templateHour = dt.getUTCHours();
+              }
+              const slots = templateHour !== null ? [templateHour] : [];
+              setDaySlots([{ date: todayIso, slots }]);
+            }
+          }
+        } catch {
+          // se fallisce, lasciamo comunque il pacchetto acquistato e la mappa aggiornata
+        }
+      }
+
       setMeetingHasPackage((prev) =>
         promoMeeting ? { ...prev, [promoMeeting.id]: true } : prev
       );
@@ -563,6 +650,13 @@ export default function IncontriVelociAgenzia() {
                     >
                       ✏️ Modifica
                     </button>
+
+                    <button
+                      onClick={() => handleClone(meeting.id)}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+                    >
+                      📄 Clona
+                    </button>
                     
                     <button
                       onClick={() => toggleActive(meeting.id, meeting.isActive)}
@@ -641,129 +735,133 @@ export default function IncontriVelociAgenzia() {
                 <div className="py-10 text-center text-gray-400">Nessun pacchetto disponibile al momento.</div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    {superTopPackages.length > 0 && availableSuperTopDays.length > 0 && (
-                      (() => {
-                        const selectedDays = availableSuperTopDays.includes(superTopDays)
-                          ? superTopDays
-                          : availableSuperTopDays[0];
-                        const superPkg = superTopByDays[selectedDays];
-                        if (!superPkg) return null;
-                        const isSelected = !!selectedPackage && selectedPackage.code.startsWith('SUPERTOP_');
-                        return (
-                          <button
-                            key="supertop-virtual"
-                            type="button"
-                            onClick={() => {
-                              setSelectedPackage(superPkg);
-                              setSuperTopDays(selectedDays);
-                              setDaySlots([]);
-                            }}
-                            className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300 ${
-                              isSelected ? 'ring-2 ring-pink-400' : ''
-                            }`}
-                          >
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                                  <span className="text-yellow-300">💎</span>
-                                  <span>SuperTop</span>
-                                </h3>
-                                <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">SuperTop</span>
-                              </div>
-                              <div className="text-sm text-gray-300 mb-2 space-y-1">
-                                <p>Metti il tuo annuncio in evidenza fissa in alto.</p>
-                                <div className="flex items-center gap-2 text-xs">
-                                  <span className="text-gray-300">Durata:</span>
-                                  <select
-                                    value={selectedDays}
-                                    onChange={(e) => {
-                                      const v = Number(e.target.value) || selectedDays;
-                                      setSuperTopDays(v);
-                                    }}
-                                    className="bg-black/40 border border-yellow-500/60 rounded px-2 py-1 text-xs text-yellow-200"
-                                  >
-                                    {availableSuperTopDays.map((d) => (
-                                      <option key={d} value={d}>
-                                        {d} {d === 1 ? 'giorno' : 'giorni'}
-                                      </option>
-                                    ))}
-                                  </select>
+                  {!activePurchase && (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {superTopPackages.length > 0 && availableSuperTopDays.length > 0 && (
+                          (() => {
+                            const selectedDays = availableSuperTopDays.includes(superTopDays)
+                              ? superTopDays
+                              : availableSuperTopDays[0];
+                            const superPkg = superTopByDays[selectedDays];
+                            if (!superPkg) return null;
+                            const isSelected = !!selectedPackage && selectedPackage.code.startsWith('SUPERTOP_');
+                            return (
+                              <button
+                                key="supertop-virtual"
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPackage(superPkg);
+                                  setSuperTopDays(selectedDays);
+                                  setDaySlots([]);
+                                }}
+                                className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors border-yellow-400 bg-yellow-900/40 shadow-lg shadow-yellow-500/30 hover:border-yellow-300 ${
+                                  isSelected ? 'ring-2 ring-pink-400' : ''
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                      <span className="text-yellow-300">💎</span>
+                                      <span>SuperTop</span>
+                                    </h3>
+                                    <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">SuperTop</span>
+                                  </div>
+                                  <div className="text-sm text-gray-300 mb-2 space-y-1">
+                                    <p>Metti il tuo annuncio in evidenza fissa in alto.</p>
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className="text-gray-300">Durata:</span>
+                                      <select
+                                        value={selectedDays}
+                                        onChange={(e) => {
+                                          const v = Number(e.target.value) || selectedDays;
+                                          setSuperTopDays(v);
+                                        }}
+                                        className="bg-black/40 border border-yellow-500/60 rounded px-2 py-1 text-xs text-yellow-200"
+                                      >
+                                        {availableSuperTopDays.map((d) => (
+                                          <option key={d} value={d}>
+                                            {d} {d === 1 ? 'giorno' : 'giorni'}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
                                 </div>
+                                <div className="mt-4 flex items-center justify-between">
+                                  <div className="text-lg font-bold text-pink-300">{superPkg.creditsCost} crediti</div>
+                                  <span className="text-xs text-gray-300">{isSelected ? 'Selezionato' : 'Clicca per acquistare'}</span>
+                                </div>
+                              </button>
+                            );
+                          })()
+                        )}
+
+                        {nonSuperTopPackages.map((p) => {
+                          const isSelected = selectedPackage?.code === p.code;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedPackage(p);
+                                if (p.code === 'IMMEDIATE') {
+                                  setDaySlots([]);
+                                } else if (p.type === 'DAY') {
+                                  const today = new Date();
+                                  const iso = today.toISOString().slice(0, 10);
+                                  setDaySlots([{ date: iso, slots: [] }]);
+                                } else {
+                                  setDaySlots([]);
+                                }
+                              }}
+                              className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
+                                p.type === 'DAY'
+                                  ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
+                                  : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
+                              } ${isSelected ? 'ring-2 ring-pink-400' : ''}`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="text-lg font-semibold text-white flex items-center gap-2"><span>{p.label}</span></h3>
+                                  <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
+                                    {p.code === 'IMMEDIATE' ? 'Risalita immediata' : p.type === 'DAY' ? 'Giorno' : 'Notte'}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-300 mb-2">
+                                  {p.code === 'IMMEDIATE' ? (
+                                    <span>Esegui una risalita immediata utilizzando 10 crediti.</span>
+                                  ) : p.type === 'DAY' ? (
+                                    <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
+                                  ) : (
+                                    <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
+                                  )}
+                                </div>
+                                {p.code !== 'IMMEDIATE' && (
+                                  <div className="text-sm text-gray-400">Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}</div>
+                                )}
                               </div>
-                            </div>
-                            <div className="mt-4 flex items-center justify-between">
-                              <div className="text-lg font-bold text-pink-300">{superPkg.creditsCost} crediti</div>
-                              <span className="text-xs text-gray-300">{isSelected ? 'Selezionato' : 'Clicca per acquistare'}</span>
-                            </div>
+                              <div className="mt-4 flex items-center justify-between">
+                                <div className="text-lg font-bold text-pink-300">{p.creditsCost} crediti</div>
+                                <span className="text-xs text-gray-300">{isSelected ? 'Selezionato' : 'Clicca per selezionare'}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {selectedPackage && (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handlePurchase(selectedPackage.code.startsWith('SUPERTOP_') ? 'SUPERTOP' : selectedPackage.code)}
+                            disabled={!!purchaseLoadingCode}
+                            className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-700 text-white text-sm rounded transition-colors"
+                          >
+                            {purchaseLoadingCode ? 'Acquisto…' : 'Acquista'}
                           </button>
-                        );
-                      })()
-                    )}
-
-                    {nonSuperTopPackages.map((p) => {
-                      const isSelected = selectedPackage?.code === p.code;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedPackage(p);
-                            if (p.code === 'IMMEDIATE') {
-                              setDaySlots([]);
-                            } else if (p.type === 'DAY') {
-                              const today = new Date();
-                              const iso = today.toISOString().slice(0, 10);
-                              setDaySlots([{ date: iso, slots: [] }]);
-                            } else {
-                              setDaySlots([]);
-                            }
-                          }}
-                          className={`text-left rounded-xl border p-4 flex flex-col justify-between transition-colors ${
-                            p.type === 'DAY'
-                              ? 'border-amber-500/60 bg-amber-900/20 hover:border-amber-400'
-                              : 'border-indigo-500/60 bg-indigo-900/20 hover:border-indigo-400'
-                          } ${isSelected ? 'ring-2 ring-pink-400' : ''}`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-lg font-semibold text-white flex items-center gap-2"><span>{p.label}</span></h3>
-                              <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-gray-200">
-                                {p.code === 'IMMEDIATE' ? 'Risalita immediata' : p.type === 'DAY' ? 'Giorno' : 'Notte'}
-                              </span>
-                            </div>
-                            <div className="text-sm text-gray-300 mb-2">
-                              {p.code === 'IMMEDIATE' ? (
-                                <span>Esegui una risalita immediata utilizzando 10 crediti.</span>
-                              ) : p.type === 'DAY' ? (
-                                <span>1 risalita automatica al giorno per {p.durationDays} {p.durationDays === 1 ? 'giorno' : 'giorni'}.</span>
-                              ) : (
-                                <span>{p.quantityPerWindow} risalite a notte per {p.durationDays} {p.durationDays === 1 ? 'notte' : 'notti'}.</span>
-                              )}
-                            </div>
-                            {p.code !== 'IMMEDIATE' && (
-                              <div className="text-sm text-gray-400">Finestra oraria: {p.type === 'DAY' ? '08:00 - 22:00' : '22:00 - 08:00'}</div>
-                            )}
-                          </div>
-                          <div className="mt-4 flex items-center justify-between">
-                            <div className="text-lg font-bold text-pink-300">{p.creditsCost} crediti</div>
-                            <span className="text-xs text-gray-300">{isSelected ? 'Selezionato' : 'Clicca per selezionare'}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {selectedPackage && (
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handlePurchase(selectedPackage.code.startsWith('SUPERTOP_') ? 'SUPERTOP' : selectedPackage.code)}
-                        disabled={!!purchaseLoadingCode}
-                        className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-700 text-white text-sm rounded transition-colors"
-                      >
-                        {purchaseLoadingCode ? 'Acquisto…' : 'Acquista'}
-                      </button>
-                    </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {daySlots.length > 0 && (

@@ -98,6 +98,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       : false
     const hasActivePackage = (tierNorm !== 'STANDARD' && !!tierExpiresAt && tierExpiresAt.getTime() > now.getTime()) || girlOfTheDay
 
+    const eta = (() => {
+      try {
+        const bioInfo: any = (p?.contacts as any)?.bioInfo || {}
+        const n = Number(bioInfo?.eta)
+        return Number.isFinite(n) && n > 0 ? n : null
+      } catch {
+        return null
+      }
+    })()
+
     return res.json({
       userId: user.id,
       nome: (()=>{
@@ -105,6 +115,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })(),
       slug: user.slug,
       cities: p?.cities ?? [],
+      eta,
       tier,
       tierExpiresAt: p?.tierExpiresAt ?? null,
       girlOfTheDay,

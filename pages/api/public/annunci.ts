@@ -160,6 +160,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         const displayName = (() => { try { return (p?.contacts as any)?.bioInfo?.nomeProfilo || p.user?.nome || `User ${p.userId}` } catch { return p.user?.nome || `User ${p.userId}` } })()
 
+        const eta = (() => {
+          try {
+            const bioInfo: any = (p?.contacts as any)?.bioInfo || {}
+            const n = Number(bioInfo?.eta)
+            return Number.isFinite(n) && n > 0 ? n : null
+          } catch {
+            return null
+          }
+        })()
+
         // categoria per mappa: ESCORT / TRANS / COPPIE / ALTRO
         let mapCategory: 'ESCORT' | 'TRANS' | 'COPPIE' | 'ALTRO' = 'ESCORT'
         try {
@@ -208,6 +218,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           isAgencyEscort,
           agencyName: p.agency?.nome || null,
           tierExpiresAt: p.tierExpiresAt, // Mantieni per debug
+          eta,
           positionLat,
           positionLon,
           mapCategory,

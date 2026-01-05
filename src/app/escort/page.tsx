@@ -113,7 +113,7 @@ export default function EscortListPage() {
           </div>
         )}
         {escortsFiltrate.map((e:any) => (
-          <EscortCard key={e.id} escort={{ id: e.id, nome: e.name, eta: 25, citta: Array.isArray(e.cities)&&e.cities[0]?String(e.cities[0]):'—', capelli: '', prezzo: e.price || 0, foto: e.coverUrl || '/placeholder.svg', rank: e.tier, isVerified: !!e.hasApprovedDoc }} />
+          <EscortCard key={e.id} escort={{ id: e.id, nome: e.name, eta: Number(e.eta) || 0, citta: Array.isArray(e.cities)&&e.cities[0]?String(e.cities[0]):'—', capelli: '', prezzo: e.price || 0, foto: e.coverUrl || '/placeholder.svg', rank: e.tier, isVerified: !!e.hasApprovedDoc }} />
         ))}
       </div>
     </main>

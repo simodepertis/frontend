@@ -39,8 +39,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const meetings = await prisma.quickMeeting.findMany({
       where,
       orderBy: [
-        { publishedAt: 'desc' }, // Prima i più recenti (bumpati)
-        { createdAt: 'desc' }    // Poi per data creazione
+        // Prima i promossi: bumpPackage valorizzato (SUPERTOP e altri) deve stare in alto
+        { bumpPackage: 'desc' },
+        // Poi i più recenti
+        { publishedAt: 'desc' },
+        { createdAt: 'desc' }
       ],
       skip: offset,
       take: limitNum,

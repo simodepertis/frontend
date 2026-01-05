@@ -155,11 +155,21 @@ export default async function handler(
           return (cts.bioInfo?.nomeProfilo) || u.nome
         } catch { return u.nome }
       })()
+
+      const eta = (() => {
+        try {
+          const bioInfo: any = (u.escortProfile as any)?.contacts?.bioInfo || {}
+          const n = Number(bioInfo?.eta)
+          return Number.isFinite(n) && n > 0 ? n : null
+        } catch {
+          return null
+        }
+      })()
       return {
         id: u.id,
         slug: u.slug || `${u.nome?.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${u.id}`,
         nome: displayName,
-        eta: 25,
+        eta,
         citta: city,
         cities,
         capelli: undefined,
