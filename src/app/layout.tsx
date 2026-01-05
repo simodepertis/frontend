@@ -24,6 +24,14 @@ export const metadata: Metadata = {
   },
   description:
     "Annunci, profili e incontri. Scopri escort, trans e incontri veloci per città.",
+  icons: {
+    icon: [
+      { url: "/logo.png", type: "image/png" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
+    shortcut: ["/logo.png"],
+    apple: ["/logo.png"],
+  },
   alternates: {
     canonical: "/",
   },
@@ -34,12 +42,21 @@ export const metadata: Metadata = {
     title: "Incontriescort.org",
     description:
       "Annunci, profili e incontri. Scopri escort, trans e incontri veloci per città.",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Incontriescort.org",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Incontriescort.org",
     description:
       "Annunci, profili e incontri. Scopri escort, trans e incontri veloci per città.",
+    images: ["/logo.png"],
   },
 };
 
