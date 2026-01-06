@@ -15,20 +15,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const userIdParam = req.query.userId;
-      const where: any = {};
+      const qParam = req.query.q;
+      const takeParam = req.query.take;
+      const skipParam = req.query.skip;
 
+      const take = Math.max(1, Math.min(1000, Number(Array.isArray(takeParam) ? takeParam[0] : takeParam) || 200));
+      const skip = Math.max(0, Number(Array.isArray(skipParam) ? skipParam[0] : skipParam) || 0);
+
+      const where: any = {};
       if (userIdParam && typeof userIdParam === 'string') {
         const uid = parseInt(userIdParam, 10);
         if (!Number.isNaN(uid)) where.userId = uid;
       }
 
+      const q = typeof qParam === 'string' ? qParam.trim() : '';
+      if (q) {
+        where.OR = [
+          { title: { contains: q, mode: 'insensitive' } },
+          { city: { contains: q, mode: 'insensitive' } },
+          { phone: { contains: q, mode: 'insensitive' } },
+          { sourceId: { contains: q, mode: 'insensitive' } },
+          { sourceUrl: { contains: q, mode: 'insensitive' } },
+        ];
+      }
+
+      const now = new Date();
       const meetings = await prisma.quickMeeting.findMany({
         where,
         orderBy: { createdAt: 'desc' },
-        take: 200,
+        skip,
+        take,
+        include: {
+          quickMeetingPurchases: {
+            where: {
+              status: 'ACTIVE',
+              expiresAt: { gt: now },
+            },
+            include: {
+              product: {
+                select: {
+                  code: true,
+                  label: true,
+                  type: true,
+                  durationDays: true,
+                },
+              },
+            },
+          },
+        },
       });
 
-      return res.status(200).json({ meetings });
+      const items = meetings.map((m: any) => {
+        const activeProducts = Array.isArray(m.quickMeetingPurchases)
+          ? m.quickMeetingPurchases.map((p: any) => p?.product).filter(Boolean)
+          : [];
+        const hasSuperTopPurchase = activeProducts.some((p: any) => {
+          if (typeof p?.code !== 'string') return false;
+          return p.code === 'SUPERTOP' || p.code.startsWith('SUPERTOP_');
+        });
+        const isSuperTop = hasSuperTopPurchase || String(m.bumpPackage || '').toUpperCase() === 'SUPERTOP';
+        return {
+          ...m,
+          isSuperTop,
+          activePackages: activeProducts,
+        };
+      });
+
+      return res.status(200).json({ meetings: items, take, skip });
     } catch (error) {
       console.error('❌ GET /admin/quick-meetings error', error);
       return res.status(500).json({ error: 'Errore interno del server' });
@@ -46,7 +99,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'ID non valido' });
       }
 
-      await prisma.quickMeeting.delete({ where: { id: meetingId } });
+      await prisma.$transaction(async (tx) => {
+        await tx.quickMeetingBumpSchedule.deleteMany({
+          where: {
+            purchase: {
+              meetingId,
+            },
+          },
+        });
+
+        await tx.quickMeetingPurchase.deleteMany({
+          where: {
+            meetingId,
+          },
+        });
+
+        await tx.quickMeeting.delete({ where: { id: meetingId } });
+      });
+
       return res.status(200).json({ success: true });
     } catch (error) {
       console.error('❌ DELETE /admin/quick-meetings error', error);

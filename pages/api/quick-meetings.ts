@@ -149,6 +149,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       bumpCount: true,
       maxBumps: true,
       views: true,
+      userId: true,
+      user: {
+        select: {
+          nome: true,
+        },
+      },
     } as const
 
     const [superTopMeetings, normalMeetings] = await Promise.all([

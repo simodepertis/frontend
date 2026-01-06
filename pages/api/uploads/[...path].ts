@@ -50,7 +50,10 @@ function getContentType(filePath: string): string {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     let segs = (req.query.path || []) as string[]
-    if (!Array.isArray(segs) || segs.length === 0) return res.status(400).end('Bad request')
+    if (!Array.isArray(segs) || segs.length === 0) {
+      res.status(400).end('Bad request')
+      return
+    }
     // Normalize segments: strip accidental leading 'uploads' and decode
     segs = segs.map(s => decodeURIComponent(s)).filter(Boolean)
     if (segs[0] === 'uploads') segs = segs.slice(1)
@@ -60,12 +63,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const publicUploadsDir = path.join(projectRoot, 'public', 'uploads')
     const publicFilePath = path.join(publicUploadsDir, ...segs)
     const rel = path.relative(publicUploadsDir, publicFilePath)
-    if (rel.startsWith('..')) return res.status(403).end('Forbidden')
+    if (rel.startsWith('..')) {
+      res.status(403).end('Forbidden')
+      return
+    }
 
     if (await fileExists(publicFilePath)) {
       const location = `/uploads/${safePath}`
       res.setHeader('Cache-Control', 'no-cache')
-      return res.redirect(307, location)
+      res.redirect(307, location)
+      return
     }
 
     const legacyUploadsDir = getLegacyStandaloneUploadsDir(projectRoot)
@@ -80,7 +87,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return
     }
 
-    return res.status(404).end('Not found')
+    res.status(404).end('Not found')
+    return
   } catch (e) {
     res.status(404).end('Not found')
   }

@@ -23,6 +23,8 @@ interface QuickMeeting {
   bumpPackage?: string;
   avgRating?: number | null;
   reviewCount?: number;
+  userId?: number | null;
+  user?: { nome?: string | null } | null;
 }
 
 function Star({ filled }: { filled: boolean }) {
@@ -97,6 +99,14 @@ function getBumpBadge(bumpPackage?: string) {
 
 function normalizePhone(s: string) {
   return String(s || '').replace(/\s+/g, '').replace(/[^0-9+]/g, '');
+}
+
+function getSuperTopDisplayName(title: string) {
+  const t = String(title || '').trim();
+  if (!t) return '';
+  const head = t.split(/\s[-–—|•·:]\s|\||·|•|—|–|-/)[0]?.trim();
+  const base = (head || t).trim();
+  return base.split(/\s+/)[0] || base;
 }
 
 export default function IncontriVelociPage() {
@@ -308,13 +318,14 @@ export default function IncontriVelociPage() {
                 const cover = normalizeUploadUrl(meeting.photos?.[0]);
                 const phone = normalizePhone(meeting.phone || '');
                 const whatsapp = normalizePhone(meeting.whatsapp || meeting.phone || '');
+                const displayName = (meeting.user?.nome || '').trim() || getSuperTopDisplayName(meeting.title);
                 return (
                   <Link
                     key={`super-${meeting.id}`}
                     href={`/incontri-veloci/${meeting.id}`}
                     className="block group"
                   >
-                    <div className="h-full bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors flex flex-col">
+                    <div className="h-full bg-gray-800 rounded-xl border-2 border-yellow-400 shadow-lg shadow-yellow-500/20 overflow-hidden hover:border-yellow-300 hover:bg-gray-750 transition-colors flex flex-col relative">
                       <>
                         <div className="relative w-full h-44 bg-gray-700 overflow-hidden flex-shrink-0">
                           <img
@@ -340,7 +351,7 @@ export default function IncontriVelociPage() {
                         </div>
                         <div className="p-3 space-y-2 flex-1 flex flex-col">
                           <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-yellow-300">
-                            {meeting.title}
+                            {displayName || meeting.title}
                           </h3>
                           <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
                             <span> {meeting.city}</span>
@@ -374,6 +385,10 @@ export default function IncontriVelociPage() {
                               </div>
                             )}
                           </div>
+                        </div>
+
+                        <div className="absolute bottom-2 right-3 flex items-center gap-1">
+                          <Stars value={5} />
                         </div>
                       </>
                     </div>

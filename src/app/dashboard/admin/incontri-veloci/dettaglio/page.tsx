@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import SectionHeader from "@/components/SectionHeader";
 
 export default function AdminEditQuickMeetingPage() {
   const router = useRouter();
   const params = useParams();
-  const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
+  const searchParams = useSearchParams();
+  const fromQuery = searchParams?.get('id') || '';
+  const fromParams = Array.isArray((params as any)?.id) ? (params as any).id[0] : ((params as any)?.id as string);
+  const id = String(fromQuery || fromParams || '');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
