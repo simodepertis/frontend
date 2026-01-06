@@ -55,7 +55,7 @@ export default function AdminAnnunciModerazionePage() {
     try {
       const token = localStorage.getItem('auth-token') || '';
       const q = qmQ.trim();
-      const res = await fetch(`/api/admin/quick-meetings?take=${qmTake}&skip=${qmSkip}${q ? `&q=${encodeURIComponent(q)}` : ''}`, {
+      const res = await fetch(`/api/admin/quick-meetings?type=both&take=${qmTake}&skip=${qmSkip}${q ? `&q=${encodeURIComponent(q)}` : ''}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       const j = await res.json().catch(() => ({}));
@@ -153,8 +153,8 @@ export default function AdminAnnunciModerazionePage() {
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <div className="text-white font-semibold">Incontri Veloci (tutti)</div>
-            <div className="text-xs text-gray-400">Include anche annunci importati dal bot. Separati in SuperTop e Normali.</div>
+            <div className="text-white font-semibold">Incontri Veloci</div>
+            <div className="text-xs text-gray-400">Gestione annunci: SuperTop e Normali in pagine separate.</div>
           </div>
           <div className="flex items-center gap-2">
             <input
@@ -180,94 +180,23 @@ export default function AdminAnnunciModerazionePage() {
         ) : qmErr ? (
           <div className="text-red-300 text-sm mt-3">{qmErr}</div>
         ) : (
-          <div className="mt-4 space-y-6">
-            <div>
-              <div className="text-sm font-semibold text-yellow-200 mb-2">SuperTop ({qmCounts.superTop || qmSuperTop.length})</div>
-              {qmSuperTop.length === 0 ? (
-                <div className="text-gray-400 text-sm">Nessun annuncio SuperTop.</div>
-              ) : (
-                <div className="space-y-2">
-                  {qmSuperTop.map((m) => (
-                    <div key={m.id} className="border border-yellow-500/30 rounded-md p-3 bg-gray-900 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-white font-semibold text-sm">#{m.id} · {m.title}</div>
-                        <div className="text-xs text-gray-400">{m.city} · {m.category} · {m.userId ? `User #${m.userId}` : 'BOT/IMPORT'} · {m.isActive ? 'Attivo' : 'Disattivato'}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/dashboard/admin/incontri-veloci/dettaglio?id=${m.id}`}
-                          className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-xs text-white"
-                        >
-                          Modifica
-                        </Link>
-                        <button
-                          type="button"
-                          disabled={qmDeleting === m.id}
-                          onClick={() => deleteQuickMeeting(m.id)}
-                          className="px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-xs text-white disabled:opacity-50"
-                        >
-                          {qmDeleting === m.id ? '...' : 'Elimina'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
-                <div className="text-sm font-semibold text-gray-200">Normali ({qmCounts.normal || qmNormal.length})</div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={qmLoading || !qmHasPrev}
-                    onClick={() => setQmSkip((s) => Math.max(0, s - qmTake))}
-                    className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-xs text-white disabled:opacity-40"
-                  >
-                    ← Prev
-                  </button>
-                  <button
-                    type="button"
-                    disabled={qmLoading || !qmHasNext}
-                    onClick={() => setQmSkip((s) => s + qmTake)}
-                    className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-xs text-white disabled:opacity-40"
-                  >
-                    Next →
-                  </button>
-                </div>
-              </div>
-              {qmNormal.length === 0 ? (
-                <div className="text-gray-400 text-sm">Nessun annuncio normale.</div>
-              ) : (
-                <div className="space-y-2">
-                  {qmNormal.map((m) => (
-                    <div key={m.id} className="border border-gray-700 rounded-md p-3 bg-gray-900 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-white font-semibold text-sm">#{m.id} · {m.title}</div>
-                        <div className="text-xs text-gray-400">{m.city} · {m.category} · {m.userId ? `User #${m.userId}` : 'BOT/IMPORT'} · {m.isActive ? 'Attivo' : 'Disattivato'}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/dashboard/admin/incontri-veloci/dettaglio?id=${m.id}`}
-                          className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-xs text-white"
-                        >
-                          Modifica
-                        </Link>
-                        <button
-                          type="button"
-                          disabled={qmDeleting === m.id}
-                          onClick={() => deleteQuickMeeting(m.id)}
-                          className="px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-xs text-white disabled:opacity-50"
-                        >
-                          {qmDeleting === m.id ? '...' : 'Elimina'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Link
+              href={`/dashboard/admin/incontri-veloci/supertop${qmQ ? `?q=${encodeURIComponent(qmQ)}` : ''}`}
+              className="block border border-yellow-500/30 rounded-lg p-4 bg-gray-900 hover:border-yellow-400 transition-colors"
+            >
+              <div className="text-yellow-200 font-semibold">Incontri Veloci SuperTop</div>
+              <div className="text-xs text-gray-400 mt-1">Totale: {qmCounts.superTop}</div>
+              <div className="text-xs text-gray-500 mt-2">Apri lista completa e gestisci Modifica/Elimina.</div>
+            </Link>
+            <Link
+              href={`/dashboard/admin/incontri-veloci/normali${qmQ ? `?q=${encodeURIComponent(qmQ)}` : ''}`}
+              className="block border border-gray-700 rounded-lg p-4 bg-gray-900 hover:border-gray-600 transition-colors"
+            >
+              <div className="text-gray-200 font-semibold">Incontri Veloci Normali</div>
+              <div className="text-xs text-gray-400 mt-1">Totale: {qmCounts.normal}</div>
+              <div className="text-xs text-gray-500 mt-2">Lista paginata: scorri e gestisci Modifica/Elimina.</div>
+            </Link>
           </div>
         )}
       </div>

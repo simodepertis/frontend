@@ -18,6 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const qParam = req.query.q;
       const takeParam = req.query.take;
       const skipParam = req.query.skip;
+      const typeParam = req.query.type;
+      const type = typeof typeParam === 'string' ? typeParam : 'both';
 
       const take = Math.max(1, Math.min(1000, Number(Array.isArray(takeParam) ? takeParam[0] : takeParam) || 200));
       const skip = Math.max(0, Number(Array.isArray(skipParam) ? skipParam[0] : skipParam) || 0);
@@ -84,24 +86,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const normalWhere: any = {
         ...where,
         AND: [
-          { NOT: superTopClause },
+          {
+            OR: [{ bumpPackage: null }, { bumpPackage: { not: 'SUPERTOP' } }],
+          },
+          {
+            quickMeetingPurchases: {
+              none: superTopPurchaseWhere,
+            },
+          },
         ],
       };
 
+      const needSuper = type === 'both' || type === 'supertop';
+      const needNormal = type === 'both' || type === 'normal';
+
       const [superTopRaw, normalRaw, superTopTotal, normalTotal] = await Promise.all([
-        prisma.quickMeeting.findMany({
-          where: superTopWhere,
-          orderBy: { createdAt: 'desc' },
-          take: 2000,
-          include: includePurchases,
-        }),
-        prisma.quickMeeting.findMany({
-          where: normalWhere,
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take,
-          include: includePurchases,
-        }),
+        needSuper
+          ? prisma.quickMeeting.findMany({
+              where: superTopWhere,
+              orderBy: { createdAt: 'desc' },
+              take: 2000,
+              include: includePurchases,
+            })
+          : Promise.resolve([] as any[]),
+        needNormal
+          ? prisma.quickMeeting.findMany({
+              where: normalWhere,
+              orderBy: { createdAt: 'desc' },
+              skip,
+              take,
+              include: includePurchases,
+            })
+          : Promise.resolve([] as any[]),
         prisma.quickMeeting.count({ where: superTopWhere }),
         prisma.quickMeeting.count({ where: normalWhere }),
       ]);
