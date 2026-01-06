@@ -30,6 +30,9 @@ export default function AdminAnnunciModerazionePage() {
   const [qm, setQm] = useState<QuickMeeting[]>([]);
   const [qmQ, setQmQ] = useState('');
   const [qmDeleting, setQmDeleting] = useState<number | null>(null);
+  const [qmSkip, setQmSkip] = useState(0);
+  const [qmTake] = useState(200);
+  const [qmCounts, setQmCounts] = useState<{ superTop: number; normal: number }>({ superTop: 0, normal: 0 });
 
   async function load() {
     setLoading(true); setErr("");
@@ -52,15 +55,19 @@ export default function AdminAnnunciModerazionePage() {
     try {
       const token = localStorage.getItem('auth-token') || '';
       const q = qmQ.trim();
-      const res = await fetch(`/api/admin/quick-meetings?take=500${q ? `&q=${encodeURIComponent(q)}` : ''}`, {
+      const res = await fetch(`/api/admin/quick-meetings?take=${qmTake}&skip=${qmSkip}${q ? `&q=${encodeURIComponent(q)}` : ''}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(j?.error || 'Errore caricamento incontri veloci');
-      setQm((j.meetings || []) as QuickMeeting[]);
+      const superTop = (j.superTopMeetings || []) as QuickMeeting[];
+      const normal = (j.normalMeetings || []) as QuickMeeting[];
+      setQm([...superTop, ...normal]);
+      setQmCounts(j.counts || { superTop: superTop.length, normal: normal.length });
     } catch (e: any) {
       setQmErr(e?.message || 'Errore caricamento incontri veloci');
       setQm([]);
+      setQmCounts({ superTop: 0, normal: 0 });
     } finally {
       setQmLoading(false);
     }
@@ -68,6 +75,7 @@ export default function AdminAnnunciModerazionePage() {
 
   useEffect(() => { load(); }, []);
   useEffect(() => { loadQuickMeetings(); }, []);
+  useEffect(() => { loadQuickMeetings(); }, [qmSkip]);
 
   async function act(id: number, action: 'PUBLISH'|'REJECT') {
     setUpdating(id);
@@ -110,6 +118,8 @@ export default function AdminAnnunciModerazionePage() {
 
   const qmSuperTop = qm.filter((m) => !!m.isSuperTop);
   const qmNormal = qm.filter((m) => !m.isSuperTop);
+  const qmHasPrev = qmSkip > 0;
+  const qmHasNext = qmSkip + qmTake < (qmCounts.normal || 0);
 
   return (
     <div className="space-y-6">
@@ -153,7 +163,15 @@ export default function AdminAnnunciModerazionePage() {
               placeholder="Cerca titolo/città/telefono..."
               className="px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white"
             />
-            <Button onClick={loadQuickMeetings} disabled={qmLoading}>Cerca</Button>
+            <Button
+              onClick={() => {
+                setQmSkip(0);
+                loadQuickMeetings();
+              }}
+              disabled={qmLoading}
+            >
+              Cerca
+            </Button>
           </div>
         </div>
 
@@ -164,7 +182,7 @@ export default function AdminAnnunciModerazionePage() {
         ) : (
           <div className="mt-4 space-y-6">
             <div>
-              <div className="text-sm font-semibold text-yellow-200 mb-2">SuperTop ({qmSuperTop.length})</div>
+              <div className="text-sm font-semibold text-yellow-200 mb-2">SuperTop ({qmCounts.superTop || qmSuperTop.length})</div>
               {qmSuperTop.length === 0 ? (
                 <div className="text-gray-400 text-sm">Nessun annuncio SuperTop.</div>
               ) : (
@@ -198,7 +216,27 @@ export default function AdminAnnunciModerazionePage() {
             </div>
 
             <div>
-              <div className="text-sm font-semibold text-gray-200 mb-2">Normali ({qmNormal.length})</div>
+              <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                <div className="text-sm font-semibold text-gray-200">Normali ({qmCounts.normal || qmNormal.length})</div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={qmLoading || !qmHasPrev}
+                    onClick={() => setQmSkip((s) => Math.max(0, s - qmTake))}
+                    className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-xs text-white disabled:opacity-40"
+                  >
+                    ← Prev
+                  </button>
+                  <button
+                    type="button"
+                    disabled={qmLoading || !qmHasNext}
+                    onClick={() => setQmSkip((s) => s + qmTake)}
+                    className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 text-xs text-white disabled:opacity-40"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
               {qmNormal.length === 0 ? (
                 <div className="text-gray-400 text-sm">Nessun annuncio normale.</div>
               ) : (

@@ -40,32 +40,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const now = new Date();
-      const meetings = await prisma.quickMeeting.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-        include: {
-          quickMeetingPurchases: {
-            where: {
-              status: 'ACTIVE',
-              expiresAt: { gt: now },
-            },
-            include: {
-              product: {
-                select: {
-                  code: true,
-                  label: true,
-                  type: true,
-                  durationDays: true,
-                },
+      const includePurchases = {
+        quickMeetingPurchases: {
+          where: {
+            status: 'ACTIVE',
+            expiresAt: { gt: now },
+          },
+          include: {
+            product: {
+              select: {
+                code: true,
+                label: true,
+                type: true,
+                durationDays: true,
               },
             },
           },
         },
-      });
+      } as const;
 
-      const items = meetings.map((m: any) => {
+      // Split queries so SuperTop are never truncated by pagination on normal meetings.
+      const superTopPurchaseWhere: any = {
+        status: 'ACTIVE',
+        expiresAt: { gt: now },
+        OR: [
+          { product: { code: 'SUPERTOP' } },
+          { product: { code: { startsWith: 'SUPERTOP_' } } },
+        ],
+      };
+
+      const superTopClause: any = {
+        OR: [
+          { bumpPackage: 'SUPERTOP' },
+          { quickMeetingPurchases: { some: superTopPurchaseWhere } },
+        ],
+      };
+
+      const superTopWhere: any = {
+        ...where,
+        ...superTopClause,
+      };
+
+      const normalWhere: any = {
+        ...where,
+        AND: [
+          { NOT: superTopClause },
+        ],
+      };
+
+      const [superTopRaw, normalRaw, superTopTotal, normalTotal] = await Promise.all([
+        prisma.quickMeeting.findMany({
+          where: superTopWhere,
+          orderBy: { createdAt: 'desc' },
+          take: 2000,
+          include: includePurchases,
+        }),
+        prisma.quickMeeting.findMany({
+          where: normalWhere,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+          include: includePurchases,
+        }),
+        prisma.quickMeeting.count({ where: superTopWhere }),
+        prisma.quickMeeting.count({ where: normalWhere }),
+      ]);
+
+      function decorate(m: any) {
         const activeProducts = Array.isArray(m.quickMeetingPurchases)
           ? m.quickMeetingPurchases.map((p: any) => p?.product).filter(Boolean)
           : [];
@@ -79,9 +120,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           isSuperTop,
           activePackages: activeProducts,
         };
-      });
+      }
 
-      return res.status(200).json({ meetings: items, take, skip });
+      const superTopMeetings = superTopRaw.map(decorate);
+      const normalMeetings = normalRaw.map(decorate);
+
+      return res.status(200).json({
+        superTopMeetings,
+        normalMeetings,
+        counts: { superTop: superTopTotal, normal: normalTotal },
+        take,
+        skip,
+      });
     } catch (error) {
       console.error('❌ GET /admin/quick-meetings error', error);
       return res.status(500).json({ error: 'Errore interno del server' });
