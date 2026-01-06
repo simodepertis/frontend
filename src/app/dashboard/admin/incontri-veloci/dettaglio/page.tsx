@@ -26,6 +26,11 @@ export default function AdminEditQuickMeetingPage() {
     isActive: true,
   });
 
+  const photoUrls = (form?.photosText || "")
+    .split(/\r?\n/)
+    .map((s: string) => s.trim())
+    .filter((s: string) => s.length > 0);
+
   useEffect(() => {
     if (!id) return;
     (async () => {
@@ -205,6 +210,41 @@ export default function AdminEditQuickMeetingPage() {
             placeholder="https://...jpg\nhttps://...jpg"
           />
         </div>
+
+        {photoUrls.length > 0 && (
+          <div className="bg-gray-900 border border-gray-700 rounded p-3">
+            <div className="text-sm font-medium text-gray-300 mb-2">Anteprima foto</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {photoUrls.map((url: string, idx: number) => (
+                <a
+                  key={`${url}-${idx}`}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded overflow-hidden border border-gray-700 bg-gray-800 hover:border-gray-600"
+                >
+                  <img
+                    src={url}
+                    alt={`Foto ${idx + 1}`}
+                    className="w-full h-28 object-cover"
+                    loading="lazy"
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      img.style.display = "none";
+                      const parent = img.parentElement;
+                      if (parent) {
+                        parent.setAttribute("data-error", "1");
+                      }
+                    }}
+                  />
+                  <div className="px-2 py-1 text-[11px] text-gray-400 truncate">
+                    {url}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <label className="flex items-center gap-2 text-white">
           <input
