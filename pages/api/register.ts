@@ -82,6 +82,27 @@ export default async function handler(
       select: { id: true, nome: true, email: true, ruolo: true, createdAt: true }
     })
 
+    const adminTo = (process.env.ADMIN_NOTIFICATIONS_EMAIL || '').trim()
+    if (adminTo) {
+      try {
+        await sendEmail({
+          to: adminTo,
+          subject: 'Nuova registrazione utente',
+          html: `
+            <p>Nuova registrazione completata:</p>
+            <ul>
+              <li><strong>ID</strong>: ${created.id}</li>
+              <li><strong>Email</strong>: ${created.email}</li>
+              <li><strong>Nome</strong>: ${created.nome}</li>
+              <li><strong>Ruolo</strong>: ${created.ruolo}</li>
+            </ul>
+          `,
+        })
+      } catch (e) {
+        console.error('Errore invio email admin (registrazione):', e)
+      }
+    }
+
     const hasEmailVerificationTokenModel = !!(prisma as any)?.emailVerificationToken?.create
     if (hasEmailVerificationTokenModel) {
       const rawToken = generateOpaqueToken()
