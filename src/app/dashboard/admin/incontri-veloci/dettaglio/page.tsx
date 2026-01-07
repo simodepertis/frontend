@@ -62,6 +62,15 @@ export default function AdminEditQuickMeetingPage() {
     setForm((s: any) => ({ ...s, [name]: type === "checkbox" ? checked : value }));
   };
 
+  const removePhotoUrl = (urlToRemove: string) => {
+    const next = (form?.photosText || "")
+      .split(/\r?\n/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0 && s !== urlToRemove)
+      .join("\n");
+    setForm((s: any) => ({ ...s, photosText: next }));
+  };
+
   const onSubmit = async (e: any) => {
     e.preventDefault();
     if (!id) return;
@@ -221,8 +230,19 @@ export default function AdminEditQuickMeetingPage() {
                   href={url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block rounded overflow-hidden border border-gray-700 bg-gray-800 hover:border-gray-600"
+                  className="relative block rounded overflow-hidden border border-gray-700 bg-gray-800 hover:border-gray-600"
                 >
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 z-10 px-2 py-1 text-[11px] bg-black/70 hover:bg-black/80 text-white rounded"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      removePhotoUrl(url);
+                    }}
+                  >
+                    Rimuovi
+                  </button>
                   <img
                     src={url}
                     alt={`Foto ${idx + 1}`}
