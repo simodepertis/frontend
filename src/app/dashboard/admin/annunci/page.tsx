@@ -160,7 +160,7 @@ export default function AdminAnnunciModerazionePage() {
             <input
               value={qmQ}
               onChange={(e) => setQmQ(e.target.value)}
-              placeholder="Cerca titolo/città/telefono..."
+              placeholder="Cerca per telefono..."
               className="px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white"
             />
             <Button

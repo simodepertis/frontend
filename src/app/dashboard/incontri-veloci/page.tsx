@@ -45,6 +45,7 @@ export default function IncontriVelociDashboard() {
   const router = useRouter();
   const [meetings, setMeetings] = useState<QuickMeeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [phoneQ, setPhoneQ] = useState<string>("");
   const [cat, setCat] = useState<string>('DONNA_CERCA_UOMO');
   const [city, setCity] = useState<string>('Milano');
   const [limit, setLimit] = useState<number>(20);
@@ -524,6 +525,10 @@ export default function IncontriVelociDashboard() {
     .filter((d) => Number.isFinite(d))
     .sort((a, b) => a - b);
 
+  const filteredMeetings = phoneQ.trim()
+    ? meetings.filter((m) => String(m.phone || '').includes(phoneQ.trim()))
+    : meetings;
+
   return (
     <div className="max-w-6xl mx-auto p-6">
       {/* Header */}
@@ -541,6 +546,12 @@ export default function IncontriVelociDashboard() {
           <span>➕</span>
           Crea Nuovo Annuncio
         </button>
+        <input
+          value={phoneQ}
+          onChange={(e) => setPhoneQ(e.target.value)}
+          placeholder="Cerca per telefono..."
+          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm text-white w-56"
+        />
         <select
           value={cat}
           onChange={(e) => setCat(e.target.value)}
@@ -586,9 +597,19 @@ export default function IncontriVelociDashboard() {
             Crea il tuo primo annuncio →
           </button>
         </div>
+      ) : filteredMeetings.length === 0 ? (
+        <div className="bg-gray-800 rounded-lg border border-gray-700 p-12 text-center">
+          <div className="text-gray-400 mb-4">Nessun annuncio trovato per questo numero.</div>
+          <button
+            onClick={() => setPhoneQ("")}
+            className="text-blue-400 hover:text-blue-300 font-medium"
+          >
+            Reset ricerca →
+          </button>
+        </div>
       ) : (
         <div className="space-y-4">
-          {meetings.map((meeting) => (
+          {filteredMeetings.map((meeting) => (
             <div
               key={meeting.id}
               className="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:border-gray-600 transition-colors"

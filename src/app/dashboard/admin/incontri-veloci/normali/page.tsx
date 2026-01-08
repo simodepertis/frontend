@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import SectionHeader from "@/components/SectionHeader";
 
 type QuickMeeting = {
@@ -16,8 +16,11 @@ type QuickMeeting = {
 };
 
 export default function AdminQuickMeetingsNormalPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const q = (searchParams?.get("q") || "").trim();
+
+  const [qInput, setQInput] = useState(q);
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -62,6 +65,15 @@ export default function AdminQuickMeetingsNormalPage() {
   }, [q]);
 
   useEffect(() => {
+    setQInput(q);
+  }, [q]);
+
+  const applySearch = () => {
+    const next = qInput.trim();
+    router.push(`/dashboard/admin/incontri-veloci/normali${next ? `?q=${encodeURIComponent(next)}` : ""}`);
+  };
+
+  useEffect(() => {
     load();
   }, [queryString]);
 
@@ -100,6 +112,28 @@ export default function AdminQuickMeetingsNormalPage() {
           >
             ← Torna a Moderazione Annunci
           </Link>
+          <div className="flex items-center gap-2">
+            <input
+              value={qInput}
+              onChange={(e) => setQInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  applySearch();
+                }
+              }}
+              placeholder="Cerca per telefono..."
+              className="px-3 py-2 bg-gray-900 border border-gray-700 rounded text-sm text-white"
+            />
+            <button
+              type="button"
+              disabled={loading}
+              onClick={applySearch}
+              className="px-3 py-2 rounded bg-blue-600 hover:bg-blue-700 text-sm text-white disabled:opacity-40"
+            >
+              Cerca
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
