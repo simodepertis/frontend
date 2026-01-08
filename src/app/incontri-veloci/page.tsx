@@ -109,6 +109,57 @@ function getSuperTopDisplayName(title: string) {
   return base.split(/\s+/)[0] || base;
 }
 
+function formatLocation(city: string, zone?: string | null) {
+  const clean = (input: string, opts?: { maxWords?: number; maxChars?: number }) => {
+    let s = String(input || '').trim();
+    if (!s) return '';
+    // keep only the leading location chunk (avoid appended phrases)
+    s = s.split(/\s*(?:\||\/|\\|\n|\r|,|\.|;|:|—|–|-|·)\s*/)[0] || s;
+    // collapse whitespace
+    s = s.replace(/\s+/g, ' ').trim();
+    // remove consecutive duplicate words (case-insensitive)
+    const parts = s.split(' ');
+    const out: string[] = [];
+    for (const p of parts) {
+      const prev = out[out.length - 1];
+      if (prev && prev.toLowerCase() === p.toLowerCase()) continue;
+      const low = p.toLowerCase();
+      if (
+        low.includes('pompino') ||
+        low.includes('venuta') ||
+        low.includes('sbor') ||
+        low.includes('scop') ||
+        low.includes('sexy')
+      ) {
+        break;
+      }
+      out.push(p);
+    }
+
+    // remove spurious trailing token sometimes appended by imports
+    if (out.length > 0 && out[out.length - 1].toLowerCase() === 'super') {
+      out.pop();
+    }
+
+    const maxWords = Math.max(1, opts?.maxWords ?? 4);
+    const maxChars = Math.max(10, opts?.maxChars ?? 40);
+    const limited = out.slice(0, maxWords).join(' ').trim();
+    return limited.length > maxChars ? limited.slice(0, maxChars).trim() : limited;
+  };
+
+  const c = clean(city, { maxWords: 4, maxChars: 40 });
+  let z = clean(zone || '', { maxWords: 12, maxChars: 90 });
+  if (!c && !z) return '';
+  if (!z) return c;
+  if (!c) return z;
+  // if zone starts with city, remove city prefix from zone
+  if (z.toLowerCase().startsWith(c.toLowerCase() + ' ')) {
+    z = z.slice(c.length).trim();
+  }
+  if (c.toLowerCase() === z.toLowerCase()) return c;
+  return `${c} · ${z}`;
+}
+
 export default function IncontriVelociPage() {
   const [meetings, setMeetings] = useState<QuickMeeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -353,10 +404,8 @@ export default function IncontriVelociPage() {
                           <h3 className="text-sm font-semibold text-white line-clamp-2 group-hover:text-yellow-300">
                             {displayName || meeting.title}
                           </h3>
-                          <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
-                            <span> {meeting.city}</span>
-                            {meeting.zone && <span> {meeting.zone}</span>}
-                            {meeting.age && <span> {meeting.age} anni</span>}
+                          <div className="text-[11px] text-gray-300">
+                            {formatLocation(meeting.city, meeting.zone)}
                           </div>
 
                           <div className="mt-auto">
@@ -453,10 +502,8 @@ export default function IncontriVelociPage() {
                           <h3 className="text-sm font-semibold text-white line-clamp-1 group-hover:text-blue-300">
                             {meeting.title}
                           </h3>
-                          <div className="text-[11px] text-gray-300 flex flex-wrap gap-2">
-                            <span> {meeting.city}</span>
-                            {meeting.zone && <span> {meeting.zone}</span>}
-                            {meeting.age && <span> {meeting.age} anni</span>}
+                          <div className="text-[11px] text-gray-300">
+                            {formatLocation(meeting.city, meeting.zone)}
                           </div>
                         </div>
                       </div>
