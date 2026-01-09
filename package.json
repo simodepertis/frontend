@@ -7,6 +7,7 @@
     "build": "prisma generate && prisma db push && next build",
     "start": "next start",
     "lint": "next lint",
+    "qm:bump-worker": "node scripts/qm-bump-schedule-worker.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev --name init_users",
     "prisma:migrate:deploy": "prisma migrate deploy",
