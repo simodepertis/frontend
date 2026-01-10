@@ -369,7 +369,7 @@ export default function IncontriVelociPage() {
                 const cover = normalizeUploadUrl(meeting.photos?.[0]);
                 const phone = normalizePhone(meeting.phone || '');
                 const whatsapp = normalizePhone(meeting.whatsapp || meeting.phone || '');
-                const displayName = (meeting.user?.nome || '').trim() || getSuperTopDisplayName(meeting.title);
+                const displayName = getSuperTopDisplayName(meeting.title) || (meeting.user?.nome || '').trim();
                 return (
                   <Link
                     key={`super-${meeting.id}`}
