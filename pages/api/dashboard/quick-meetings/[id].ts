@@ -122,6 +122,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const body: any = req.body || {};
       const data: any = { ...body };
       if ('photos' in data) data.photos = sanitizePhotos(data.photos);
+      if ('artistName' in data) {
+        const v = typeof data.artistName === 'string' ? data.artistName.trim() : '';
+        data.artistName = v ? v : null;
+      }
 
       const updated = await prisma.quickMeeting.update({
         where: { id: meetingId },

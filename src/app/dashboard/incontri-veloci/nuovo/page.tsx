@@ -305,6 +305,7 @@ export default function NuovoIncontroVeloce() {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
+          artistName: formData.artistName,
           title: formData.title,
           description: formData.description,
           category: formData.category,

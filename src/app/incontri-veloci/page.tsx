@@ -10,6 +10,7 @@ import SeoHead from "@/components/SeoHead";
 interface QuickMeeting {
   id: number;
   title: string;
+  artistName?: string | null;
   description?: string;
   category: string;
   city: string;
@@ -369,7 +370,10 @@ export default function IncontriVelociPage() {
                 const cover = normalizeUploadUrl(meeting.photos?.[0]);
                 const phone = normalizePhone(meeting.phone || '');
                 const whatsapp = normalizePhone(meeting.whatsapp || meeting.phone || '');
-                const displayName = getSuperTopDisplayName(meeting.title) || (meeting.user?.nome || '').trim();
+                const displayName =
+                  String(meeting.artistName || '').trim() ||
+                  getSuperTopDisplayName(meeting.title) ||
+                  (meeting.user?.nome || '').trim();
                 return (
                   <Link
                     key={`super-${meeting.id}`}

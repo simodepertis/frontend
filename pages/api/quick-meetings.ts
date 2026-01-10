@@ -133,6 +133,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Recupera annunci ordinati per bump e data
     const selectFields = {
       id: true,
+      artistName: true,
       title: true,
       description: true,
       category: true,

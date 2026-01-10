@@ -111,6 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   else if (req.method === 'POST') {
     try {
       const {
+        artistName,
         title,
         description,
         category,
@@ -136,6 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const meeting = await prisma.quickMeeting.create({
         data: {
+          artistName: typeof artistName === 'string' ? artistName.trim() : null,
           title,
           description,
           category: category as QuickMeetingCategory,

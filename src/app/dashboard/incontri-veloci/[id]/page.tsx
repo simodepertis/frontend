@@ -11,6 +11,7 @@ export default function EditQuickMeeting() {
   const [saving, setSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [form, setForm] = useState<any>({
+    artistName: "",
     title: "",
     description: "",
     category: "DONNA_CERCA_UOMO",
@@ -48,6 +49,7 @@ export default function EditQuickMeeting() {
         };
 
         setForm({
+          artistName: m.artistName || "",
           title: m.title || "",
           description: m.description || "",
           category: m.category || "DONNA_CERCA_UOMO",
@@ -305,6 +307,7 @@ export default function EditQuickMeeting() {
       }
 
       const body: any = {
+        artistName: form.artistName || null,
         title: form.title,
         description: form.description,
         category: form.category,
@@ -360,6 +363,11 @@ export default function EditQuickMeeting() {
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-white mb-6">Modifica Incontro Veloce</h1>
       <form onSubmit={onSubmit} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Nome d'arte</label>
+          <input name="artistName" value={form.artistName} onChange={onChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" placeholder="Nome d'arte" />
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">Titolo</label>
           <input name="title" value={form.title} onChange={onChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" placeholder="Titolo annuncio" required />

@@ -260,6 +260,7 @@ enum QuickMeetingCategory {
 model QuickMeeting {
   id          Int                  @id @default(autoincrement())
   title       String
+  artistName  String?
   description String?
   category    QuickMeetingCategory
   city        String
