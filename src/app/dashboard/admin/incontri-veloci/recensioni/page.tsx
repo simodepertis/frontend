@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 
 type ReviewItem = {
+  kind?: 'manual' | 'imported';
   id: number;
   title: string;
   rating: number;
@@ -14,6 +15,7 @@ type ReviewItem = {
   isVisible: boolean;
   user: { id: number; nome: string; email: string };
   quickMeeting: { id: number; title: string };
+  meta?: any;
 };
 
 export default function AdminIncontriVelociRecensioniPage() {
@@ -85,13 +87,16 @@ export default function AdminIncontriVelociRecensioniPage() {
     await load();
   }
 
-  async function deleteReview(id: number) {
+  async function deleteReview(id: number, kind?: ReviewItem['kind']) {
     if (!confirm('Eliminare definitivamente questa recensione?')) return;
 
     setActing(id);
     try {
       const token = localStorage.getItem('auth-token') || '';
-      const res = await fetch(`/api/admin/quick-meeting-reviews?id=${id}`, {
+      const params = new URLSearchParams();
+      params.set('id', String(id));
+      if (kind === 'imported') params.set('kind', 'imported');
+      const res = await fetch(`/api/admin/quick-meeting-reviews?${params.toString()}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -184,18 +189,22 @@ export default function AdminIncontriVelociRecensioniPage() {
                           <div className="text-white font-semibold">
                             {r.title}{' '}
                             <span className="text-xs text-gray-400">({r.rating}/5)</span>
+                            {r.kind === 'imported' ? <span className="ml-2 text-xs text-blue-300">(bot)</span> : null}
                             {!r.isVisible ? <span className="ml-2 text-xs text-red-300">(nascosta)</span> : null}
                             {r.isApproved ? <span className="ml-2 text-xs text-green-300">(approvata)</span> : <span className="ml-2 text-xs text-yellow-300">(in attesa)</span>}
                           </div>
                           <div className="text-sm text-gray-300 whitespace-pre-line">{r.reviewText}</div>
                           <div className="text-xs text-gray-400">Autore: {r.user?.nome} ({r.user?.email || '—'})</div>
+                          {r.kind === 'imported' && r.meta?.sourceUrl ? (
+                            <div className="text-xs text-gray-400">Source: {r.meta.sourceUrl}</div>
+                          ) : null}
                           <div className="text-xs text-gray-500">Inviata: {new Date(r.createdAt).toLocaleString()}</div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="secondary"
                             disabled={acting === r.id}
-                            onClick={() => deleteReview(r.id)}
+                            onClick={() => deleteReview(r.id, r.kind)}
                           >
                             {acting === r.id ? '...' : 'Elimina'}
                           </Button>

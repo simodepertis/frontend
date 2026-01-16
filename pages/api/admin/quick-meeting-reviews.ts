@@ -33,7 +33,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const meetingId = Number(req.query.meetingId || 0);
       const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
 
-      // Default behavior (for existing moderation page): only pending + visible
       const where: any = scope === 'all'
         ? {}
         : { isApproved: false, isVisible: true };
@@ -49,10 +48,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           { user: { is: { email: { contains: q, mode: 'insensitive' } } } },
           { user: { is: { nome: { contains: q, mode: 'insensitive' } } } },
           { quickMeeting: { is: { title: { contains: q, mode: 'insensitive' } } } },
+          { quickMeeting: { is: { phone: { contains: q } } } },
+          { quickMeeting: { is: { whatsapp: { contains: q } } } },
+          { quickMeeting: { is: { telegram: { contains: q } } } },
         ];
       }
 
-      const [items, total] = await Promise.all([
+      const [manualItems, manualTotal] = await Promise.all([
         prisma.quickMeetingReview.findMany({
           where,
           orderBy: { createdAt: 'desc' },
@@ -77,6 +79,83 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prisma.quickMeetingReview.count({ where }),
       ]);
 
+      let importedItems: any[] = [];
+      let importedTotal = 0;
+
+      if (scope === 'all') {
+        const importedWhere: any = {};
+        if (Number.isFinite(meetingId) && meetingId > 0) {
+          importedWhere.quickMeetingId = meetingId;
+        }
+        if (q) {
+          importedWhere.OR = [
+            { escortName: { contains: q, mode: 'insensitive' } },
+            { reviewerName: { contains: q, mode: 'insensitive' } },
+            { reviewText: { contains: q, mode: 'insensitive' } },
+            { escortPhone: { contains: q } },
+            { quickMeeting: { is: { title: { contains: q, mode: 'insensitive' } } } },
+            { quickMeeting: { is: { phone: { contains: q } } } },
+            { quickMeeting: { is: { whatsapp: { contains: q } } } },
+            { quickMeeting: { is: { telegram: { contains: q } } } },
+          ];
+        }
+
+        const importedTake = take;
+        const importedSkip = skip;
+        const [rawImported, rawImportedTotal] = await Promise.all([
+          prisma.importedReview.findMany({
+            where: importedWhere,
+            orderBy: { createdAt: 'desc' },
+            take: importedTake,
+            skip: importedSkip,
+            select: {
+              id: true,
+              reviewerName: true,
+              rating: true,
+              reviewText: true,
+              reviewDate: true,
+              createdAt: true,
+              sourceUrl: true,
+              sourceId: true,
+              escortName: true,
+              escortPhone: true,
+              quickMeeting: { select: { id: true, title: true } },
+            },
+          }),
+          prisma.importedReview.count({ where: importedWhere }),
+        ]);
+
+        importedItems = rawImported.map((r) => ({
+          kind: 'imported',
+          id: r.id,
+          title: r.reviewerName ? `Recensione di ${r.reviewerName}` : 'Recensione importata',
+          rating: r.rating ?? 0,
+          reviewText: r.reviewText ?? '',
+          createdAt: (r.reviewDate || r.createdAt).toISOString(),
+          isApproved: true,
+          isVisible: true,
+          user: { id: 0, nome: r.reviewerName || '—', email: r.sourceUrl || '' },
+          quickMeeting: r.quickMeeting,
+          meta: {
+            sourceUrl: r.sourceUrl,
+            sourceId: r.sourceId,
+            escortName: r.escortName,
+            escortPhone: r.escortPhone,
+          },
+        }));
+        importedTotal = rawImportedTotal;
+      }
+
+      const items = [
+        ...manualItems.map((r: any) => ({ ...r, kind: 'manual' })),
+        ...importedItems,
+      ].sort((a: any, b: any) => {
+        const da = new Date(a.createdAt).getTime();
+        const db = new Date(b.createdAt).getTime();
+        return db - da;
+      });
+
+      const total = manualTotal + importedTotal;
       return res.status(200).json({ items, total, take, skip, scope: scope || 'pending' });
     } catch (e) {
       console.error('Errore API admin quick-meeting-reviews:', e);
@@ -89,11 +168,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const adm = await requireAdmin(req);
       if (!adm) return res.status(403).json({ error: 'Non autorizzato' });
 
+      const kind = String((req.query.kind ?? '') || '').toLowerCase();
       const idRaw = (req.query.id ?? (typeof req.body === 'string' ? JSON.parse(req.body).id : req.body?.id)) as any;
       const idNum = Number(idRaw || 0);
       if (!idNum) return res.status(400).json({ error: 'Parametri non validi' });
 
-      await prisma.quickMeetingReview.delete({ where: { id: idNum } });
+      if (kind === 'imported') {
+        await prisma.importedReview.delete({ where: { id: idNum } });
+      } else {
+        await prisma.quickMeetingReview.delete({ where: { id: idNum } });
+      }
       return res.status(200).json({ ok: true });
     } catch (e) {
       console.error('Errore DELETE quick-meeting-review:', e);
