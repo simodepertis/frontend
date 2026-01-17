@@ -11,6 +11,7 @@ export default function EditQuickMeetingAgenzia() {
   const [saving, setSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [form, setForm] = useState<any>({
+    artistName: "",
     title: "",
     description: "",
     category: "DONNA_CERCA_UOMO",
@@ -49,6 +50,7 @@ export default function EditQuickMeetingAgenzia() {
 
         const existingPhotos = Array.isArray(m.photos) ? m.photos.map((p: any) => normalizeUploadUrl(p)) : [];
         setForm({
+          artistName: m.artistName || "",
           title: m.title || "",
           description: m.description || "",
           category: m.category || "DONNA_CERCA_UOMO",
@@ -311,6 +313,7 @@ export default function EditQuickMeetingAgenzia() {
       }
 
       const body: any = {
+        artistName: form.artistName || null,
         title: form.title,
         description: form.description,
         category: form.category,
@@ -366,6 +369,7 @@ export default function EditQuickMeetingAgenzia() {
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-white mb-6">Modifica Incontro Veloce (Agenzia)</h1>
       <form onSubmit={onSubmit} className="space-y-4">
+        <input name="artistName" value={form.artistName} onChange={onChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" placeholder="Nome d'arte" />
         <input name="title" value={form.title} onChange={onChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" placeholder="Titolo" />
         <textarea name="description" value={form.description} onChange={onChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white h-32" placeholder="Descrizione" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
