@@ -33,6 +33,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const meetingId = Number(req.query.meetingId || 0);
       const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
 
+      const qDigits = q ? q.replace(/[^0-9+]/g, '') : '';
+      const qDigitsOnly = qDigits.replace(/\D/g, '');
+      const phoneCandidates: string[] = [];
+      if (qDigitsOnly.length >= 6) {
+        const base = qDigitsOnly.startsWith('39') ? qDigitsOnly.slice(2) : qDigitsOnly;
+        if (base) {
+          phoneCandidates.push(base);
+          phoneCandidates.push(`39${base}`);
+          phoneCandidates.push(`+39${base}`);
+        }
+        if (qDigits && qDigits !== q) phoneCandidates.push(qDigits);
+      }
+      const phoneCandidatesUnique = Array.from(new Set(phoneCandidates.filter(Boolean)));
+
       const where: any = scope === 'all'
         ? {}
         : { isApproved: false, isVisible: true };
@@ -42,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       if (q) {
-        where.OR = [
+        const or: any[] = [
           { title: { contains: q, mode: 'insensitive' } },
           { reviewText: { contains: q, mode: 'insensitive' } },
           { user: { is: { email: { contains: q, mode: 'insensitive' } } } },
@@ -52,6 +66,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           { quickMeeting: { is: { whatsapp: { contains: q } } } },
           { quickMeeting: { is: { telegram: { contains: q } } } },
         ];
+        for (const cand of phoneCandidatesUnique) {
+          or.push({ quickMeeting: { is: { phone: { contains: cand } } } });
+          or.push({ quickMeeting: { is: { whatsapp: { contains: cand } } } });
+          or.push({ quickMeeting: { is: { telegram: { contains: cand } } } });
+        }
+        where.OR = or;
       }
 
       const [manualItems, manualTotal] = await Promise.all([
@@ -88,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           importedWhere.quickMeetingId = meetingId;
         }
         if (q) {
-          importedWhere.OR = [
+          const importedOr: any[] = [
             { escortName: { contains: q, mode: 'insensitive' } },
             { reviewerName: { contains: q, mode: 'insensitive' } },
             { reviewText: { contains: q, mode: 'insensitive' } },
@@ -98,6 +118,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             { quickMeeting: { is: { whatsapp: { contains: q } } } },
             { quickMeeting: { is: { telegram: { contains: q } } } },
           ];
+          for (const cand of phoneCandidatesUnique) {
+            importedOr.push({ escortPhone: { contains: cand } });
+            importedOr.push({ quickMeeting: { is: { phone: { contains: cand } } } });
+            importedOr.push({ quickMeeting: { is: { whatsapp: { contains: cand } } } });
+            importedOr.push({ quickMeeting: { is: { telegram: { contains: cand } } } });
+          }
+          importedWhere.OR = importedOr;
         }
 
         const importedTake = take;
