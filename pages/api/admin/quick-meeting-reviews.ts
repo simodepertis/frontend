@@ -58,6 +58,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .map((chunks) => chunks.map((c) => String(c || '').trim()).filter(Boolean))
         .filter((chunks) => chunks.length >= 2);
 
+      const shouldTryPhoneResolve = qDigitsOnly.length >= 6;
+
+      const phoneMeetingOr: any[] = [];
+      if (shouldTryPhoneResolve) {
+        for (const cand of phoneCandidatesUnique) {
+          phoneMeetingOr.push({ phone: { contains: cand } });
+          phoneMeetingOr.push({ whatsapp: { contains: cand } });
+          phoneMeetingOr.push({ telegram: { contains: cand } });
+        }
+        for (const chunks of phoneChunkCandidatesUnique) {
+          phoneMeetingOr.push({ AND: chunks.map((c) => ({ phone: { contains: c } })) });
+          phoneMeetingOr.push({ AND: chunks.map((c) => ({ whatsapp: { contains: c } })) });
+          phoneMeetingOr.push({ AND: chunks.map((c) => ({ telegram: { contains: c } })) });
+        }
+      }
+
+      const matchingMeetings = shouldTryPhoneResolve && phoneMeetingOr.length > 0
+        ? await prisma.quickMeeting.findMany({
+          where: { OR: phoneMeetingOr },
+          take: 50,
+          select: { id: true, title: true, phone: true, whatsapp: true, telegram: true },
+        })
+        : [];
+
       const where: any = scope === 'all'
         ? {}
         : { isApproved: false, isVisible: true };
@@ -174,6 +198,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           prisma.importedReview.count({ where: importedWhere }),
         ]);
 
+        const pickMeetingForImported = (r: any) => {
+          if (r?.quickMeeting?.id) return r.quickMeeting;
+          if (!shouldTryPhoneResolve || matchingMeetings.length === 0) return null;
+          const ph = String(r?.escortPhone || '').replace(/[^0-9+]/g, '');
+          const phDigits = ph.replace(/\D/g, '');
+          if (!phDigits) return matchingMeetings[0] || null;
+          const base = phDigits.startsWith('39') ? phDigits.slice(2) : phDigits;
+          for (const m of matchingMeetings) {
+            const s = `${m.phone || ''} ${m.whatsapp || ''} ${m.telegram || ''}`;
+            if (base && s.includes(base)) return { id: m.id, title: m.title };
+            if (ph && s.includes(ph)) return { id: m.id, title: m.title };
+          }
+          return matchingMeetings[0] ? { id: matchingMeetings[0].id, title: matchingMeetings[0].title } : null;
+        };
+
         importedItems = rawImported.map((r) => ({
           kind: 'imported',
           id: r.id,
@@ -184,7 +223,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           isApproved: true,
           isVisible: true,
           user: { id: 0, nome: r.reviewerName || '—', email: r.sourceUrl || '' },
-          quickMeeting: r.quickMeeting,
+          quickMeeting: r.quickMeeting || pickMeetingForImported(r),
           meta: {
             sourceUrl: r.sourceUrl,
             sourceId: r.sourceId,
