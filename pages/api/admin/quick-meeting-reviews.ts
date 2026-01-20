@@ -36,16 +36,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const qDigits = q ? q.replace(/[^0-9+]/g, '') : '';
       const qDigitsOnly = qDigits.replace(/\D/g, '');
       const phoneCandidates: string[] = [];
+      const phoneChunkCandidates: string[][] = [];
       if (qDigitsOnly.length >= 6) {
         const base = qDigitsOnly.startsWith('39') ? qDigitsOnly.slice(2) : qDigitsOnly;
         if (base) {
           phoneCandidates.push(base);
           phoneCandidates.push(`39${base}`);
           phoneCandidates.push(`+39${base}`);
+          if (base.length >= 9) {
+            phoneChunkCandidates.push([base.slice(0, 3), base.slice(3, 6), base.slice(6)]);
+          }
+          if (base.length >= 7) {
+            const last7 = base.slice(-7);
+            phoneChunkCandidates.push([last7.slice(0, 3), last7.slice(3)]);
+          }
         }
         if (qDigits && qDigits !== q) phoneCandidates.push(qDigits);
       }
       const phoneCandidatesUnique = Array.from(new Set(phoneCandidates.filter(Boolean)));
+      const phoneChunkCandidatesUnique = phoneChunkCandidates
+        .map((chunks) => chunks.map((c) => String(c || '').trim()).filter(Boolean))
+        .filter((chunks) => chunks.length >= 2);
 
       const where: any = scope === 'all'
         ? {}
@@ -70,6 +81,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           or.push({ quickMeeting: { is: { phone: { contains: cand } } } });
           or.push({ quickMeeting: { is: { whatsapp: { contains: cand } } } });
           or.push({ quickMeeting: { is: { telegram: { contains: cand } } } });
+        }
+        for (const chunks of phoneChunkCandidatesUnique) {
+          or.push({ quickMeeting: { is: { AND: chunks.map((c) => ({ phone: { contains: c } })) } } });
+          or.push({ quickMeeting: { is: { AND: chunks.map((c) => ({ whatsapp: { contains: c } })) } } });
+          or.push({ quickMeeting: { is: { AND: chunks.map((c) => ({ telegram: { contains: c } })) } } });
         }
         where.OR = or;
       }
@@ -123,6 +139,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             importedOr.push({ quickMeeting: { is: { phone: { contains: cand } } } });
             importedOr.push({ quickMeeting: { is: { whatsapp: { contains: cand } } } });
             importedOr.push({ quickMeeting: { is: { telegram: { contains: cand } } } });
+          }
+          for (const chunks of phoneChunkCandidatesUnique) {
+            importedOr.push({ AND: chunks.map((c) => ({ escortPhone: { contains: c } })) });
+            importedOr.push({ quickMeeting: { is: { AND: chunks.map((c) => ({ phone: { contains: c } })) } } });
+            importedOr.push({ quickMeeting: { is: { AND: chunks.map((c) => ({ whatsapp: { contains: c } })) } } });
+            importedOr.push({ quickMeeting: { is: { AND: chunks.map((c) => ({ telegram: { contains: c } })) } } });
           }
           importedWhere.OR = importedOr;
         }
