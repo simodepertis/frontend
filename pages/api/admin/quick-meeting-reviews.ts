@@ -494,6 +494,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (poolOnly) {
         const items = poolItems.sort((a: any, b: any) => {
+          const am = Number(a?.quickMeeting?.id ?? 0);
+          const bm = Number(b?.quickMeeting?.id ?? 0);
+          if (am !== bm) return am - bm;
           const ma = Number(a?.meta?.poolOrder ?? 0);
           const mb = Number(b?.meta?.poolOrder ?? 0);
           return ma - mb;
