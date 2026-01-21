@@ -17,13 +17,22 @@ function stripEscortReply(t: unknown) {
   return s;
 }
 
-function isBadText(t: unknown, bannedPhrases: string[], bannedStartRe: RegExp, clientSignals: string[]) {
+function isBadText(
+  t: unknown,
+  bannedPhrases: string[],
+  bannedStart: string[],
+  bannedStartRe: RegExp,
+  clientSignals: string[]
+) {
   const sRaw = stripEscortReply(t);
   const s = String(sRaw || '').trim().toLowerCase();
   if (!s) return true;
   if (s.length < 40) return true;
   for (const p of bannedPhrases) {
     if (s.includes(p)) return true;
+  }
+  for (const st of bannedStart) {
+    if (s.startsWith(st + ' ') || s === st) return true;
   }
   if (bannedStartRe.test(String(sRaw || ''))) return true;
   if (/\bti\s*(ringrazio|aspetto|bacio|abbraccio)\b/.test(s)) return true;
@@ -419,7 +428,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
               return rows
                 .map((r: any) => ({ ...r, reviewText: stripEscortReply(r.reviewText) }))
-                .filter((r: any) => !isBadText(r.reviewText, bannedPhrases, bannedStartRe, clientSignals));
+                .filter((r: any) => !isBadText(r.reviewText, bannedPhrases, bannedStart, bannedStartRe, clientSignals));
             };
 
             let pool = await loadPool(desiredPool);
