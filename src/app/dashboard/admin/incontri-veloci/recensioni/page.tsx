@@ -4,6 +4,102 @@ import SectionHeader from "@/components/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 
+function hash32(seed: number) {
+  let x = seed | 0;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  return x >>> 0;
+}
+
+function base36(n: number) {
+  return Math.abs(n).toString(36);
+}
+
+function toEaHandleRaw(input: unknown, seed: number) {
+  const raw = String(input || '').trim();
+  const looksLikeHandle = raw.length >= 3 && !raw.includes(' ') && /[0-9_\.]/.test(raw);
+
+  if (looksLikeHandle) {
+    const cleaned = raw.toLowerCase().replace(/[^a-z0-9_\.]/g, '').slice(0, 18);
+    return cleaned || `user_${base36(seed).slice(0, 6)}`;
+  }
+
+  const prefixes = [
+    'neo','meta','ultra','super','dark','quiet','wild','urban','lunar','solar','alpha','omega','delta','sigma','prime','zero','hyper','retro','steel','gold',
+    'mister','signor','capo','dr','mr','sir','il','lo','the','king','real','true','just','only','max','mini','big','tiny','fast','slow',
+    'blue','red','black','white','green','gray','night','day','sun','moon','star','nova','sky','deep','cold','hot','zen','koi','fox','wolf',
+    'hawk','raven','eagle','tiger','lion','bear','cobra','viper','shark','orca','puma','panther','storm','rain','wind','snow','fire','ice','rock','wave',
+  ];
+  const cores = [
+    'nico','marco','luca','alex','fede','mike','ste','dany','ivan','toni','vale','simo','ricky','tommy','kevin','roger','fabio','sam','leo','max',
+    'runner','driver','rider','walker','seeker','shadow','ghost','ninja','joker','vandal','pirate','viking','samurai','ronin','ranger','hunter','builder','maker','pilot','captain',
+    'atlas','orion','vega','zeus','thor','odin','ares','helios','cosmo','astro','omega','alpha','sigma','drake','blade','flash','spark','ember','stone','river',
+  ];
+  const suffixes = [
+    'it','x','xx','99','88','77','66','55','44','33','22','11','00','pro','vip','real','live','now','one','two','three','five','seven',
+    'north','south','east','west','city','zone','street','night','day','moon','sun','star','nova','lab','hub','club','crew','team','gang','base',
+  ];
+
+  const h = hash32(seed);
+  const p = prefixes[h % prefixes.length];
+  const c = cores[(h >>> 8) % cores.length];
+  const s = suffixes[(h >>> 16) % suffixes.length];
+  const digits = String(h % 1000).padStart(3, '0');
+  const tail = base36(h).padStart(6, '0').slice(0, 6);
+  const style = h % 7;
+
+  if (style === 0) return `${c}${digits}`.slice(0, 18);
+  if (style === 1) return `${c}_${digits}`.slice(0, 18);
+  if (style === 2) return `${p}${c}${digits}`.slice(0, 18);
+  if (style === 3) return `${p}_${c}${digits}`.slice(0, 18);
+  if (style === 4) return `${c}_${s}${digits}`.slice(0, 18);
+  if (style === 5) return `${p}_${c}_${s}`.slice(0, 18);
+  return `${c}${tail}`.slice(0, 18);
+}
+
+function toEaHandleUnique(input: unknown, seed: number, used: Set<string>, usedBases: Set<string>) {
+  let h = toEaHandleRaw(input, seed);
+
+  const basePart = (s: string) => {
+    const m = String(s || '').toLowerCase().match(/^[a-z]+/);
+    return m ? m[0] : '';
+  };
+  const base = basePart(h);
+
+  if (base && usedBases.has(base)) {
+    for (let k = 1; k <= 10; k++) {
+      const alt = toEaHandleRaw(input, seed + k * 1337);
+      const altBase = basePart(alt);
+      if (altBase && !usedBases.has(altBase) && !used.has(alt)) {
+        usedBases.add(altBase);
+        used.add(alt);
+        return alt;
+      }
+    }
+  }
+
+  if (!used.has(h)) {
+    used.add(h);
+    if (base) usedBases.add(base);
+    return h;
+  }
+
+  for (let i = 1; i <= 5; i++) {
+    const extra = base36(hash32(seed + i * 997)).padStart(4, '0').slice(0, 4);
+    const candidate = `${h}_${extra}`.slice(0, 22);
+    if (!used.has(candidate)) {
+      used.add(candidate);
+      const cb = basePart(candidate);
+      if (cb) usedBases.add(cb);
+      return candidate;
+    }
+  }
+  const fallback = `user_${base36(hash32(seed + 9999)).slice(0, 8)}`;
+  used.add(fallback);
+  return fallback;
+}
+
 type ReviewItem = {
   kind?: 'manual' | 'imported' | 'imported_pool';
   id: number;
@@ -31,7 +127,7 @@ export default function AdminIncontriVelociRecensioniPage() {
   const take = 200;
 
   const grouped = useMemo(() => {
-    const map = new Map<number, { meeting: ReviewItem['quickMeeting']; reviews: ReviewItem[] }>();
+    const map = new Map<number, { meeting: ReviewItem['quickMeeting']; reviews: (ReviewItem & { displayNome?: string })[] }>();
     for (const r of items) {
       const mid = r.quickMeeting?.id;
       if (!mid) continue;
@@ -42,7 +138,28 @@ export default function AdminIncontriVelociRecensioniPage() {
         map.set(mid, { meeting: r.quickMeeting, reviews: [r] });
       }
     }
-    return Array.from(map.values()).sort((a, b) => a.meeting.id - b.meeting.id);
+
+    const out = Array.from(map.values()).sort((a, b) => a.meeting.id - b.meeting.id);
+
+    for (const g of out) {
+      const used = new Set<string>();
+      const usedBases = new Set<string>();
+      g.reviews = g.reviews.map((r) => {
+        if (r.kind === 'imported_pool' && r.meta?.originalImportedReviewId) {
+          const seed = (g.meeting.id || 0) * 200000 + Number(r.meta.originalImportedReviewId);
+          const name = toEaHandleUnique(r.user?.nome, seed, used, usedBases);
+          return { ...r, displayNome: name };
+        }
+        if (r.kind === 'imported' && r.meta?.sourceUrl && String(r.meta.sourceUrl).includes('escort-advisor.com')) {
+          const seed = (g.meeting.id || 0) * 200000 + Number(r.id || 0);
+          const name = toEaHandleUnique(r.user?.nome, seed, used, usedBases);
+          return { ...r, displayNome: name };
+        }
+        return r;
+      });
+    }
+
+    return out;
   }, [items]);
 
   async function load() {
@@ -65,8 +182,14 @@ export default function AdminIncontriVelociRecensioniPage() {
       const midNum = Number(meetingId);
       if (Number.isFinite(midNum) && midNum > 0) params.set('meetingId', String(midNum));
 
+      const ts = Date.now();
+      params.set('_', String(ts));
       const res = await fetch(`/api/admin/quick-meeting-reviews?${params.toString()}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        cache: 'no-store',
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          'cache-control': 'no-cache',
+        },
       });
       if (res.status === 403) {
         alert('Non autorizzato');
@@ -203,7 +326,7 @@ export default function AdminIncontriVelociRecensioniPage() {
                             {r.isApproved ? <span className="ml-2 text-xs text-green-300">(approvata)</span> : <span className="ml-2 text-xs text-yellow-300">(in attesa)</span>}
                           </div>
                           <div className="text-sm text-gray-300 whitespace-pre-line">{r.reviewText}</div>
-                          <div className="text-xs text-gray-400">Autore: {r.user?.nome} ({r.user?.email || '—'})</div>
+                          <div className="text-xs text-gray-400">Autore: {(r as any).displayNome || r.user?.nome} ({r.user?.email || '—'})</div>
                           {(r.kind === 'imported' || r.kind === 'imported_pool') && r.meta?.sourceUrl ? (
                             <div className="text-xs text-gray-400">Source: {r.meta.sourceUrl}</div>
                           ) : null}
