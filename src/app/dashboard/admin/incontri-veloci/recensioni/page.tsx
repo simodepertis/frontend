@@ -53,7 +53,15 @@ export default function AdminIncontriVelociRecensioniPage() {
       params.set('scope', 'all');
       params.set('take', String(take));
       params.set('skip', String(skip));
-      if (q.trim()) params.set('q', q.trim());
+      if (q.trim()) {
+        const qTrim = q.trim();
+        params.set('q', qTrim);
+        const digitsOnly = qTrim.replace(/\D/g, '');
+        if (digitsOnly.length >= 6) {
+          params.set('poolOnly', '1');
+          params.set('poolLimit', '5');
+        }
+      }
       const midNum = Number(meetingId);
       if (Number.isFinite(midNum) && midNum > 0) params.set('meetingId', String(midNum));
 

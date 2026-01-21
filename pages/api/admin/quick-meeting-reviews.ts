@@ -85,6 +85,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const skip = Math.max(0, Number(req.query.skip) || 0);
       const meetingId = Number(req.query.meetingId || 0);
       const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+      const poolOnly = String(req.query.poolOnly || '') === '1';
 
       const qDigits = q ? q.replace(/[^0-9+]/g, '') : '';
       const qDigitsOnly = qDigits.replace(/\D/g, '');
@@ -467,7 +468,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           );
 
           poolItems = pools.flatMap(({ meeting, pool }: any) =>
-            (pool || []).map((r: any) => ({
+            (pool || []).map((r: any, idx: number) => ({
               kind: 'imported_pool',
               id: makePoolStableId(meeting.id, r.id),
               title: r.reviewerName ? `Recensione di ${r.reviewerName}` : 'Recensione importata',
@@ -484,10 +485,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 escortName: r.escortName,
                 pool: true,
                 originalImportedReviewId: r.id,
+                poolOrder: idx,
               },
             }))
           );
         }
+      }
+
+      if (poolOnly) {
+        const items = poolItems.sort((a: any, b: any) => {
+          const ma = Number(a?.meta?.poolOrder ?? 0);
+          const mb = Number(b?.meta?.poolOrder ?? 0);
+          return ma - mb;
+        });
+        return res.status(200).json({ items, total: items.length, take, skip, scope: scope || 'pending' });
       }
 
       const items = [
