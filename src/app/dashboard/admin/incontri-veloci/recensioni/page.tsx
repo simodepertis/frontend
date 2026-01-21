@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 
 type ReviewItem = {
-  kind?: 'manual' | 'imported';
+  kind?: 'manual' | 'imported' | 'imported_pool';
   id: number;
   title: string;
   rating: number;
@@ -190,12 +190,13 @@ export default function AdminIncontriVelociRecensioniPage() {
                             {r.title}{' '}
                             <span className="text-xs text-gray-400">({r.rating}/5)</span>
                             {r.kind === 'imported' ? <span className="ml-2 text-xs text-blue-300">(bot)</span> : null}
+                            {r.kind === 'imported_pool' ? <span className="ml-2 text-xs text-purple-300">(pool)</span> : null}
                             {!r.isVisible ? <span className="ml-2 text-xs text-red-300">(nascosta)</span> : null}
                             {r.isApproved ? <span className="ml-2 text-xs text-green-300">(approvata)</span> : <span className="ml-2 text-xs text-yellow-300">(in attesa)</span>}
                           </div>
                           <div className="text-sm text-gray-300 whitespace-pre-line">{r.reviewText}</div>
                           <div className="text-xs text-gray-400">Autore: {r.user?.nome} ({r.user?.email || '—'})</div>
-                          {r.kind === 'imported' && r.meta?.sourceUrl ? (
+                          {(r.kind === 'imported' || r.kind === 'imported_pool') && r.meta?.sourceUrl ? (
                             <div className="text-xs text-gray-400">Source: {r.meta.sourceUrl}</div>
                           ) : null}
                           <div className="text-xs text-gray-500">Inviata: {new Date(r.createdAt).toLocaleString()}</div>
@@ -204,7 +205,13 @@ export default function AdminIncontriVelociRecensioniPage() {
                           <Button
                             variant="secondary"
                             disabled={acting === r.id}
-                            onClick={() => deleteReview(r.id, r.kind)}
+                            onClick={() => {
+                              if (r.kind === 'imported_pool' && r.meta?.originalImportedReviewId) {
+                                deleteReview(Number(r.meta.originalImportedReviewId), 'imported');
+                                return;
+                              }
+                              deleteReview(r.id, r.kind);
+                            }}
                           >
                             {acting === r.id ? '...' : 'Elimina'}
                           </Button>

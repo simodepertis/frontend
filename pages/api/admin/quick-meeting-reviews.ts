@@ -2,6 +2,50 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 
+function stripEscortReply(t: unknown) {
+  let s = String(t || '').trim();
+  if (!s) return '';
+  const lower = s.toLowerCase();
+  const markers = [' ha risposto', '\nha risposto', 'risposta', ' ha risposto il', ' ha risposto:', ' risponde'];
+  let cut = -1;
+  for (const m of markers) {
+    const idx = lower.indexOf(m);
+    if (idx !== -1) cut = cut === -1 ? idx : Math.min(cut, idx);
+  }
+  if (cut !== -1) s = s.slice(0, cut).trim();
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
+function isBadText(t: unknown, bannedPhrases: string[], bannedStartRe: RegExp, clientSignals: string[]) {
+  const sRaw = stripEscortReply(t);
+  const s = String(sRaw || '').trim().toLowerCase();
+  if (!s) return true;
+  if (s.length < 40) return true;
+  for (const p of bannedPhrases) {
+    if (s.includes(p)) return true;
+  }
+  if (bannedStartRe.test(String(sRaw || ''))) return true;
+  if (/\bti\s*(ringrazio|aspetto|bacio|abbraccio)\b/.test(s)) return true;
+  if (/\b(feedback|ospiti|clienti)\b/.test(s) && /\b(grazie|ringrazio|scusa|dispiace)\b/.test(s)) return true;
+  if (/\bspero\s+di\s+vederti\s+presto\b/.test(s)) return true;
+  if (/\b(sono|sar[oò])\s+qui\s+per\s+te\b/.test(s)) return true;
+  if (/\bquando\s+vuoi\b/.test(s) && /\bti\s+aspetto\b/.test(s)) return true;
+  if (/\b(miei|i\s*miei)\s*clienti\b/.test(s)) return true;
+  if (/\b(recensione|stelline)\b/.test(s) && /\b(grazie|ringrazio)\b/.test(s)) return true;
+  const hasClientSignal = clientSignals.some((k) => s.includes(k));
+  if (!hasClientSignal && s.length < 120) return true;
+  return false;
+}
+
+function hash32(seed: number) {
+  let x = seed | 0;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  return x >>> 0;
+}
+
 function getBearer(req: NextApiRequest): string | null {
   const h = req.headers['authorization'];
   if (!h) return null;
@@ -78,9 +122,94 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ? await prisma.quickMeeting.findMany({
           where: { OR: phoneMeetingOr },
           take: 50,
-          select: { id: true, title: true, phone: true, whatsapp: true, telegram: true },
+          select: { id: true, title: true, category: true, phone: true, whatsapp: true, telegram: true },
         })
         : [];
+
+      const bannedPhrases = [
+        'grazie per la recensione',
+        'che bella recensione',
+        'grazie della recensione',
+        'grazie della tua recensione',
+        'grazie per questa recensione',
+        'ti ringrazio per la recensione',
+        'grazie per le tue parole',
+        'grazie per il vostro feedback',
+        'grazie per il tuo feedback',
+        'grazie per il feedback',
+        'mi dispiace se',
+        'mi dispiace',
+        'chiedo scusa',
+        'cercherò di migliorare',
+        'cerco sempre di offrire',
+        'cerco sempre di dare',
+        'ai miei ospiti',
+        'ai miei clienti',
+        'ti aspetto presto',
+        'grazie tesoro',
+        'un bacio',
+        'un bacio dolce',
+        'ti aspetto',
+        'a presto',
+        'mille baci',
+        'baci',
+        'grazie mille',
+        'grazie di cuore',
+      ];
+
+      const clientSignals = [
+        'esperienza',
+        'incontro',
+        'appuntamento',
+        'incontrata',
+        'incontrato',
+        'consiglio',
+        'consigliata',
+        'consigliato',
+        'sono stato',
+        'sono andato',
+        'sono tornato',
+        'ho incontrato',
+        'ho visto',
+        'mi sono trovato',
+        'mi sono trovato bene',
+        'mi sono trovato benissimo',
+        'pulita',
+        'pulito',
+        'puntuale',
+        'gentile',
+        'brava',
+        'accogliente',
+        'riceve',
+        'riceve a',
+        'appartamento',
+        'location',
+        'zona',
+        'parcheggio',
+        'porta',
+        'foto',
+        'foto reali',
+        'reali',
+        'rispetta',
+      ];
+
+      const bannedStart = [
+        'grazie',
+        'ciao',
+        'tesoro',
+        'amore',
+        'un bacio',
+        'baci',
+        'a presto',
+      ];
+
+      const bannedStartRe = new RegExp(
+        `^\\s*(?:${bannedStart
+          .map((x) => x.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'))
+          .sort((a, b) => b.length - a.length)
+          .join('|')})(?:[\\s,!?.:;\"'()\\-]|$)`,
+        'i'
+      );
 
       const where: any = scope === 'all'
         ? {}
@@ -141,6 +270,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       let importedItems: any[] = [];
       let importedTotal = 0;
+
+      let poolItems: any[] = [];
 
       if (scope === 'all') {
         const importedWhere: any = {};
@@ -232,18 +363,135 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           },
         }));
         importedTotal = rawImportedTotal;
+
+        const wantsPhonePool = shouldTryPhoneResolve && qDigitsOnly.length >= 6 && matchingMeetings.length > 0;
+        if (wantsPhonePool) {
+          const poolLimit = Math.max(1, Math.min(10, Number(req.query.poolLimit || 5)));
+
+          const fetchGlobalPool = async (seed: number, category?: string) => {
+            const cat = String(category || '').toUpperCase();
+            const sectionPrefix =
+              cat === 'DONNA_CERCA_UOMO'
+                ? 'ea_donne_'
+                : cat === 'UOMO_CERCA_UOMO'
+                  ? 'ea_uomini_'
+                  : cat === 'TRANS'
+                    ? 'ea_trans_'
+                    : cat === 'CENTRO_MASSAGGI'
+                      ? 'ea_massaggi_'
+                      : '';
+
+            const where: any = {
+              reviewText: { not: null },
+              rating: { not: null },
+              NOT: bannedPhrases.map((p) => ({ reviewText: { contains: p, mode: 'insensitive' as any } })),
+            };
+
+            if (sectionPrefix) {
+              where.OR = [{ sourceId: { startsWith: sectionPrefix } }];
+            }
+
+            const total = await prisma.importedReview.count({ where });
+            if (!total) return [];
+
+            const desiredPool = Math.max(poolLimit, Math.min(400, total));
+            const maxStart = Math.max(0, total - desiredPool);
+            const skipPool = maxStart > 0 ? (Math.abs(seed) % (maxStart + 1)) : 0;
+
+            const loadPool = async (takePool: number) => {
+              const rows = await prisma.importedReview.findMany({
+                where,
+                orderBy: [{ reviewDate: 'desc' }, { createdAt: 'desc' }],
+                skip: skipPool,
+                take: takePool,
+                select: {
+                  id: true,
+                  escortName: true,
+                  reviewerName: true,
+                  rating: true,
+                  reviewText: true,
+                  reviewDate: true,
+                  sourceUrl: true,
+                  sourceId: true,
+                  createdAt: true,
+                },
+              });
+
+              return rows
+                .map((r: any) => ({ ...r, reviewText: stripEscortReply(r.reviewText) }))
+                .filter((r: any) => !isBadText(r.reviewText, bannedPhrases, bannedStartRe, clientSignals));
+            };
+
+            let pool = await loadPool(desiredPool);
+            if (pool.length < poolLimit && total > desiredPool) {
+              pool = await loadPool(Math.min(700, total));
+            }
+
+            if (pool.length <= poolLimit) return pool;
+
+            const h = Math.abs(seed) >>> 0;
+            const step = 1 + (h % 7);
+            let idx = h % pool.length;
+            const out: any[] = [];
+            const used = new Set<number>();
+            for (let i = 0; i < poolLimit && used.size < pool.length; i++) {
+              while (used.has(idx) && used.size < pool.length) {
+                idx = (idx + 1) % pool.length;
+              }
+              used.add(idx);
+              out.push(pool[idx]);
+              idx = (idx + step) % pool.length;
+            }
+            return out;
+          };
+
+          const makePoolStableId = (meetingSeed: number, importedId: number) => {
+            const h = hash32(meetingSeed ^ importedId);
+            return 900000000 + (h % 900000000);
+          };
+
+          const pools = await Promise.all(
+            matchingMeetings.map(async (m: any) => {
+              const pool = await fetchGlobalPool(m.id, m.category);
+              return { meeting: m, pool };
+            })
+          );
+
+          poolItems = pools.flatMap(({ meeting, pool }: any) =>
+            (pool || []).map((r: any) => ({
+              kind: 'imported_pool',
+              id: makePoolStableId(meeting.id, r.id),
+              title: r.reviewerName ? `Recensione di ${r.reviewerName}` : 'Recensione importata',
+              rating: r.rating ?? 0,
+              reviewText: r.reviewText ?? '',
+              createdAt: (r.reviewDate || r.createdAt).toISOString(),
+              isApproved: true,
+              isVisible: true,
+              user: { id: 0, nome: r.reviewerName || '—', email: r.sourceUrl || '' },
+              quickMeeting: { id: meeting.id, title: meeting.title },
+              meta: {
+                sourceUrl: r.sourceUrl,
+                sourceId: r.sourceId,
+                escortName: r.escortName,
+                pool: true,
+                originalImportedReviewId: r.id,
+              },
+            }))
+          );
+        }
       }
 
       const items = [
         ...manualItems.map((r: any) => ({ ...r, kind: 'manual' })),
         ...importedItems,
+        ...poolItems,
       ].sort((a: any, b: any) => {
         const da = new Date(a.createdAt).getTime();
         const db = new Date(b.createdAt).getTime();
         return db - da;
       });
 
-      const total = manualTotal + importedTotal;
+      const total = manualTotal + importedTotal + poolItems.length;
       return res.status(200).json({ items, total, take, skip, scope: scope || 'pending' });
     } catch (e) {
       console.error('Errore API admin quick-meeting-reviews:', e);

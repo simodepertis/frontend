@@ -49,6 +49,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const limit = Math.max(1, Math.min(10, Number(req.query.limit || 5)))
   const mode = String(req.query.mode || '').toLowerCase()
 
+  const selectImported = {
+    id: true,
+    escortName: true,
+    reviewerName: true,
+    rating: true,
+    reviewText: true,
+    reviewDate: true,
+    sourceUrl: true,
+  }
+
   const bannedPhrases = [
     'grazie per la recensione',
     'che bella recensione',
@@ -269,6 +279,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    if (mode === 'linked' || mode === 'linked_fallback') {
+      const linkedRaw = await prisma.importedReview.findMany({
+        where: {
+          quickMeetingId: meetingId,
+          reviewText: { not: null },
+          rating: { not: null },
+          NOT: bannedPhrases.map((p) => ({ reviewText: { contains: p, mode: 'insensitive' as any } })),
+        },
+        orderBy: [
+          { reviewDate: 'desc' },
+          { createdAt: 'desc' },
+        ],
+        take: limit,
+        select: selectImported,
+      })
+
+      const linked = (linkedRaw || [])
+        .map((r: any) => ({ ...r, reviewText: stripEscortReply(r.reviewText) }))
+        .filter((r: any) => !isBadText(r.reviewText))
+
+      if (linked.length > 0) {
+        return res.status(200).json({ reviews: linked, keywords: [], mode: 'linked' })
+      }
+
+      if (mode === 'linked') {
+        return res.status(200).json({ reviews: [], keywords: [], mode: 'linked_empty' })
+      }
+
+      const meeting = await prisma.quickMeeting.findFirst({
+        where: { id: meetingId },
+        select: { category: true },
+      })
+      const reviews = await fetchGlobal(meetingId, meeting?.category as any)
+      return res.status(200).json({ reviews, keywords: [], mode: 'linked_fallback_global' })
+    }
+
     if (mode === 'global') {
       const meeting = await prisma.quickMeeting.findFirst({
         where: { id: meetingId },
@@ -314,15 +360,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         { createdAt: 'desc' },
       ],
       take: limit,
-      select: {
-        id: true,
-        escortName: true,
-        reviewerName: true,
-        rating: true,
-        reviewText: true,
-        reviewDate: true,
-        sourceUrl: true,
-      }
+      select: selectImported,
     })
 
     const reviews = (reviewsRaw || [])
