@@ -85,7 +85,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const skip = Math.max(0, Number(req.query.skip) || 0);
       const meetingId = Number(req.query.meetingId || 0);
       const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-      const poolOnly = String(req.query.poolOnly || '') === '1';
 
       const qDigits = q ? q.replace(/[^0-9+]/g, '') : '';
       const qDigitsOnly = qDigits.replace(/\D/g, '');
@@ -281,13 +280,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let importedItems: any[] = [];
       let importedTotal = 0;
 
-      let poolItems: any[] = [];
+      // NOTE: for admin management we only return linked imported reviews (ImportedReview.quickMeetingId)
+      // so deletions do not cause any substitution.
 
       if (scope === 'all') {
         const importedWhere: any = {};
         if (Number.isFinite(meetingId) && meetingId > 0) {
           importedWhere.quickMeetingId = meetingId;
         }
+
+        // If user searched a phone number, resolve the matching meetings and return imported reviews linked to them.
+        // This guarantees that if you delete 1 review, the remaining set stays the same (no pool regeneration).
+        if (
+          !importedWhere.quickMeetingId &&
+          shouldTryPhoneResolve &&
+          qDigitsOnly.length >= 6 &&
+          matchingMeetings.length > 0
+        ) {
+          importedWhere.quickMeetingId = { in: matchingMeetings.map((m) => m.id) };
+        }
+
         if (q) {
           const importedOr: any[] = [
             { escortName: { contains: q, mode: 'insensitive' } },
@@ -374,147 +386,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }));
         importedTotal = rawImportedTotal;
 
-        const wantsPhonePool = shouldTryPhoneResolve && qDigitsOnly.length >= 6 && matchingMeetings.length > 0;
-        if (wantsPhonePool) {
-          const poolLimit = Math.max(1, Math.min(10, Number(req.query.poolLimit || 5)));
-
-          const fetchGlobalPool = async (seed: number, category?: string) => {
-            const cat = String(category || '').toUpperCase();
-            const sectionPrefix =
-              cat === 'DONNA_CERCA_UOMO'
-                ? 'ea_donne_'
-                : cat === 'UOMO_CERCA_UOMO'
-                  ? 'ea_uomini_'
-                  : cat === 'TRANS'
-                    ? 'ea_trans_'
-                    : cat === 'CENTRO_MASSAGGI'
-                      ? 'ea_massaggi_'
-                      : '';
-
-            const where: any = {
-              reviewText: { not: null },
-              rating: { not: null },
-              NOT: bannedPhrases.map((p) => ({ reviewText: { contains: p, mode: 'insensitive' as any } })),
-            };
-
-            if (sectionPrefix) {
-              where.OR = [{ sourceId: { startsWith: sectionPrefix } }];
-            }
-
-            const total = await prisma.importedReview.count({ where });
-            if (!total) return [];
-
-            const desiredPool = Math.max(poolLimit, Math.min(400, total));
-            const maxStart = Math.max(0, total - desiredPool);
-            const skipPool = maxStart > 0 ? (Math.abs(seed) % (maxStart + 1)) : 0;
-
-            const loadPool = async (takePool: number) => {
-              const rows = await prisma.importedReview.findMany({
-                where,
-                orderBy: [{ reviewDate: 'desc' }, { createdAt: 'desc' }],
-                skip: skipPool,
-                take: takePool,
-                select: {
-                  id: true,
-                  escortName: true,
-                  reviewerName: true,
-                  rating: true,
-                  reviewText: true,
-                  reviewDate: true,
-                  sourceUrl: true,
-                  sourceId: true,
-                  createdAt: true,
-                },
-              });
-
-              return rows
-                .map((r: any) => ({ ...r, reviewText: stripEscortReply(r.reviewText) }))
-                .filter((r: any) => !isBadText(r.reviewText, bannedPhrases, bannedStart, bannedStartRe, clientSignals));
-            };
-
-            let pool = await loadPool(desiredPool);
-            if (pool.length < poolLimit && total > desiredPool) {
-              pool = await loadPool(Math.min(700, total));
-            }
-
-            if (pool.length <= poolLimit) return pool;
-
-            const h = Math.abs(seed) >>> 0;
-            const step = 1 + (h % 7);
-            let idx = h % pool.length;
-            const out: any[] = [];
-            const used = new Set<number>();
-            for (let i = 0; i < poolLimit && used.size < pool.length; i++) {
-              while (used.has(idx) && used.size < pool.length) {
-                idx = (idx + 1) % pool.length;
-              }
-              used.add(idx);
-              out.push(pool[idx]);
-              idx = (idx + step) % pool.length;
-            }
-            return out;
-          };
-
-          const makePoolStableId = (meetingSeed: number, importedId: number) => {
-            const h = hash32(meetingSeed ^ importedId);
-            return 900000000 + (h % 900000000);
-          };
-
-          const pools = await Promise.all(
-            matchingMeetings.map(async (m: any) => {
-              const pool = await fetchGlobalPool(m.id, m.category);
-              return { meeting: m, pool };
-            })
-          );
-
-          poolItems = pools.flatMap(({ meeting, pool }: any) =>
-            (pool || []).map((r: any, idx: number) => ({
-              kind: 'imported_pool',
-              id: makePoolStableId(meeting.id, r.id),
-              title: r.reviewerName ? `Recensione di ${r.reviewerName}` : 'Recensione importata',
-              rating: r.rating ?? 0,
-              reviewText: r.reviewText ?? '',
-              createdAt: (r.reviewDate || r.createdAt).toISOString(),
-              isApproved: true,
-              isVisible: true,
-              user: { id: 0, nome: r.reviewerName || '—', email: r.sourceUrl || '' },
-              quickMeeting: { id: meeting.id, title: meeting.title },
-              meta: {
-                sourceUrl: r.sourceUrl,
-                sourceId: r.sourceId,
-                escortName: r.escortName,
-                pool: true,
-                originalImportedReviewId: r.id,
-                poolOrder: idx,
-              },
-            }))
-          );
-        }
-      }
-
-      if (poolOnly) {
-        const items = poolItems.sort((a: any, b: any) => {
-          const am = Number(a?.quickMeeting?.id ?? 0);
-          const bm = Number(b?.quickMeeting?.id ?? 0);
-          if (am !== bm) return am - bm;
-          const ma = Number(a?.meta?.poolOrder ?? 0);
-          const mb = Number(b?.meta?.poolOrder ?? 0);
-          return ma - mb;
-        });
-        return res.status(200).json({ items, total: items.length, take, skip, scope: scope || 'pending' });
       }
 
       const items = [
         ...manualItems.map((r: any) => ({ ...r, kind: 'manual' })),
         ...importedItems,
-        ...poolItems,
       ].sort((a: any, b: any) => {
         const da = new Date(a.createdAt).getTime();
         const db = new Date(b.createdAt).getTime();
         return db - da;
       });
 
-      const total = manualTotal + importedTotal + poolItems.length;
+      const total = manualTotal + importedTotal;
       return res.status(200).json({ items, total, take, skip, scope: scope || 'pending' });
     } catch (e) {
       console.error('Errore API admin quick-meeting-reviews:', e);
@@ -548,26 +431,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const adm = await requireAdmin(req);
       if (!adm) return res.status(403).json({ error: 'Non autorizzato' });
-      
-      const { id, action } = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-      const idNum = Number(id || 0);
-      const act = String(action || '').toLowerCase();
-      
-      if (!idNum || !['approve','reject'].includes(act)) {
+
+      const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+      const kind = String(body.kind || '').toLowerCase();
+      const idNum = Number(body.id || 0);
+      const action = String(body.action || '').toLowerCase();
+      const reviewText = typeof body.reviewText === 'string' ? body.reviewText : undefined;
+      const title = typeof body.title === 'string' ? body.title : undefined;
+      const rating = body.rating != null ? Number(body.rating) : undefined;
+
+      if (!idNum) return res.status(400).json({ error: 'Parametri non validi' });
+
+      // Edit mode: allow updating text (and optional fields)
+      if (reviewText != null || title != null || rating != null) {
+        if (kind === 'imported') {
+          const data: any = {};
+          if (reviewText != null) data.reviewText = reviewText;
+          if (rating != null && Number.isFinite(rating)) data.rating = rating;
+          const item = await prisma.importedReview.update({ where: { id: idNum }, data });
+          return res.status(200).json({ ok: true, item });
+        }
+
+        // default/manual
+        const data: any = {};
+        if (reviewText != null) data.reviewText = reviewText;
+        if (title != null) data.title = title;
+        if (rating != null && Number.isFinite(rating)) data.rating = rating;
+        const item = await prisma.quickMeetingReview.update({ where: { id: idNum }, data });
+        return res.status(200).json({ ok: true, item });
+      }
+
+      // Moderate mode (existing): approve/reject only applies to manual reviews
+      if (!['approve', 'reject'].includes(action)) {
         return res.status(400).json({ error: 'Parametri non validi' });
       }
 
-      if (act === 'approve') {
+      if (action === 'approve') {
         const item = await prisma.quickMeetingReview.update({
           where: { id: idNum },
           data: { isApproved: true }
         });
         return res.status(200).json({ ok: true, item });
-      } else {
-        // Rifiuta = elimina
-        await prisma.quickMeetingReview.delete({ where: { id: idNum } });
-        return res.status(200).json({ ok: true });
       }
+      await prisma.quickMeetingReview.delete({ where: { id: idNum } });
+      return res.status(200).json({ ok: true });
     } catch (e) {
       console.error('Errore PATCH:', e);
       return res.status(500).json({ error: 'Errore interno' });

@@ -101,7 +101,7 @@ function toEaHandleUnique(input: unknown, seed: number, used: Set<string>, usedB
 }
 
 type ReviewItem = {
-  kind?: 'manual' | 'imported' | 'imported_pool';
+  kind?: 'manual' | 'imported';
   id: number;
   title: string;
   rating: number;
@@ -119,6 +119,8 @@ export default function AdminIncontriVelociRecensioniPage() {
   const [acting, setActing] = useState<number | null>(null);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState<string>('');
 
   const [q, setQ] = useState('');
   const [meetingId, setMeetingId] = useState('');
@@ -145,11 +147,6 @@ export default function AdminIncontriVelociRecensioniPage() {
       const used = new Set<string>();
       const usedBases = new Set<string>();
       g.reviews = g.reviews.map((r) => {
-        if (r.kind === 'imported_pool' && r.meta?.originalImportedReviewId) {
-          const seed = (g.meeting.id || 0) * 200000 + Number(r.meta.originalImportedReviewId);
-          const name = toEaHandleUnique(r.user?.nome, seed, used, usedBases);
-          return { ...r, displayNome: name };
-        }
         if (r.kind === 'imported' && r.meta?.sourceUrl && String(r.meta.sourceUrl).includes('escort-advisor.com')) {
           const seed = (g.meeting.id || 0) * 200000 + Number(r.id || 0);
           const name = toEaHandleUnique(r.user?.nome, seed, used, usedBases);
@@ -173,11 +170,6 @@ export default function AdminIncontriVelociRecensioniPage() {
       if (q.trim()) {
         const qTrim = q.trim();
         params.set('q', qTrim);
-        const digitsOnly = qTrim.replace(/\D/g, '');
-        if (digitsOnly.length >= 6) {
-          params.set('poolOnly', '1');
-          params.set('poolLimit', '5');
-        }
       }
       const midNum = Number(meetingId);
       if (Number.isFinite(midNum) && midNum > 0) params.set('meetingId', String(midNum));
@@ -236,6 +228,40 @@ export default function AdminIncontriVelociRecensioniPage() {
         alert(j?.error || 'Errore eliminazione');
         return;
       }
+      await load();
+    } finally {
+      setActing(null);
+    }
+  }
+
+  function startEdit(r: ReviewItem) {
+    setEditingId(r.id);
+    setEditingText(String(r.reviewText || ''));
+  }
+
+  async function saveEdit(r: ReviewItem) {
+    setActing(r.id);
+    try {
+      const token = localStorage.getItem('auth-token') || '';
+      const res = await fetch('/api/admin/quick-meeting-reviews', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          id: r.id,
+          kind: r.kind === 'imported' ? 'imported' : 'manual',
+          reviewText: editingText,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(j?.error || 'Errore salvataggio');
+        return;
+      }
+      setEditingId(null);
+      setEditingText('');
       await load();
     } finally {
       setActing(null);
@@ -321,26 +347,59 @@ export default function AdminIncontriVelociRecensioniPage() {
                             {r.title}{' '}
                             <span className="text-xs text-gray-400">({r.rating}/5)</span>
                             {r.kind === 'imported' ? <span className="ml-2 text-xs text-blue-300">(bot)</span> : null}
-                            {r.kind === 'imported_pool' ? <span className="ml-2 text-xs text-purple-300">(pool)</span> : null}
                             {!r.isVisible ? <span className="ml-2 text-xs text-red-300">(nascosta)</span> : null}
                             {r.isApproved ? <span className="ml-2 text-xs text-green-300">(approvata)</span> : <span className="ml-2 text-xs text-yellow-300">(in attesa)</span>}
                           </div>
-                          <div className="text-sm text-gray-300 whitespace-pre-line">{r.reviewText}</div>
+                          {editingId === r.id ? (
+                            <textarea
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              className="w-full mt-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded text-white text-sm"
+                              rows={4}
+                            />
+                          ) : (
+                            <div className="text-sm text-gray-300 whitespace-pre-line">{r.reviewText}</div>
+                          )}
                           <div className="text-xs text-gray-400">Autore: {(r as any).displayNome || r.user?.nome} ({r.user?.email || '—'})</div>
-                          {(r.kind === 'imported' || r.kind === 'imported_pool') && r.meta?.sourceUrl ? (
+                          {r.kind === 'imported' && r.meta?.sourceUrl ? (
                             <div className="text-xs text-gray-400">Source: {r.meta.sourceUrl}</div>
                           ) : null}
                           <div className="text-xs text-gray-500">Inviata: {new Date(r.createdAt).toLocaleString()}</div>
                         </div>
                         <div className="flex items-center gap-2">
+                          {editingId === r.id ? (
+                            <>
+                              <Button
+                                variant="secondary"
+                                disabled={acting === r.id}
+                                onClick={() => saveEdit(r)}
+                              >
+                                {acting === r.id ? '...' : 'Salva'}
+                              </Button>
+                              <Button
+                                variant="secondary"
+                                disabled={acting === r.id}
+                                onClick={() => {
+                                  setEditingId(null);
+                                  setEditingText('');
+                                }}
+                              >
+                                Annulla
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              variant="secondary"
+                              disabled={acting === r.id}
+                              onClick={() => startEdit(r)}
+                            >
+                              Modifica
+                            </Button>
+                          )}
                           <Button
                             variant="secondary"
                             disabled={acting === r.id}
                             onClick={() => {
-                              if (r.kind === 'imported_pool' && r.meta?.originalImportedReviewId) {
-                                deleteReview(Number(r.meta.originalImportedReviewId), 'imported');
-                                return;
-                              }
                               deleteReview(r.id, r.kind);
                             }}
                           >
