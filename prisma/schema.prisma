@@ -299,6 +299,7 @@ model QuickMeeting {
   // Relazioni
   bumpLogs              BumpLog[]
   importedReviews       ImportedReview[]
+  importedReviewSelections QuickMeetingImportedReviewSelection[]
   reviews               QuickMeetingReview[]
   quickMeetingPurchases QuickMeetingPurchase[]
 
