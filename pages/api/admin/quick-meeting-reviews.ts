@@ -280,6 +280,72 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let importedItems: any[] = [];
       let importedTotal = 0;
 
+      let selectionItems: any[] = [];
+      let selectionTotal = 0;
+
+      const selectionMeetingIds = (() => {
+        if (Number.isFinite(meetingId) && meetingId > 0) return [meetingId];
+        if (shouldTryPhoneResolve && qDigitsOnly.length >= 6 && matchingMeetings.length > 0) {
+          return matchingMeetings.map((m) => m.id);
+        }
+        return [];
+      })();
+
+      if (scope === 'all' && selectionMeetingIds.length > 0) {
+        const rows = await prisma.quickMeetingImportedReviewSelection.findMany({
+          where: { quickMeetingId: { in: selectionMeetingIds } },
+          orderBy: [{ quickMeetingId: 'asc' }, { position: 'asc' }],
+          select: {
+            id: true,
+            quickMeetingId: true,
+            position: true,
+            overrideReviewText: true,
+            quickMeeting: { select: { id: true, title: true } },
+            importedReview: {
+              select: {
+                id: true,
+                reviewerName: true,
+                rating: true,
+                reviewText: true,
+                reviewDate: true,
+                createdAt: true,
+                sourceUrl: true,
+                sourceId: true,
+                escortName: true,
+                escortPhone: true,
+              },
+            },
+          },
+        });
+
+        selectionItems = (rows || []).map((s: any) => {
+          const r = s.importedReview;
+          const txt = s.overrideReviewText != null ? s.overrideReviewText : r?.reviewText;
+          return {
+            kind: 'imported_selected',
+            id: s.id,
+            title: r?.reviewerName ? `Recensione di ${r.reviewerName}` : 'Recensione importata',
+            rating: r?.rating ?? 0,
+            reviewText: txt ?? '',
+            createdAt: (r?.reviewDate || r?.createdAt).toISOString(),
+            isApproved: true,
+            isVisible: true,
+            user: { id: 0, nome: r?.reviewerName || '—', email: r?.sourceUrl || '' },
+            quickMeeting: s.quickMeeting,
+            meta: {
+              selectionId: s.id,
+              position: s.position,
+              originalImportedReviewId: r?.id,
+              sourceUrl: r?.sourceUrl,
+              sourceId: r?.sourceId,
+              escortName: r?.escortName,
+              escortPhone: r?.escortPhone,
+            },
+          };
+        });
+        selectionTotal = selectionItems.length;
+      }
+
       // NOTE: for admin management we only return linked imported reviews (ImportedReview.quickMeetingId)
       // so deletions do not cause any substitution.
 
@@ -391,13 +457,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const items = [
         ...manualItems.map((r: any) => ({ ...r, kind: 'manual' })),
         ...importedItems,
+        ...selectionItems,
       ].sort((a: any, b: any) => {
         const da = new Date(a.createdAt).getTime();
         const db = new Date(b.createdAt).getTime();
         return db - da;
       });
 
-      const total = manualTotal + importedTotal;
+      const total = manualTotal + importedTotal + selectionTotal;
       return res.status(200).json({ items, total, take, skip, scope: scope || 'pending' });
     } catch (e) {
       console.error('Errore API admin quick-meeting-reviews:', e);
@@ -415,7 +482,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const idNum = Number(idRaw || 0);
       if (!idNum) return res.status(400).json({ error: 'Parametri non validi' });
 
-      if (kind === 'imported') {
+      if (kind === 'selection') {
+        await prisma.quickMeetingImportedReviewSelection.delete({ where: { id: idNum } });
+      } else if (kind === 'imported') {
         await prisma.importedReview.delete({ where: { id: idNum } });
       } else {
         await prisma.quickMeetingReview.delete({ where: { id: idNum } });
@@ -444,6 +513,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Edit mode: allow updating text (and optional fields)
       if (reviewText != null || title != null || rating != null) {
+        if (kind === 'selection') {
+          const data: any = {};
+          if (reviewText != null) data.overrideReviewText = reviewText;
+          const item = await prisma.quickMeetingImportedReviewSelection.update({ where: { id: idNum }, data });
+          return res.status(200).json({ ok: true, item });
+        }
         if (kind === 'imported') {
           const data: any = {};
           if (reviewText != null) data.reviewText = reviewText;

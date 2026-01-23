@@ -327,10 +327,29 @@ model ImportedReview {
 
   quickMeeting QuickMeeting? @relation(fields: [quickMeetingId], references: [id], onDelete: Cascade)
 
+  quickMeetingSelections QuickMeetingImportedReviewSelection[]
+
   @@index([escortPhone])
   @@index([sourceId])
   @@index([isProcessed])
   @@index([quickMeetingId])
+}
+
+model QuickMeetingImportedReviewSelection {
+  id            Int      @id @default(autoincrement())
+  quickMeetingId Int
+  importedReviewId Int
+  position      Int
+  overrideReviewText String?
+  createdAt     DateTime @default(now())
+
+  quickMeeting   QuickMeeting  @relation(fields: [quickMeetingId], references: [id], onDelete: Cascade)
+  importedReview ImportedReview @relation(fields: [importedReviewId], references: [id], onDelete: Cascade)
+
+  @@unique([quickMeetingId, importedReviewId])
+  @@unique([quickMeetingId, position])
+  @@index([quickMeetingId])
+  @@index([importedReviewId])
 }
 
 model BumpLog {

@@ -1,6 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
+function hash32(seed: number) {
+  let x = seed | 0
+  x ^= x << 13
+  x ^= x >>> 17
+  x ^= x << 5
+  return x >>> 0
+}
+
 function extractKeywords(text: string) {
   const stop = new Set([
     'e','o','ma','per','con','senza','su','già','anche','solo','poi','qui','qua','come','che','chi','cui','del','dello','della','dei','degli','delle',
@@ -27,6 +35,7 @@ function extractKeywords(text: string) {
     if (!out.includes(t)) out.push(t)
     if (out.length >= 8) break
   }
+
   return out
 }
 
@@ -278,6 +287,62 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return out
   }
 
+  const fetchSelection = async () => {
+    const rows = await prisma.quickMeetingImportedReviewSelection.findMany({
+      where: { quickMeetingId: meetingId },
+      orderBy: { position: 'asc' },
+      take: limit,
+      select: {
+        position: true,
+        overrideReviewText: true,
+        importedReview: {
+          select: selectImported,
+        },
+      },
+    })
+
+    if (!rows || rows.length === 0) return null
+
+    const reviews = rows
+      .map((x: any) => {
+        const r = x.importedReview
+        const txt = x.overrideReviewText != null ? x.overrideReviewText : r?.reviewText
+        return { ...r, reviewText: stripEscortReply(txt) }
+      })
+      .filter((r: any) => !isBadText(r.reviewText))
+
+    return reviews
+  }
+
+  const ensureSelection = async (category?: string) => {
+    const existing = await fetchSelection()
+    if (existing) return existing
+
+    const generated = await fetchGlobal(meetingId, category as any)
+    const picks = (generated || []).slice(0, limit)
+
+    if (!picks.length) return []
+
+    try {
+      await prisma.$transaction(
+        picks.map((r: any, idx: number) =>
+          prisma.quickMeetingImportedReviewSelection.create({
+            data: {
+              quickMeetingId: meetingId,
+              importedReviewId: Number(r.id),
+              position: idx,
+            },
+          })
+        )
+      )
+    } catch {
+      // In case of race conditions, just read what got created.
+    }
+
+    const after = await fetchSelection()
+    return after || []
+  }
+
   try {
     if (mode === 'linked' || mode === 'linked_fallback') {
       const linkedRaw = await prisma.importedReview.findMany({
@@ -320,7 +385,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         where: { id: meetingId },
         select: { category: true },
       })
-      const reviews = await fetchGlobal(meetingId, meeting?.category as any)
+      const reviews = await ensureSelection(meeting?.category as any)
       return res.status(200).json({ reviews, keywords: [], mode: 'global' })
     }
 

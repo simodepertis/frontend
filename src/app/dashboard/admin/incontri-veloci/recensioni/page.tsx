@@ -101,7 +101,7 @@ function toEaHandleUnique(input: unknown, seed: number, used: Set<string>, usedB
 }
 
 type ReviewItem = {
-  kind?: 'manual' | 'imported';
+  kind?: 'manual' | 'imported' | 'imported_selected';
   id: number;
   title: string;
   rating: number;
@@ -147,8 +147,16 @@ export default function AdminIncontriVelociRecensioniPage() {
       const used = new Set<string>();
       const usedBases = new Set<string>();
       g.reviews = g.reviews.map((r) => {
-        if (r.kind === 'imported' && r.meta?.sourceUrl && String(r.meta.sourceUrl).includes('escort-advisor.com')) {
-          const seed = (g.meeting.id || 0) * 200000 + Number(r.id || 0);
+        const originalId =
+          r.kind === 'imported_selected' && r.meta?.originalImportedReviewId
+            ? Number(r.meta.originalImportedReviewId)
+            : Number(r.id || 0);
+        if (
+          (r.kind === 'imported' || r.kind === 'imported_selected') &&
+          r.meta?.sourceUrl &&
+          String(r.meta.sourceUrl).includes('escort-advisor.com')
+        ) {
+          const seed = (g.meeting.id || 0) * 200000 + originalId;
           const name = toEaHandleUnique(r.user?.nome, seed, used, usedBases);
           return { ...r, displayNome: name };
         }
@@ -219,6 +227,7 @@ export default function AdminIncontriVelociRecensioniPage() {
       const params = new URLSearchParams();
       params.set('id', String(id));
       if (kind === 'imported') params.set('kind', 'imported');
+      if (kind === 'imported_selected') params.set('kind', 'selection');
       const res = await fetch(`/api/admin/quick-meeting-reviews?${params.toString()}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -251,7 +260,7 @@ export default function AdminIncontriVelociRecensioniPage() {
         },
         body: JSON.stringify({
           id: r.id,
-          kind: r.kind === 'imported' ? 'imported' : 'manual',
+          kind: r.kind === 'imported_selected' ? 'selection' : (r.kind === 'imported' ? 'imported' : 'manual'),
           reviewText: editingText,
         }),
       });
@@ -346,7 +355,7 @@ export default function AdminIncontriVelociRecensioniPage() {
                           <div className="text-white font-semibold">
                             {r.title}{' '}
                             <span className="text-xs text-gray-400">({r.rating}/5)</span>
-                            {r.kind === 'imported' ? <span className="ml-2 text-xs text-blue-300">(bot)</span> : null}
+                            {r.kind === 'imported' || r.kind === 'imported_selected' ? <span className="ml-2 text-xs text-blue-300">(bot)</span> : null}
                             {!r.isVisible ? <span className="ml-2 text-xs text-red-300">(nascosta)</span> : null}
                             {r.isApproved ? <span className="ml-2 text-xs text-green-300">(approvata)</span> : <span className="ml-2 text-xs text-yellow-300">(in attesa)</span>}
                           </div>
@@ -361,7 +370,7 @@ export default function AdminIncontriVelociRecensioniPage() {
                             <div className="text-sm text-gray-300 whitespace-pre-line">{r.reviewText}</div>
                           )}
                           <div className="text-xs text-gray-400">Autore: {(r as any).displayNome || r.user?.nome} ({r.user?.email || '—'})</div>
-                          {r.kind === 'imported' && r.meta?.sourceUrl ? (
+                          {(r.kind === 'imported' || r.kind === 'imported_selected') && r.meta?.sourceUrl ? (
                             <div className="text-xs text-gray-400">Source: {r.meta.sourceUrl}</div>
                           ) : null}
                           <div className="text-xs text-gray-500">Inviata: {new Date(r.createdAt).toLocaleString()}</div>
