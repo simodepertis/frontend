@@ -816,43 +816,11 @@ export default function IncontroVeloceDetailPage() {
             )}
 
             {/* Lista Recensioni */}
-            {reviews.length > 0 || (meeting.importedReviews && meeting.importedReviews.length > 0) || relatedReviews.length > 0 ? (
+            {reviews.length > 0 || relatedReviews.length > 0 ? (
               <div className="space-y-3">
                 {(() => {
                   const used = new Set<string>();
                   const usedBases = new Set<string>();
-
-                  const eaImported = (meeting.importedReviews || []).map((r) => {
-                    const seed = (meeting?.id || 0) * 100000 + r.id;
-                    const name = toEaHandleUnique(r.reviewerName, seed, used, usedBases);
-                    const ratingVal = typeof r.rating === 'number' ? r.rating : eaFallbackRating(seed);
-                    return (
-                      <div key={`ea-imported-${r.id}`} className="p-4 bg-gray-700 rounded-lg border border-yellow-500/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-white">{name}</span>
-                              <Stars value={ratingVal} />
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-400">
-                            {r.reviewDate ? new Date(r.reviewDate).toLocaleDateString('it-IT') : ''}
-                          </span>
-                        </div>
-                        {r.reviewText ? <p className="text-gray-300 text-sm mt-2">{cleanEaText(r.reviewText)}</p> : null}
-                        {r.sourceUrl ? (
-                          <a
-                            href={r.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-400 hover:underline"
-                          >
-                            Fonte: Escort Advisor →
-                          </a>
-                        ) : null}
-                      </div>
-                    );
-                  });
 
                   const native = reviews.map((review) => (
                     <div key={review.id} className="p-4 bg-gray-700 rounded-lg">
@@ -904,7 +872,6 @@ export default function IncontroVeloceDetailPage() {
 
                   return (
                     <>
-                      {eaImported}
                       {native}
                       {eaRelated}
                     </>
@@ -912,23 +879,16 @@ export default function IncontroVeloceDetailPage() {
                 })()}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-400">
-                <div className="text-4xl mb-2">💬</div>
-                <div className="text-sm">Nessuna recensione ancora</div>
-                <div className="text-xs mt-1">Sii il primo a lasciare una recensione!</div>
+              <div className="text-center text-gray-400 py-4">
+                Nessuna recensione ancora. Sii il primo a lasciare una recensione!
               </div>
             )}
+            <div className="text-gray-400">
+              <Link href={`/incontri-veloci?city=${meeting.city}&category=${meeting.category}`} className="text-blue-400 hover:underline">
+                Vedi tutti gli incontri {category?.label.toLowerCase()} a {meeting.city} →
+              </Link>
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Annunci correlati */}
-      <div className="mt-12">
-        <h2 className="text-2xl font-bold text-white mb-6">Altri incontri in {meeting.city}</h2>
-        <div className="text-gray-400">
-          <Link href={`/incontri-veloci?city=${meeting.city}&category=${meeting.category}`} className="text-blue-400 hover:underline">
-            Vedi tutti gli incontri {category?.label.toLowerCase()} a {meeting.city} →
-          </Link>
         </div>
       </div>
 

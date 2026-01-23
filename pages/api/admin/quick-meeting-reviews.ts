@@ -349,7 +349,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // NOTE: for admin management we only return linked imported reviews (ImportedReview.quickMeetingId)
       // so deletions do not cause any substitution.
 
-      if (scope === 'all') {
+      // If we are resolving by phone/meeting and have selection rows, do not mix in linked imported reviews.
+      // This keeps admin output aligned with what the public page shows (selection-based list).
+      const shouldSkipImportedBecauseSelection = selectionItems.length > 0 && selectionMeetingIds.length > 0;
+
+      if (scope === 'all' && !shouldSkipImportedBecauseSelection) {
         const importedWhere: any = {};
         if (Number.isFinite(meetingId) && meetingId > 0) {
           importedWhere.quickMeetingId = meetingId;
