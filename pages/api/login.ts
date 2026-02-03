@@ -32,6 +32,7 @@ export default async function handler(
         nome: true, 
         email: true, 
         password: true,
+        emailVerifiedAt: true,
         ruolo: true,
         createdAt: true,
       }
