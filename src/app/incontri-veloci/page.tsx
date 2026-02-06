@@ -169,11 +169,12 @@ export default function IncontriVelociPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedCountry, setSelectedCountry] = useState<string>('ALL');
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
+  const [phoneQ, setPhoneQ] = useState<string>('');
   const [availableCities, setAvailableCities] = useState<string[]>([]);
 
   useEffect(() => {
     loadMeetings();
-  }, [selectedCategory, selectedCity, page]);
+  }, [selectedCategory, selectedCity, phoneQ, page]);
 
   // Aggiorna le città disponibili quando cambia la nazione
   useEffect(() => {
@@ -195,6 +196,7 @@ export default function IncontriVelociPage() {
       const params = new URLSearchParams();
       if (selectedCategory !== 'ALL') params.set('category', selectedCategory);
       if (selectedCity !== 'ALL') params.set('city', selectedCity);
+      if (phoneQ.trim()) params.set('phone', phoneQ.trim());
       params.set('limit', '25');
       params.set('page', String(page));
       
@@ -274,7 +276,7 @@ export default function IncontriVelociPage() {
 
       {/* Filtri */}
       <div className="mb-8 p-6 bg-gray-800 rounded-lg border border-gray-700">
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
           {/* Filtro Categoria */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -295,6 +297,26 @@ export default function IncontriVelociPage() {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Filtro Telefono */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Telefono
+            </label>
+            <input
+              value={phoneQ}
+              onChange={(e) => {
+                setPage(1);
+                setPhoneQ(e.target.value);
+              }}
+              placeholder="Es. 3331234567"
+              inputMode="tel"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="mt-1 text-xs text-gray-400">
+              Cerca per telefono o WhatsApp (anche parziale)
+            </div>
           </div>
 
           {/* Filtro Nazione */}

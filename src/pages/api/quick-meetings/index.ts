@@ -6,7 +6,13 @@ const prisma = new PrismaClient();
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      const { category, city, limit = '20', page = '1' } = req.query;
+      const { category, city, phone, limit = '20', page = '1' } = req.query;
+
+      const normalizePhoneQuery = (raw: unknown) => {
+        const s = String(raw || '').trim();
+        if (!s) return '';
+        return s.replace(/\D/g, '');
+      };
 
       const where: any = {
         isActive: true,
@@ -21,6 +27,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (city) {
         where.city = city;
+      }
+
+      const phoneDigits = normalizePhoneQuery(phone);
+      if (phoneDigits && phoneDigits.length >= 4) {
+        const variants = new Set<string>();
+        variants.add(phoneDigits);
+
+        // If user typed a local Italian number (e.g. 333...), also try adding country code
+        if (!phoneDigits.startsWith('39') && phoneDigits.length >= 8) {
+          variants.add(`39${phoneDigits}`);
+        }
+        // If user typed with country code, also try without it (common DB formats)
+        if (phoneDigits.startsWith('39') && phoneDigits.length > 10) {
+          variants.add(phoneDigits.slice(2));
+        }
+
+        where.OR = Array.from(variants).flatMap((v) => [
+          { phone: { contains: v } },
+          { whatsapp: { contains: v } },
+          { phone: { contains: `+${v}` } },
+          { whatsapp: { contains: `+${v}` } },
+        ]);
       }
 
       const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
