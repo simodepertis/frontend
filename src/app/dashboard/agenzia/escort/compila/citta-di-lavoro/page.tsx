@@ -248,18 +248,23 @@ function Inner() {
           const j = await r.json();
           const filtered = Array.isArray(j)
             ? j
-                .filter((it: any) => it.class === "place" && ["city", "town", "village", "hamlet", "municipality"].includes(it.type))
+                .filter(
+                  (it: any) =>
+                    !!it &&
+                    it.class === "place" &&
+                    ["city", "town", "village", "hamlet", "municipality"].includes(it.type)
+                )
                 .map((it: any) => ({
-                  label: it.display_name,
+                  label: String(it?.display_name || ""),
                   city:
-                    it.address?.city ||
-                    it.address?.town ||
-                    it.address?.village ||
-                    it.address?.hamlet ||
-                    it.address?.municipality ||
-                    it.display_name.split(",")[0],
-                  lat: Number(it.lat),
-                  lon: Number(it.lon),
+                    it?.address?.city ||
+                    it?.address?.town ||
+                    it?.address?.village ||
+                    it?.address?.hamlet ||
+                    it?.address?.municipality ||
+                    String(it?.display_name || "").split(",")[0],
+                  lat: Number(it?.lat),
+                  lon: Number(it?.lon),
                 }))
             : [];
           setCityRes((prev) => ({ ...prev, [k]: filtered }));

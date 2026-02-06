@@ -247,11 +247,27 @@ export default function CittaDiLavoroPage() {
           const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=it&q=${encodeURIComponent(q)}`;
           const r = await fetch(url, { headers: { 'Accept':'application/json' } });
           const j = await r.json();
-          const filtered = Array.isArray(j) ? j.filter((it:any)=> it.class==='place' && ['city','town','village','hamlet','municipality'].includes(it.type)).map((it:any)=> ({
-            label: it.display_name,
-            city: it.address?.city || it.address?.town || it.address?.village || it.address?.hamlet || it.address?.municipality || it.display_name.split(',')[0],
-            lat: Number(it.lat), lon: Number(it.lon)
-          })) : [];
+          const filtered = Array.isArray(j)
+            ? j
+                .filter(
+                  (it: any) =>
+                    !!it &&
+                    it.class === 'place' &&
+                    ['city', 'town', 'village', 'hamlet', 'municipality'].includes(it.type)
+                )
+                .map((it: any) => ({
+                  label: String(it?.display_name || ''),
+                  city:
+                    it?.address?.city ||
+                    it?.address?.town ||
+                    it?.address?.village ||
+                    it?.address?.hamlet ||
+                    it?.address?.municipality ||
+                    String(it?.display_name || '').split(',')[0],
+                  lat: Number(it?.lat),
+                  lon: Number(it?.lon),
+                }))
+            : [];
           setCityRes(prev=>({ ...prev, [k]: filtered }));
         } catch { setCityRes(prev=>({ ...prev, [k]: [] })); }
         finally { setCityLoading(prev=>({ ...prev, [k]: false })); }
