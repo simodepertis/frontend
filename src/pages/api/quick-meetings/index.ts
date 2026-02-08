@@ -32,15 +32,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const phoneDigits = normalizePhoneQuery(phone);
       if (phoneDigits && phoneDigits.length >= 4) {
         const variants = new Set<string>();
-        variants.add(phoneDigits);
+        const addVariant = (v: string) => {
+          const s = String(v || '').trim();
+          if (!s) return;
+          variants.add(s);
+        };
+
+        addVariant(phoneDigits);
+
+        // Add suffixes to match numbers stored with spaces/dashes (e.g. "351 752 6531")
+        // Because Prisma `contains` is substring-based, matching a full digit sequence may fail
+        // if formatting breaks the continuity.
+        const suffixLens = [8, 7, 6, 5, 4];
+        for (const n of suffixLens) {
+          if (phoneDigits.length > n) addVariant(phoneDigits.slice(-n));
+        }
 
         // If user typed a local Italian number (e.g. 333...), also try adding country code
         if (!phoneDigits.startsWith('39') && phoneDigits.length >= 8) {
-          variants.add(`39${phoneDigits}`);
+          addVariant(`39${phoneDigits}`);
+          for (const n of [8, 7, 6, 5, 4]) {
+            if (phoneDigits.length > n) addVariant(`39${phoneDigits.slice(-n)}`);
+          }
         }
         // If user typed with country code, also try without it (common DB formats)
         if (phoneDigits.startsWith('39') && phoneDigits.length > 10) {
-          variants.add(phoneDigits.slice(2));
+          addVariant(phoneDigits.slice(2));
         }
 
         where.OR = Array.from(variants).flatMap((v) => [

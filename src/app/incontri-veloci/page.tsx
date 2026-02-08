@@ -310,6 +310,13 @@ export default function IncontriVelociPage() {
                 setPage(1);
                 setPhoneQ(e.target.value);
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setPage(1);
+                  loadMeetings();
+                }
+              }}
               placeholder="Es. 3331234567"
               inputMode="tel"
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
