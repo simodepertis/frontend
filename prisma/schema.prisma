@@ -493,6 +493,9 @@ model User {
 
   // Street Fireflies reviews
   streetFireflyReviews  StreetFireflyReview[]
+
+  streetEscortSubmissions StreetEscortSubmission[]
+  reviewedStreetEscortSubmissions StreetEscortSubmission[] @relation("StreetEscortSubmissionReviewedBy")
 }
 
 model EmailVerificationToken {
@@ -710,6 +713,33 @@ model QuickMeetingBumpSchedule {
 // ==============================
 // Street Fireflies (mappa speciale gestita solo da admin)
 // ==============================
+
+model StreetEscortSubmission {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  name             String
+  city             String
+  lat              Float
+  lon              Float
+  category         String   @default("ESCORT")
+  shortDescription String?
+  fullDescription  String?
+  price            Int?
+  status           String   @default("PENDING")
+  adminNote        String?
+  streetEscortId   Int?
+  reviewedAt       DateTime?
+  reviewedById     Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy  User?  @relation("StreetEscortSubmissionReviewedBy", fields: [reviewedById], references: [id])
+  streetEscort StreetEscort? @relation(fields: [streetEscortId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
 
 model StreetEscort {
   id               Int      @id @default(autoincrement())
