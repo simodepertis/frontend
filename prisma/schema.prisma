@@ -758,6 +758,8 @@ model StreetEscort {
 
   photos StreetEscortPhoto[]
 
+  submissions StreetEscortSubmission[]
+
   streetFireflyReviews StreetFireflyReview[]
 
   @@index([city, active])

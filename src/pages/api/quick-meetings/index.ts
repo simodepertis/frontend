@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const phoneDigits = normalizePhoneQuery(phone);
-      if (phoneDigits && phoneDigits.length >= 4) {
+      if (phoneDigits && phoneDigits.length >= 2) {
         const variants = new Set<string>();
         const addVariant = (v: string) => {
           const s = String(v || '').trim();
