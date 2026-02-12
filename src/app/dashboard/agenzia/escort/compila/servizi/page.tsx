@@ -17,7 +17,11 @@ function Inner() {
     (async () => {
       if (!escortUserId) { setLoading(false); return; }
       try {
-        const res = await fetch(`/api/agency/escort/servizi?escortUserId=${escortUserId}`, { credentials: 'include' });
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
+        const res = await fetch(`/api/agency/escort/servizi?escortUserId=${escortUserId}`, {
+          credentials: 'include',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
         if (res.ok) {
           const j = await res.json();
           const s = j.services || {};
@@ -42,9 +46,10 @@ function Inner() {
     if (!escortUserId) { alert('escortUserId mancante'); return; }
     setSaving(true);
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') || '' : '';
       const res = await fetch('/api/agency/escort/servizi', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         credentials: 'include',
         body: JSON.stringify({ escortUserId, services })
       });
