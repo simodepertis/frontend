@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient, QuickMeetingCategory } from '@prisma/client';
+import { PrismaClient, QuickMeetingCategory, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -31,59 +31,66 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const phoneDigits = normalizePhoneQuery(phone);
       if (phoneDigits && phoneDigits.length >= 2) {
-        const variants = new Set<string>();
-        const addVariant = (v: string) => {
-          const s = String(v || '').trim();
-          if (!s) return;
-          variants.add(s);
-        };
+        // Robust search: normalize phone/whatsapp in DB to digits and apply LIKE.
+        // This avoids false negatives when DB stores formatted numbers (spaces/dashes/+39).
+        const q = `%${phoneDigits}%`;
 
-        addVariant(phoneDigits);
+        const andSql: Prisma.Sql[] = [
+          Prisma.sql`"isActive" = true`,
+          Prisma.sql`("expiresAt" IS NULL OR "expiresAt" >= NOW())`,
+        ];
 
-        // Add suffixes to match numbers stored with spaces/dashes (e.g. "351 752 6531")
-        // Because Prisma `contains` is substring-based, matching a full digit sequence may fail
-        // if formatting breaks the continuity.
-        const suffixLens = [8, 7, 6, 5, 4];
-        for (const n of suffixLens) {
-          if (phoneDigits.length > n) addVariant(phoneDigits.slice(-n));
+        if (category && category !== 'all') {
+          andSql.push(Prisma.sql`"category" = ${category as any}`);
+        }
+        if (city) {
+          andSql.push(Prisma.sql`"city" = ${city as any}`);
         }
 
-        // If user typed a local Italian number (e.g. 333...), also try adding country code
-        if (!phoneDigits.startsWith('39') && phoneDigits.length >= 8) {
-          addVariant(`39${phoneDigits}`);
-          for (const n of [8, 7, 6, 5, 4]) {
-            if (phoneDigits.length > n) addVariant(`39${phoneDigits.slice(-n)}`);
-          }
-        }
-        // If user typed with country code, also try without it (common DB formats)
-        if (phoneDigits.startsWith('39') && phoneDigits.length > 10) {
-          addVariant(phoneDigits.slice(2));
-        }
+        const andWhere = andSql.reduce((acc, cur, idx) => {
+          if (idx === 0) return cur;
+          return Prisma.sql`${acc} AND ${cur}`;
+        }, Prisma.sql``);
 
-        where.OR = Array.from(variants).flatMap((v) => [
-          { phone: { contains: v } },
-          { whatsapp: { contains: v } },
-          { phone: { contains: `+${v}` } },
-          { whatsapp: { contains: `+${v}` } },
-        ]);
+        const rows = await prisma.$queryRaw<{ id: number }[]>(
+          Prisma.sql`
+            SELECT "id"
+            FROM "QuickMeeting"
+            WHERE ${andWhere}
+            AND (
+              regexp_replace(COALESCE("phone", ''), '\\D', '', 'g') LIKE ${q}
+              OR regexp_replace(COALESCE("whatsapp", ''), '\\D', '', 'g') LIKE ${q}
+            )
+          `
+        );
+
+        const ids = rows.map((r) => r.id);
+        // If no matches, short-circuit to an impossible condition
+        where.id = ids.length ? { in: ids } : { in: [-1] };
       }
 
       const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
       const take = parseInt(limit as string);
 
-      const [meetings, total] = await Promise.all([
+      const superTopWhere = { ...where, bumpPackage: 'SUPERTOP' as const };
+      const normalWhere = { ...where, NOT: { bumpPackage: 'SUPERTOP' as const } };
+
+      const [superTopMeetings, meetings, total] = await Promise.all([
         prisma.quickMeeting.findMany({
-          where,
-          orderBy: [
-            { publishedAt: 'desc' }
-          ],
-          skip,
-          take
+          where: superTopWhere,
+          orderBy: [{ publishedAt: 'desc' }],
+          take: 12,
         }),
-        prisma.quickMeeting.count({ where })
+        prisma.quickMeeting.findMany({
+          where: normalWhere,
+          orderBy: [{ publishedAt: 'desc' }],
+          skip,
+          take,
+        }),
+        prisma.quickMeeting.count({ where: normalWhere }),
       ]);
 
-      const meetingIds = meetings.map((m) => m.id)
+      const meetingIds = [...superTopMeetings, ...meetings].map((m) => m.id)
       const ratingsAgg = meetingIds.length
         ? await prisma.quickMeetingReview.groupBy({
             by: ['quickMeetingId'],
@@ -105,16 +112,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       }
 
-      const meetingsWithRating = meetings.map((m: any) => {
+      const enrich = (m: any) => {
         const agg = ratingByMeeting.get(m.id)
         return {
           ...m,
           avgRating: agg?.avg ?? null,
           reviewCount: agg?.count ?? 0,
         }
-      })
+      }
+
+      const superTopWithRating = superTopMeetings.map(enrich)
+      const meetingsWithRating = meetings.map(enrich)
 
       return res.status(200).json({
+        superTopMeetings: superTopWithRating,
         meetings: meetingsWithRating,
         pagination: {
           total,

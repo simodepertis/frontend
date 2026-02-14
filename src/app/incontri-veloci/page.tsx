@@ -203,7 +203,18 @@ export default function IncontriVelociPage() {
       const res = await fetch(`/api/quick-meetings?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setMeetings(data.meetings || []);
+        const superTop = Array.isArray(data.superTopMeetings) ? data.superTopMeetings : [];
+        const normal = Array.isArray(data.meetings) ? data.meetings : [];
+        // merge without duplicates (superTop first)
+        const seen = new Set<number>();
+        const merged = [...superTop, ...normal].filter((m: any) => {
+          const id = Number(m?.id);
+          if (!Number.isFinite(id)) return false;
+          if (seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        });
+        setMeetings(merged);
         if (data.pagination) {
           setPages(data.pagination.pages || 1);
         } else {
