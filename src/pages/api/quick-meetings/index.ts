@@ -16,9 +16,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const where: any = {
         isActive: true,
-        expiresAt: {
-          gte: new Date() // Solo annunci non scaduti
-        }
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gte: new Date() } }, // Solo annunci non scaduti
+        ],
       };
 
       if (category && category !== 'all') {

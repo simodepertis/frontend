@@ -5,7 +5,17 @@ import jwt from 'jsonwebtoken';
 // Helper per verificare autenticazione
 function getUserFromToken(req: NextApiRequest): { userId: number } | null {
   try {
-    const token = req.cookies['auth-token'];
+    let token: string | undefined;
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+
+    if (!token) {
+      token = req.cookies['auth-token'];
+    }
+
     if (!token) return null;
     
     const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
@@ -43,9 +53,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Annuncio non trovato' });
     }
 
+    const nextIsActive = !!isActive;
+    const now = new Date();
+    const needsExpiry = nextIsActive && (!meeting.expiresAt || meeting.expiresAt.getTime() < now.getTime());
+    const nextExpiresAt = needsExpiry ? new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) : meeting.expiresAt;
+
     const updated = await prisma.quickMeeting.update({
       where: { id: meetingId },
-      data: { isActive }
+      data: {
+        isActive: nextIsActive,
+        ...(nextIsActive ? { publishedAt: now } : {}),
+        ...(nextIsActive ? { expiresAt: nextExpiresAt } : {}),
+      }
     });
 
     return res.status(200).json({ meeting: updated });
