@@ -141,10 +141,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const superTopMeetings = superTopRaw.map(decorate);
       const normalMeetings = normalRaw.map(decorate);
 
+      const visibleClause: any = {
+        isActive: true,
+        OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
+      };
+
+      const [superTopVisible, normalVisible] = await Promise.all([
+        prisma.quickMeeting.count({ where: { ...superTopWhere, ...visibleClause } }),
+        prisma.quickMeeting.count({ where: { ...normalWhere, ...visibleClause } }),
+      ]);
+
       return res.status(200).json({
         superTopMeetings,
         normalMeetings,
-        counts: { superTop: superTopTotal, normal: normalTotal },
+        counts: {
+          superTop: superTopTotal,
+          normal: normalTotal,
+          superTopVisible,
+          normalVisible,
+        },
         take,
         skip,
       });

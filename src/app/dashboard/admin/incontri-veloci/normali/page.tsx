@@ -26,6 +26,7 @@ export default function AdminQuickMeetingsNormalPage() {
   const [err, setErr] = useState("");
   const [items, setItems] = useState<QuickMeeting[]>([]);
   const [count, setCount] = useState<number>(0);
+  const [countVisible, setCountVisible] = useState<number>(0);
 
   const [skip, setSkip] = useState(0);
   const take = 200;
@@ -51,10 +52,12 @@ export default function AdminQuickMeetingsNormalPage() {
       if (!res.ok) throw new Error(j?.error || "Errore caricamento Normali");
       setItems((j.normalMeetings || []) as QuickMeeting[]);
       setCount(Number(j?.counts?.normal) || 0);
+      setCountVisible(Number(j?.counts?.normalVisible) || 0);
     } catch (e: any) {
       setErr(e?.message || "Errore caricamento Normali");
       setItems([]);
       setCount(0);
+      setCountVisible(0);
     } finally {
       setLoading(false);
     }
@@ -101,7 +104,7 @@ export default function AdminQuickMeetingsNormalPage() {
     <div className="space-y-6">
       <SectionHeader
         title="Incontri Veloci · Normali"
-        subtitle={q ? `Ricerca: ${q} · Totale: ${count}` : `Totale: ${count}`}
+        subtitle={q ? `Ricerca: ${q} · Totale DB: ${count} · Visibili: ${countVisible}` : `Totale DB: ${count} · Visibili: ${countVisible}`}
       />
 
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4">
