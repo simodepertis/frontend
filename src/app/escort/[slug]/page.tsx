@@ -149,11 +149,26 @@ export default function EscortDetailPage() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const allowAllPhotos = useMemo(() => {
+    try { return !!(data as any)?.hasActivePackage; } catch { return false; }
+  }, [data]);
+
+  const visiblePhotos = useMemo<string[]>(() => {
+    const arr = Array.isArray(escort.foto) ? escort.foto : [];
+    if (arr.length === 0) return ["/placeholder.svg"];
+    return allowAllPhotos ? arr : arr.slice(0, 1);
+  }, [escort.foto, allowAllPhotos]);
   // Lightbox per immagine principale
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const lightboxCount = useMemo(() => {
-    try { return Array.isArray(visiblePhotos) ? visiblePhotos.length : 0; } catch { return 0; }
-  }, [visiblePhotos]);
+    try {
+      const arr = Array.isArray(escort.foto) ? escort.foto : [];
+      if (arr.length === 0) return 0;
+      return allowAllPhotos ? arr.length : Math.min(1, arr.length);
+    } catch {
+      return 0;
+    }
+  }, [escort.foto, allowAllPhotos]);
 
   const prevPhoto = () => {
     if (lightboxCount <= 1) return;
@@ -396,16 +411,6 @@ export default function EscortDetailPage() {
       }
     })();
   }, [data?.userId]);
-
-  const allowAllPhotos = useMemo(() => {
-    try { return !!(data as any)?.hasActivePackage; } catch { return false; }
-  }, [data]);
-
-  const visiblePhotos = useMemo<string[]>(() => {
-    const arr = Array.isArray(escort.foto) ? escort.foto : [];
-    if (arr.length === 0) return ["/placeholder.svg"];
-    return allowAllPhotos ? arr : arr.slice(0, 1);
-  }, [escort.foto, allowAllPhotos]);
 
   useEffect(() => {
     if (active > visiblePhotos.length - 1) setActive(0);
