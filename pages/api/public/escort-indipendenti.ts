@@ -1,6 +1,22 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 
+function pickPriceFromRates(rates: any): number | null {
+  if (!rates || typeof rates !== 'object') return null
+  const preferredKeys = ['hour_1', 'hour1', '60', '30', 'mezzora', '1h', '2h']
+  for (const k of preferredKeys) {
+    const v = (rates as any)[k]
+    const num = typeof v === 'number' ? v : (typeof v === 'string' ? Number(String(v).replace(/[^0-9]/g, '')) : NaN)
+    if (!Number.isNaN(num) && num > 0) return num
+  }
+  let min: number | null = null
+  for (const v of Object.values(rates)) {
+    const num = typeof v === 'number' ? v : (typeof v === 'string' ? Number(String(v).replace(/[^0-9]/g, '')) : NaN)
+    if (!Number.isNaN(num) && num > 0) min = min === null ? num : Math.min(min, num)
+  }
+  return min
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -29,7 +45,7 @@ export default async function handler(
         nome: true,
         slug: true,
         createdAt: true,
-        escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true, contacts: true, tierExpiresAt: true } },
+        escortProfile: { select: { tier: true, cities: true, girlOfTheDayDate: true, contacts: true, tierExpiresAt: true, rates: true } },
         photos: { where: { status: 'APPROVED' }, orderBy: { updatedAt: 'desc' }, take: 1 },
       },
       orderBy: [
@@ -165,6 +181,16 @@ export default async function handler(
           return null
         }
       })()
+
+      const prezzo = (() => {
+        try {
+          const rates: any = (u.escortProfile as any)?.rates
+          const num = pickPriceFromRates(rates)
+          return num !== null ? num : 150
+        } catch {
+          return 150
+        }
+      })()
       return {
         id: u.id,
         slug: u.slug || `${u.nome?.toLowerCase().replace(/[^a-z0-9]+/g,'-')}-${u.id}`,
@@ -173,7 +199,7 @@ export default async function handler(
         citta: city,
         cities,
         capelli: undefined,
-        prezzo: 100,
+        prezzo,
         foto,
         rank,
         verificata: true,

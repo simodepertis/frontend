@@ -151,6 +151,19 @@ export default function EscortDetailPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   // Lightbox per immagine principale
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const lightboxCount = useMemo(() => {
+    try { return Array.isArray(visiblePhotos) ? visiblePhotos.length : 0; } catch { return 0; }
+  }, [visiblePhotos]);
+
+  const prevPhoto = () => {
+    if (lightboxCount <= 1) return;
+    setActive((i) => (i - 1 + lightboxCount) % lightboxCount);
+  };
+
+  const nextPhoto = () => {
+    if (lightboxCount <= 1) return;
+    setActive((i) => (i + 1) % lightboxCount);
+  };
   // Rapporto d'aspetto dinamico per l'immagine principale (percentuale padding-top)
   const [mainAspectPct, setMainAspectPct] = useState<number>(66.66); // default ~16:10
   // Tick per ritentare l'inizializzazione mappa quando il container è pronto
@@ -397,6 +410,17 @@ export default function EscortDetailPage() {
   useEffect(() => {
     if (active > visiblePhotos.length - 1) setActive(0);
   }, [active, visiblePhotos.length]);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+      if (e.key === 'ArrowLeft') prevPhoto();
+      if (e.key === 'ArrowRight') nextPhoto();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [lightboxOpen, lightboxCount]);
 
   // Se il container non è pronto al primo giro, ritenta tra 300ms
   useEffect(() => {
@@ -1240,12 +1264,31 @@ export default function EscortDetailPage() {
       )}
       {/* Lightbox fullscreen immagine principale */}
       {lightboxOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center" onClick={()=>setLightboxOpen(false)}>
+        <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center" onClick={()=>setLightboxOpen(false)}>
           <img
             src={(visiblePhotos[active] || visiblePhotos[0] || '/placeholder.svg')}
             alt={`${escort.nome} fullscreen`}
-            className="max-w-[96vw] max-h-[96vh] object-contain"
+            className="max-h-[92vh] max-w-[95vw] object-contain"
+            onClick={(e)=>e.stopPropagation()}
           />
+          {lightboxCount > 1 && (
+            <>
+              <button
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-gray-800/90 hover:bg-gray-800 text-white w-10 h-10 rounded-full border border-gray-700 flex items-center justify-center text-xl"
+                onClick={(e)=>{ e.stopPropagation(); prevPhoto(); }}
+                aria-label="Precedente"
+              >
+                ‹
+              </button>
+              <button
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-gray-800/90 hover:bg-gray-800 text-white w-10 h-10 rounded-full border border-gray-700 flex items-center justify-center text-xl"
+                onClick={(e)=>{ e.stopPropagation(); nextPhoto(); }}
+                aria-label="Successiva"
+              >
+                ›
+              </button>
+            </>
+          )}
           <button
             className="absolute top-4 right-4 bg-gray-800/90 hover:bg-gray-800 text-white px-3 py-1 rounded-md border border-gray-700"
             onClick={(e)=>{ e.stopPropagation(); setLightboxOpen(false); }}

@@ -21,7 +21,7 @@ export default function PubblicitaPage() {
         const token = localStorage.getItem('auth-token') || '';
         const [c, w] = await Promise.all([
           fetch('/api/credits/catalog'),
-          escortUserId ? fetch(`/api/agency/credits/wallet?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }) : fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }),
+          fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }),
         ]);
         if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
         if (w.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
@@ -42,7 +42,7 @@ export default function PubblicitaPage() {
       if (!res.ok) { alert(data?.error || 'Errore spesa crediti'); return; }
       // refresh balance
       try { 
-        const w = escortUserId ? await fetch(`/api/agency/credits/wallet?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }) : await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); 
+        const w = await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); 
         if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } 
       } catch {}
       alert(`Attivato ${data?.activated?.tier} fino al ${new Date(data?.activated?.expiresAt).toLocaleDateString()}`);
@@ -67,7 +67,7 @@ export default function PubblicitaPage() {
       if (!res.ok) { alert(data?.error || 'Errore attivazione'); return; }
       // refresh balance
       try { 
-        const w = escortUserId ? await fetch(`/api/agency/credits/wallet?escortUserId=${escortUserId}`, { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }) : await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); 
+        const w = await fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }); 
         if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); } 
       } catch {}
       alert(`Pacchetto ${code} attivato per ${days} giorni (scade il ${new Date(data?.activated?.expiresAt).toLocaleDateString()})`);
