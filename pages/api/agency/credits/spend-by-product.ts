@@ -45,8 +45,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const cost = (pAny.pricePerDayCredits as number) * d
 
-    let wallet = await prisma.creditWallet.findUnique({ where: { userId: uid } })
-    if (!wallet) wallet = await prisma.creditWallet.create({ data: { userId: uid, balance: 0 } })
+    // L'agenzia paga con i propri crediti (wallet dell'utente autenticato), non con quello dell'escort
+    let wallet = await prisma.creditWallet.findUnique({ where: { userId: payload.userId } })
+    if (!wallet) wallet = await prisma.creditWallet.create({ data: { userId: payload.userId, balance: 0 } })
     if (wallet.balance < cost) return res.status(400).json({ error: 'Crediti insufficienti' })
 
     const tier = parseTierFromCode(product.code)
@@ -55,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const [updatedWallet] = await prisma.$transaction([
       prisma.creditWallet.update({ where: { id: wallet.id }, data: { balance: { decrement: cost } } }),
       prisma.escortProfile.update({ where: { userId: uid }, data: { tier, tierExpiresAt: expiresAt } }),
-      prisma.creditTransaction.create({ data: { userId: uid, amount: -cost, type: 'SPEND' as any, reference: `product:${product.code}:${d}d` } })
+      prisma.creditTransaction.create({ data: { userId: payload.userId, amount: -cost, type: 'SPEND' as any, reference: `product:${product.code}:${d}d:escort:${uid}` } })
     ])
 
     return res.json({ ok: true, wallet: updatedWallet, activated: { tier, expiresAt } })

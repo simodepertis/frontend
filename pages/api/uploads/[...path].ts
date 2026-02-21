@@ -69,9 +69,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (await fileExists(publicFilePath)) {
-      const location = `/uploads/${safePath}`
-      res.setHeader('Cache-Control', 'no-cache')
-      res.redirect(307, location)
+      const stat = await fs.promises.stat(publicFilePath)
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      res.setHeader('Content-Type', getContentType(publicFilePath))
+      res.setHeader('Content-Length', String(stat.size))
+      fs.createReadStream(publicFilePath).pipe(res)
       return
     }
 
