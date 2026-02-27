@@ -79,6 +79,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       });
 
+      // If user attached a pending photo (base64 data URL), persist it as StreetEscortPhoto
+      try {
+        const raw = (submission as any)?.photoUrl;
+        if (raw && typeof raw === 'string' && raw.startsWith('data:image/')) {
+          await prisma.streetEscortPhoto.create({
+            data: {
+              streetEscortId: created.id,
+              url: raw,
+              isCensored: true,
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Errore creazione foto Street Fireflies da submission:', e);
+      }
+
       const updated = await prisma.streetEscortSubmission.update({
         where: { id: sid },
         data: {

@@ -8,12 +8,14 @@ type AdminSubmission = {
   id: number;
   name: string;
   city: string;
+  address?: string | null;
   lat: number;
   lon: number;
   category: string;
   shortDescription: string | null;
   fullDescription: string | null;
   price: number | null;
+  photoUrl?: string | null;
   status: string;
   adminNote: string | null;
   createdAt: string;
@@ -133,11 +135,26 @@ export default function AdminStreetFirefliesRequestsPage() {
               <div className="text-xs text-gray-400 truncate">
                 {it.city} · lat: {it.lat} / lon: {it.lon} · {it.category}
               </div>
+              {it.address && (
+                <div className="text-xs text-gray-300 mt-1">Via: {it.address}</div>
+              )}
               {it.user && (
                 <div className="text-xs text-gray-300 mt-1">Utente: {it.user.nome} · {it.user.email}</div>
               )}
               {it.shortDescription && (
                 <div className="text-xs text-gray-300 mt-1">{it.shortDescription}</div>
+              )}
+
+              {it.photoUrl && (
+                <div className="mt-2">
+                  <div className="text-[11px] text-gray-400 mb-1">Foto proposta (in attesa)</div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={it.photoUrl}
+                    alt="Foto proposta"
+                    className="w-full max-w-[280px] rounded-md border border-gray-700 object-cover"
+                  />
+                </div>
               )}
 
               <div className="mt-2 grid md:grid-cols-3 gap-2 items-end">

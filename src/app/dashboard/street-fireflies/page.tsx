@@ -28,12 +28,14 @@ export default function UserStreetFirefliesSubmitPage() {
 
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
+  const [address, setAddress] = useState<string>("");
   const [lat, setLat] = useState<string>("");
   const [lon, setLon] = useState<string>("");
   const [category, setCategory] = useState<string>("ESCORT");
   const [shortDescription, setShortDescription] = useState("");
   const [fullDescription, setFullDescription] = useState("");
   const [price, setPrice] = useState<string>("");
+  const [photoBase64, setPhotoBase64] = useState<string>("");
 
   const [selectedCountry, setSelectedCountry] = useState<string>("");
   const [selectedCity, setSelectedCity] = useState<string>("");
@@ -195,6 +197,7 @@ export default function UserStreetFirefliesSubmitPage() {
       const body: any = {
         name: name.trim(),
         city: city.trim(),
+        address: address.trim() || null,
         category,
         shortDescription: shortDescription.trim() || null,
         fullDescription: fullDescription.trim() || null,
@@ -205,6 +208,7 @@ export default function UserStreetFirefliesSubmitPage() {
       body.lat = latNum;
       body.lon = lonNum;
       body.price = price.trim() ? priceNum : null;
+      body.photoUrl = photoBase64.trim() ? photoBase64.trim() : null;
 
       const res = await fetch("/api/street-fireflies/submissions", {
         method: "POST",
@@ -221,15 +225,62 @@ export default function UserStreetFirefliesSubmitPage() {
       }
 
       setName("");
+      setAddress("");
       setShortDescription("");
       setFullDescription("");
       setPrice("");
+      setPhotoBase64("");
       await load();
     } catch (e) {
       console.error(e);
       setError("Errore imprevisto durante l'invio");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function geocodeAddress() {
+    try {
+      const ct = city.trim();
+      const addr = address.trim();
+      if (!ct || !addr) return;
+      const q = encodeURIComponent(`${addr}, ${ct}`);
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}`, {
+        headers: { "Accept-Language": "it" },
+      });
+      if (!resp.ok) return;
+      const arr = await resp.json();
+      const latN = arr?.[0]?.lat ? parseFloat(arr[0].lat) : null;
+      const lonN = arr?.[0]?.lon ? parseFloat(arr[0].lon) : null;
+      if (latN == null || lonN == null || !Number.isFinite(latN) || !Number.isFinite(lonN)) return;
+      setCenter({ lat: latN, lon: lonN });
+      updateLatLon({ lat: latN, lon: lonN });
+    } catch {}
+  }
+
+  async function onPickPhoto(file: File | null) {
+    if (!file) return;
+    const MAX_BYTES = 3.5 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      alert('Foto troppo grande. Comprimi l\'immagine (max ~3.5MB).');
+      return;
+    }
+    const toBase64 = (f: File) =>
+      new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = reader.result;
+          if (typeof res === 'string') resolve(res);
+          else reject(new Error('Impossibile leggere file'));
+        };
+        reader.onerror = () => reject(reader.error || new Error('Errore lettura file'));
+        reader.readAsDataURL(f);
+      });
+    try {
+      const b64 = await toBase64(file);
+      setPhotoBase64(b64);
+    } catch {
+      alert('Errore caricamento foto');
     }
   }
 
@@ -298,6 +349,18 @@ export default function UserStreetFirefliesSubmitPage() {
             </div>
 
             <div>
+              <label className="block text-xs mb-1 text-gray-300">Via / Indirizzo *</label>
+              <input
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                onBlur={geocodeAddress}
+                className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
+                placeholder="Es. Via Roma 10"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">Scrivi la via: verrà usata per trovare automaticamente la posizione sulla mappa.</p>
+            </div>
+
+            <div>
               <label className="block text-xs mb-1 text-gray-300">Categoria *</label>
               <select
                 value={category}
@@ -312,21 +375,21 @@ export default function UserStreetFirefliesSubmitPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs mb-1 text-gray-300">Latitudine *</label>
+                <label className="block text-xs mb-1 text-gray-300">Latitudine</label>
                 <input
                   value={lat}
                   onChange={(e) => setLat(e.target.value)}
                   className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
-                  placeholder="45.4642"
+                  placeholder="(auto)"
                 />
               </div>
               <div>
-                <label className="block text-xs mb-1 text-gray-300">Longitudine *</label>
+                <label className="block text-xs mb-1 text-gray-300">Longitudine</label>
                 <input
                   value={lon}
                   onChange={(e) => setLon(e.target.value)}
                   className="w-full rounded-md border border-gray-600 bg-gray-900 px-3 py-2 text-sm text-white"
-                  placeholder="9.19"
+                  placeholder="(auto)"
                 />
               </div>
             </div>
@@ -337,6 +400,23 @@ export default function UserStreetFirefliesSubmitPage() {
               <p className="text-[11px] text-gray-400 mt-1">
                 Clicca sulla mappa o trascina il marker.
               </p>
+            </div>
+
+            <div>
+              <label className="block text-xs mb-1 text-gray-300">Foto (opzionale)</label>
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full text-xs text-gray-200"
+                onChange={(e) => onPickPhoto(e.target.files?.[0] || null)}
+              />
+              {photoBase64 ? (
+                <div className="mt-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoBase64} alt="Anteprima" className="w-full max-h-48 object-cover rounded-md border border-gray-700" />
+                  <p className="text-[11px] text-gray-400 mt-1">La foto verrà pubblicata solo dopo approvazione admin.</p>
+                </div>
+              ) : null}
             </div>
 
             <div>
@@ -368,7 +448,7 @@ export default function UserStreetFirefliesSubmitPage() {
             </div>
 
             <div className="pt-2 flex justify-end">
-              <Button onClick={submit} disabled={saving || !name.trim() || !city.trim()}>
+              <Button onClick={submit} disabled={saving || !name.trim() || !city.trim() || !address.trim()}>
                 {saving ? "Invio…" : "Invia richiesta"}
               </Button>
             </div>

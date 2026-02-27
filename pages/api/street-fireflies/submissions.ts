@@ -41,12 +41,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const {
         name,
         city,
+        address,
         lat,
         lon,
         category,
         shortDescription,
         fullDescription,
         price,
+        photoUrl,
       } = req.body || {};
 
       const nm = String(name || '').trim();
@@ -55,6 +57,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const latNum = typeof lat === 'number' ? lat : Number(lat);
       const lonNum = typeof lon === 'number' ? lon : Number(lon);
       const priceNum = price === null || price === undefined || String(price).trim() === '' ? null : Number(price);
+
+      const addr = address ? String(address).trim() : '';
+
+      let photo: string | null = null;
+      if (photoUrl !== null && photoUrl !== undefined && String(photoUrl).trim() !== '') {
+        const raw = String(photoUrl);
+        if (!raw.startsWith('data:image/')) {
+          return res.status(400).json({ error: 'Formato foto non valido' });
+        }
+        // Limite base64 per evitare payload enormi
+        const MAX_BASE64_LEN = 3.5 * 1024 * 1024;
+        if (raw.length > MAX_BASE64_LEN) {
+          return res.status(413).json({ error: 'Foto troppo grande (comprimi l\'immagine)' });
+        }
+        photo = raw;
+      }
 
       if (!nm || !ct) return res.status(400).json({ error: 'Nome e città sono obbligatori' });
       if (!Number.isFinite(latNum) || !Number.isFinite(lonNum)) {
@@ -69,12 +87,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           userId: auth.userId,
           name: nm,
           city: ct,
+          address: addr || null,
           lat: latNum,
           lon: lonNum,
           category: cat,
           shortDescription: shortDescription ? String(shortDescription) : null,
           fullDescription: fullDescription ? String(fullDescription) : null,
           price: priceNum === null ? null : Math.trunc(priceNum),
+          photoUrl: photo,
           status: 'PENDING',
         },
       });

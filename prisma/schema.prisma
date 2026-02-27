@@ -719,12 +719,14 @@ model StreetEscortSubmission {
   userId           Int
   name             String
   city             String
+  address          String?
   lat              Float
   lon              Float
   category         String   @default("ESCORT")
   shortDescription String?
   fullDescription  String?
   price            Int?
+  photoUrl         String?
   status           String   @default("PENDING")
   adminNote        String?
   streetEscortId   Int?

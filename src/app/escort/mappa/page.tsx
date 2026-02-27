@@ -280,11 +280,27 @@ export default function EscortMapPage() {
           const lon = e.lon as number;
           const icon = getIconForCategory(String(e.category || 'ESCORT'));
           const marker = L.marker([lat, lon], { icon });
-          if (e.name) {
-            marker.bindPopup(e.name);
-          }
+          const targetId = e.streetId || e.id;
+          const token = typeof window !== "undefined" ? window.localStorage.getItem("auth-token") || "" : "";
+          const redirectTo = `/street-fireflies/${targetId}`;
+          const href = token
+            ? redirectTo
+            : `/autenticazione?redirect=${encodeURIComponent(redirectTo)}`;
+          const popupHtml = `
+            <div style="min-width:220px;max-width:260px;">
+              <div style="font-weight:700;margin-bottom:4px;">${String(e.name || 'Street Firefly')}</div>
+              ${e.city ? `<div style="font-size:12px;opacity:.85;">Zona: ${String(e.city)}</div>` : ''}
+              <div style="margin-top:8px;">
+                <a href="${href}" style="display:inline-block;padding:8px 10px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;border:1px solid #374151;font-size:12px;font-weight:600;">
+                  Apri profilo
+                </a>
+              </div>
+            </div>
+          `;
+          marker.bindPopup(popupHtml, { closeButton: true, autoPan: true, maxWidth: 280 });
           marker.on('click', () => {
             setSelectedEscort(e);
+            try { marker.openPopup(); } catch {}
           });
           marker.addTo(mapRef.current);
           markersRef.current.push(marker);
@@ -424,48 +440,6 @@ export default function EscortMapPage() {
       {/* Contenitore mappa con card sovrapposta */}
       <div className="bg-gray-900 rounded-xl border border-gray-800 relative" style={{ minHeight: "520px" }}>
         <div ref={mapDivRef} className="w-full h-[520px]" />
-
-        {selectedEscort && (
-          <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-4 z-[10000] flex justify-center">
-            <button
-              type="button"
-              className="pointer-events-auto w-full max-w-md rounded-xl border border-gray-700 bg-gray-900/95 shadow-xl flex gap-3 px-3 py-2 items-center hover:border-pink-500 transition-colors"
-              onClick={() => {
-                const token =
-                  typeof window !== "undefined" ? window.localStorage.getItem("auth-token") || "" : "";
-                const targetId = selectedEscort.streetId || selectedEscort.id;
-                if (!token) {
-                  window.location.href = `/autenticazione?redirect=${encodeURIComponent("/escort/mappa")}`;
-                  return;
-                }
-                window.open(`/street-fireflies/${targetId}`, "_blank");
-              }}
-            >
-              {selectedEscort.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={selectedEscort.coverUrl}
-                  alt={selectedEscort.name || "Escort"}
-                  className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
-                />
-              ) : null}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-white truncate">{selectedEscort.name}</span>
-                  <span className="text-xs text-yellow-400">
-                    ★★★★★ <span className="text-[10px] text-gray-300">recensioni</span>
-                  </span>
-                </div>
-                {selectedEscort.city && (
-                  <div className="text-xs text-gray-300 mt-1 truncate">Escort {selectedEscort.city}</div>
-                )}
-                <div className="mt-1 text-xs text-pink-400 font-medium">
-                  Clicca per vedere il profilo Street Fireflies di questa escort
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
       </div>
     </main>
   );

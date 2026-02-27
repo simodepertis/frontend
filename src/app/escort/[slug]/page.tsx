@@ -857,7 +857,7 @@ export default function EscortDetailPage() {
       </div>
       {/* Quick Access + Content */}
       <div className="mt-10 grid grid-cols-1 md:grid-cols-4 gap-6" id="quick-access">
-        <aside className="md:col-span-1 bg-gray-800 border rounded-xl shadow-sm p-4 h-fit sticky top-24">
+        <aside className="md:col-span-1 bg-gray-800 border rounded-xl shadow-sm p-4 h-fit md:sticky md:top-24">
           <div className="text-sm font-semibold mb-2 text-gray-300">Quick Access</div>
           <nav className="space-y-1 text-sm text-gray-300">
             <a href="#bio" className="block px-2 py-1 rounded hover:bg-gray-700">Bio</a>
