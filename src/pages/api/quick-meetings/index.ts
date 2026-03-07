@@ -14,13 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return s.replace(/\D/g, '');
       };
 
-      const where: any = {
-        isActive: true,
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gte: new Date() } }, // Solo annunci non scaduti
-        ],
-      };
+      const where: any = {};
 
       if (category && category !== 'all') {
         where.category = category as QuickMeetingCategory;
@@ -37,8 +31,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const q = `%${phoneDigits}%`;
 
         const andSql: Prisma.Sql[] = [
-          Prisma.sql`"isActive" = true`,
-          Prisma.sql`("expiresAt" IS NULL OR "expiresAt" >= NOW())`,
         ];
 
         if (category && category !== 'all') {
@@ -48,10 +40,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           andSql.push(Prisma.sql`"city" = ${city as any}`);
         }
 
-        const andWhere = andSql.reduce((acc, cur, idx) => {
-          if (idx === 0) return cur;
-          return Prisma.sql`${acc} AND ${cur}`;
-        }, Prisma.sql``);
+        const andWhere = andSql.length
+          ? andSql.reduce((acc, cur, idx) => {
+              if (idx === 0) return cur;
+              return Prisma.sql`${acc} AND ${cur}`;
+            }, Prisma.sql``)
+          : Prisma.sql`TRUE`;
 
         const rows = await prisma.$queryRaw<{ id: number }[]>(
           Prisma.sql`

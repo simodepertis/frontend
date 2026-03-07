@@ -15,12 +15,218 @@
 const fetch = require('undici').fetch;
 const cheerio = require('cheerio');
 const { PrismaClient } = require('@prisma/client');
-const puppeteer = require('puppeteer');
+const puppeteerExtra = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const fs = require('fs');
 const path = require('path');
 
+puppeteerExtra.use(StealthPlugin());
+
+// Prevent hard-crash when puppeteer-extra stealth tries to inject scripts into a target
+// that gets closed by Cloudflare/browser restarts. We only ignore known non-fatal errors.
+process.on('unhandledRejection', (reason) => {
+  const msg = String(reason?.message || reason || '');
+  if (/TargetCloseError/i.test(msg) || /Session closed/i.test(msg) || /Protocol error/i.test(msg)) {
+    console.log('⚠️ Ignoro unhandledRejection non fatale (target chiuso):', msg.split('\n')[0]);
+    return;
+  }
+  console.error('❌ UnhandledRejection:', reason);
+});
+
 const prisma = new PrismaClient();
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function safeClosePage(page) {
+  if (!page) return;
+  try {
+    if (typeof page.isClosed === 'function' && page.isClosed()) return;
+    await page.close();
+  } catch {}
+}
+
+async function safeCloseBrowser(browser) {
+  if (!browser) return;
+  try {
+    await browser.close();
+  } catch {}
+}
+
+function normalizeCategoryEnvValue(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return null;
+  const u = v.toUpperCase();
+  if (u === 'DONNE' || u === 'DONNA' || u === 'DONNA_CERCA_UOMO') return 'DONNA_CERCA_UOMO';
+  if (u === 'TRANS') return 'TRANS';
+  if (u === 'UOMINI' || u === 'UOMO' || u === 'UOMO_CERCA_UOMO') return 'UOMO_CERCA_UOMO';
+  if (u === 'ALL' || u === 'TUTTE') return 'ALL';
+  return u;
+}
+
+function normalizeCityEnvValue(raw) {
+  const v = String(raw || '').trim();
+  if (!v) return null;
+  const u = v.toUpperCase();
+  if (u === 'ALL' || u === 'TUTTE') return 'ALL';
+  return v;
+}
+
+function getUserDataDir() {
+  const custom = String(process.env.BOT_PROFILE_DIR || '').trim();
+  if (custom) return custom;
+  return path.join(__dirname, '.puppeteer-profile-bakeca');
+}
+
+function isHeadlessEnabled() {
+  const v = String(process.env.HEADLESS || '').trim().toLowerCase();
+  if (v === '0' || v === 'false' || v === 'no') return false;
+  return true;
+}
+
+function allowNonHeadlessFallback() {
+  const v = String(process.env.ALLOW_NON_HEADLESS || '').trim().toLowerCase();
+  return v === '1' || v === 'true' || v === 'yes';
+}
+
+async function isCloudflareChallenge(page) {
+  try {
+    const title = (await page.title()) || '';
+    if (title.toLowerCase().includes('ci siamo quasi')) return true;
+    const html = await page.content();
+    return /cdn-cgi\/challenge-platform/i.test(html) || /cloudflare/i.test(html);
+  } catch {
+    return false;
+  }
+}
+
+async function newPageWithRetry(browser, headless, label) {
+  const max = 2;
+  let lastErr = null;
+  for (let i = 0; i <= max; i++) {
+    try {
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+      return { browser, page };
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      console.log(`⚠️ newPage fallita (${label || 'page'}): ${msg.split('\n')[0]}`);
+      await safeCloseBrowser(browser);
+      browser = await launchBrowser(headless);
+      await sleep(500);
+    }
+  }
+  throw lastErr;
+}
+
+async function launchBrowser(headless) {
+  const userDataDir = getUserDataDir();
+  const args = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--ignore-certificate-errors',
+    '--disable-dev-shm-usage',
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-blink-features=AutomationControlled',
+  ];
+  return puppeteerExtra.launch({
+    headless: headless ? 'new' : false,
+    userDataDir,
+    args,
+    protocolTimeout: 120000,
+  });
+}
+
+async function handleCloudflareHeadless(page, url) {
+  // In headless we cannot rely on a visible browser. Try: consent click + waits + reloads.
+  // If still blocked, return false so caller can skip.
+  const maxMs = parseInt(process.env.CLOUDFLARE_MAX_WAIT_MS || '60000', 10);
+  const start = Date.now();
+
+  while (Date.now() - start < maxMs) {
+    await ensureBakecaConsent(page);
+
+    const blocked = await isCloudflareChallenge(page);
+    if (!blocked) return true;
+
+    // Cloudflare interstitial often resolves after some seconds
+    await sleep(4000);
+
+    try {
+      await page.reload({ waitUntil: 'networkidle2', timeout: 45000 });
+    } catch {
+      try {
+        await gotoWithRetry(page, url, { waitUntil: 'networkidle2', timeout: 45000 }, 1);
+      } catch {
+        // ignore and keep looping
+      }
+    }
+  }
+
+  return false;
+}
+
+async function gotoWithRetry(page, url, opts, retries = 2) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await page.goto(url, opts);
+      return;
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      if (msg.includes('ERR_INTERNET_DISCONNECTED') && attempt < retries) {
+        await sleep(5000);
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
+
+async function ensureBakecaConsent(page) {
+  // Bakecaincontrii now blurs/hides adult content unless both cookies are set.
+  // We set them proactively to avoid missing phone/whatsapp in detail pages.
+  try {
+    if (!page || (typeof page.isClosed === 'function' && page.isClosed())) return;
+    await page.setCookie(
+      { name: 'adult_cookie', value: '1', domain: '.bakecaincontrii.com', path: '/' },
+      { name: 'privacy_cookie', value: '1', domain: '.bakecaincontrii.com', path: '/' },
+    );
+  } catch (e) {
+    // ignore (can fail before first navigation in some Chromium builds)
+  }
+
+  try {
+    await sleep(1500);
+
+    if (!page || (typeof page.isClosed === 'function' && page.isClosed())) return;
+
+    const accettoButton = await page.$('button[aria-label="Accetto"]');
+    if (accettoButton) {
+      console.log('✅ Click su bottone [aria-label="Accetto"]');
+      await accettoButton.click();
+    } else {
+      await page.evaluate(() => {
+        const candidates = Array.from(document.querySelectorAll('button, a'));
+        const acceptTexts = ['accetto', 'accetta', 'ho più di 18', 'ho piu di 18', 'enter', 'continua'];
+        for (const el of candidates) {
+          const text = (el.textContent || '').toLowerCase().trim();
+          if (!text) continue;
+          if (acceptTexts.some((t) => text.includes(t))) {
+            (el instanceof HTMLElement) && el.click();
+            break;
+          }
+        }
+      });
+    }
+
+    await sleep(2000);
+  } catch (e) {
+    // no-op
+  }
+}
 
 function normalizePhone(raw) {
   const v = String(raw || '').trim();
@@ -53,9 +259,10 @@ function buildWhatsAppLink(phoneRaw, whatsappRaw) {
 }
 
 const USER_ID = process.env.USER_ID ? parseInt(process.env.USER_ID, 10) : null;
-const CATEGORY = process.env.CATEGORY || 'DONNA_CERCA_UOMO';
-const CITY = process.env.CITY || 'Milano';
+const CATEGORY = normalizeCategoryEnvValue(process.env.CATEGORY) || 'DONNA_CERCA_UOMO';
+const CITY = normalizeCityEnvValue(process.env.CITY) || 'Milano';
 const LIMIT = parseInt(process.env.LIMIT || '20', 10);
+const PAGES = parseInt(process.env.PAGES || '0', 10);
 const API_BASE = process.env.API_BASE || 'http://localhost:3000';
 
 if (!USER_ID) {
@@ -85,15 +292,12 @@ async function fetchBakecaCityCodes() {
   // Prendiamo una pagina qualunque (Napoli) per leggere il JS che contiene: var cities=[{code:"..."},...]
   // NOTA: in alcuni ambienti la fetch server-side viene bloccata (HTTP 403), quindi usiamo Puppeteer.
   const url = 'https://napoli.bakecaincontrii.com/donna-cerca-uomo/';
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors']
-  });
+  const browser = await launchBrowser(true);
   let html = '';
   try {
     const page = await browser.newPage();
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
+    await gotoWithRetry(page, url, { waitUntil: 'networkidle2', timeout: 45000 }, 2);
     await sleep(1500);
     html = await page.content();
   } finally {
@@ -139,50 +343,57 @@ function buildUrl(city, category) {
   return `https://${city.toLowerCase()}.bakecaincontrii.com/${CATEGORY_URLS[category]}/`;
 }
 
+function normalizeSourceUrl(raw) {
+  try {
+    const u = new URL(String(raw || ''));
+    const host = u.hostname.replace(/^www\./i, '').toLowerCase();
+    const path = (u.pathname || '/').replace(/\/+$/, '');
+    return `${host}${path}`;
+  } catch {
+    return String(raw || '').trim();
+  }
+}
+
+function extractBakecaAdId(sourceUrl) {
+  const s = String(sourceUrl || '');
+  const m = s.match(/\b(it[a-z0-9]{6,12})\b/i);
+  return m ? String(m[1]).toLowerCase() : null;
+}
+
 async function scrapeLista(url) {
   console.log(`📄 Scarico lista con browser: ${url}`);
   
-  const browser = await puppeteer.launch({ 
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors']
-  });
+  const preferredHeadless = isHeadlessEnabled();
+  let browser = await launchBrowser(preferredHeadless);
   
   try {
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    let page;
+    ({ browser, page } = await newPageWithRetry(browser, preferredHeadless, 'lista'));
     
     console.log('🌐 Caricamento pagina...');
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
+    await gotoWithRetry(page, url, { waitUntil: 'networkidle2', timeout: 45000 }, 2);
+    await ensureBakecaConsent(page);
 
-    // Gestione popup 18+ / cookie
-    try {
-      await sleep(2000);
-      // prova prima con il bottone esplicito "Accetto"
-      const accettoButton = await page.$('button[aria-label="Accetto"]');
-      if (accettoButton) {
-        console.log('✅ Click su bottone [aria-label="Accetto"]');
-        await accettoButton.click();
+    if (preferredHeadless && (await isCloudflareChallenge(page))) {
+      if (allowNonHeadlessFallback()) {
+        await safeClosePage(page);
+        await safeCloseBrowser(browser);
+        browser = await launchBrowser(false);
+        let page2;
+        ({ browser, page: page2 } = await newPageWithRetry(browser, false, 'lista-non-headless'));
+        console.log('🛡️ Cloudflare challenge: riprovo in modalità non-headless (ALLOW_NON_HEADLESS=1)');
+        await gotoWithRetry(page2, url, { waitUntil: 'networkidle2', timeout: 45000 }, 2);
+        await ensureBakecaConsent(page2);
+
+        page = page2;
       } else {
-        // fallback: cerca bottoni/link con testo che contiene "Accetto" ecc.
-        await page.evaluate(() => {
-          const candidates = Array.from(document.querySelectorAll('button, a'));
-          const acceptTexts = ['accetto', 'accetta', 'ho più di 18', 'ho piu di 18', 'enter'];
-
-          for (const el of candidates) {
-            const text = (el.textContent || '').toLowerCase().trim();
-            if (!text) continue;
-            if (acceptTexts.some(t => text.includes(t))) {
-              (el instanceof HTMLElement) && el.click();
-              break;
-            }
-          }
-        });
+        console.log('🛡️ Cloudflare challenge rilevata: resto headless e provo ad attendere/ricaricare');
+        const ok = await handleCloudflareHeadless(page, url);
+        if (!ok) {
+          console.log('⏭️ Skip lista: Cloudflare non risolto in headless');
+          return [];
+        }
       }
-
-      // dai tempo alla pagina di aggiornarsi dopo il click
-      await sleep(3000);
-    } catch (e) {
-      console.log('ℹ️ Nessun popup 18+/cookie rilevato o gestione non necessaria');
     }
     
     // Attendi che il contenuto sia caricato
@@ -237,27 +448,94 @@ async function scrapeLista(url) {
     return links;
     
   } finally {
-    await browser.close();
+    await safeCloseBrowser(browser);
   }
 }
 
 async function scrapeDettaglio(url) {
   console.log(`🔍 Scarico dettaglio: ${url}`);
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors']
-  });
+  const preferredHeadless = isHeadlessEnabled();
+  let browser = await launchBrowser(preferredHeadless);
 
   try {
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+    let page;
+    ({ browser, page } = await newPageWithRetry(browser, preferredHeadless, 'dettaglio'));
 
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 45000 });
-    await sleep(2000);
+    await gotoWithRetry(page, url, { waitUntil: 'networkidle2', timeout: 45000 }, 2);
+    await ensureBakecaConsent(page);
+
+    if (preferredHeadless && (await isCloudflareChallenge(page))) {
+      if (allowNonHeadlessFallback()) {
+        await safeClosePage(page);
+        await safeCloseBrowser(browser);
+        browser = await launchBrowser(false);
+        ({ browser, page } = await newPageWithRetry(browser, false, 'dettaglio-non-headless'));
+        console.log('🛡️ Cloudflare challenge: riprovo in modalità non-headless (ALLOW_NON_HEADLESS=1)');
+        await gotoWithRetry(page, url, { waitUntil: 'networkidle2', timeout: 45000 }, 2);
+        await ensureBakecaConsent(page);
+      } else {
+        console.log('🛡️ Cloudflare challenge rilevata: resto headless e provo ad attendere/ricaricare');
+        const ok = await handleCloudflareHeadless(page, url);
+        if (!ok) {
+          console.log('⏭️ Skip dettaglio: Cloudflare non risolto in headless');
+          return { title: null, description: null, phone: null, whatsapp: null, age: null, photos: [] };
+        }
+      }
+    }
+    // After cookies/click, reload once so the app re-renders without blurredbg gating.
+    try {
+      await page.reload({ waitUntil: 'networkidle2', timeout: 45000 });
+    } catch (e) {
+      // ignore
+    }
+    await sleep(1500);
+
+    // Do NOT click anchors: some pages have footer/menu links like "Contattaci" that navigate away
+    // from /annuncio/... and would break extraction.
+    try {
+      await page.evaluate(() => {
+        const texts = ['mostra', 'numero', 'telefono', 'chiama', 'whatsapp'];
+        const buttons = Array.from(document.querySelectorAll('button'))
+          .filter((el) => {
+            const t = (el.textContent || '').toLowerCase().trim();
+            if (!t) return false;
+            return texts.some((x) => t.includes(x));
+          });
+        for (const el of buttons.slice(0, 2)) {
+          try {
+            (el instanceof HTMLElement) && el.click();
+          } catch {}
+        }
+      });
+      await sleep(800);
+    } catch (e) {
+      // ignore
+    }
+
+    // Guard: if page navigated away from the ad (e.g. /contatti/), treat as blocked.
+    try {
+      const currentUrl = page.url();
+      if (currentUrl && !currentUrl.includes('/annuncio/')) {
+        return { title: null, description: null, phone: null, whatsapp: null, age: null, photos: [] };
+      }
+    } catch {}
 
     // Estrazione telefono/WhatsApp da DOM renderizzato (spesso il numero è testo nel bottone, non tel:)
     const domContacts = await page.evaluate(() => {
       const cleanDigits = (s) => (String(s || '').replace(/\D/g, '') || '');
+
+      const extractPhoneLike = (text) => {
+        const t = String(text || '').trim();
+        if (!t) return null;
+        // accept sequences like +39 333 123 4567 or 3331234567
+        const m = t.match(/(\+?\d[\d\s\-\.]{7,18}\d)/);
+        if (!m || !m[1]) return null;
+        const digits = cleanDigits(m[1]);
+        if (digits.length >= 8 && digits.length <= 13) return digits;
+        // sometimes includes country code making it longer
+        if (digits.length >= 14 && digits.startsWith('39')) return digits;
+        return null;
+      };
 
       // 1) tel:
       const telA = document.querySelector('a[href^="tel:"]');
@@ -299,7 +577,16 @@ async function scrapeDettaglio(url) {
       const waA = document.querySelector('a[href*="wa.me"], a[href*="whatsapp"]');
       const waHref = waA ? waA.getAttribute('href') : null;
 
-      return { telHref, phoneText, waHref };
+      // 4) Fallback: some ads embed phone in <title>/<meta> but not in body DOM.
+      const titlePhone = extractPhoneLike(document.title);
+      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+      const ogTitlePhone = extractPhoneLike(ogTitle);
+      const desc = document.querySelector('meta[name="description"]')?.getAttribute('content');
+      const descPhone = extractPhoneLike(desc);
+
+      const metaPhone = titlePhone || ogTitlePhone || descPhone;
+
+      return { telHref, phoneText, waHref, metaPhone };
     });
 
     const html = await page.content();
@@ -319,6 +606,11 @@ async function scrapeDettaglio(url) {
       phone = String(domContacts.phoneText).trim();
     }
 
+    // Extra fallback: phone embedded in <title>/<meta> (common in some ads)
+    if (!phone && domContacts && domContacts.metaPhone) {
+      phone = String(domContacts.metaPhone).trim();
+    }
+
     let whatsapp = null;
     const waHref = $('a[href*="wa.me"], a[href*="whatsapp"]').first().attr('href') || (domContacts && domContacts.waHref);
     if (waHref) {
@@ -330,6 +622,27 @@ async function scrapeDettaglio(url) {
     // Normalizza sempre (così su sito tel:/wa.me funzionano)
     phone = normalizePhone(phone);
     whatsapp = buildWhatsAppLink(phone, whatsapp);
+
+    // If still missing contacts, dump debug HTML + screenshot for diagnosis.
+    if (!phone && !whatsapp) {
+      try {
+        const debugDir = process.platform === 'win32' ? __dirname : '/root';
+        const safeSlug = Buffer.from(url).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+        const debugHtmlPath = process.platform === 'win32'
+          ? path.join(debugDir, `debug-detail-nocontact-${safeSlug}.html`)
+          : `${debugDir}/debug-detail-nocontact-${safeSlug}.html`;
+        const debugPngPath = process.platform === 'win32'
+          ? path.join(debugDir, `debug-detail-nocontact-${safeSlug}.png`)
+          : `${debugDir}/debug-detail-nocontact-${safeSlug}.png`;
+        const htmlNoContact = await page.content();
+        fs.writeFileSync(debugHtmlPath, htmlNoContact);
+        await page.screenshot({ path: debugPngPath, fullPage: true });
+        console.log(`💾 Salvato debug no-contact: ${debugHtmlPath}`);
+        console.log(`🖼️ Salvato screenshot no-contact: ${debugPngPath}`);
+      } catch (e) {
+        console.log('⚠️ Impossibile salvare debug no-contact:', e.message);
+      }
+    }
 
     let age = null;
     const m = $('body').text().match(/(\d{2})\s*anni|età\s*(\d{2})/i);
@@ -403,16 +716,27 @@ async function scrapeDettaglio(url) {
 
     return { title, description, phone, whatsapp, age, photos };
   } finally {
-    await browser.close();
+    await safeCloseBrowser(browser);
   }
 }
 
 async function salvaAnnuncio(data, sourceUrl, category, city) {
-  const sourceId = `bot_${category}_${Buffer.from(sourceUrl).toString('base64').slice(0, 20)}`;
+  const normalizedSourceUrl = normalizeSourceUrl(sourceUrl);
+  const adId = extractBakecaAdId(sourceUrl);
+  const sourceId = adId
+    ? `bakeca_${adId}`
+    : `bakeca_${Buffer.from(normalizedSourceUrl).toString('base64').slice(0, 40)}`;
   
   // Controlla se esiste già
   const exists = await prisma.quickMeeting.findFirst({
-    where: { sourceUrl, userId: USER_ID }
+    where: {
+      userId: USER_ID,
+      OR: [
+        { sourceId },
+        { sourceUrl: normalizedSourceUrl },
+        { sourceUrl },
+      ],
+    }
   });
   
   if (exists) {
@@ -432,7 +756,7 @@ async function salvaAnnuncio(data, sourceUrl, category, city) {
       // Il cliente non vuole più le foto reali sugli annunci importati dal bot:
       // salviamo photos vuoto così il frontend usa solo il placeholder.
       photos: [],
-      sourceUrl,
+      sourceUrl: normalizedSourceUrl,
       sourceId,
       userId: USER_ID,
       isActive: true,
@@ -457,7 +781,7 @@ async function runOnceFor(city, category) {
 
   // Paginazione: scorri /?page=2,3,... finché trovi annunci o raggiungi LIMIT
   const maxAds = LIMIT > 0 ? LIMIT : Number.MAX_SAFE_INTEGER;
-  const maxPages = 50; // sicurezza per non ciclare all'infinito
+  const maxPages = PAGES > 0 ? PAGES : 50; // sicurezza per non ciclare all'infinito
   const links = [];
 
   for (let page = 1; page <= maxPages && links.length < maxAds; page++) {

@@ -82,12 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Costruisci filtri
     const whereBase: any = {
-      isActive: true,
-      // Mostra annunci non scaduti. Se expiresAt è null, consideralo non scaduto.
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: now } },
-      ],
+      // Mostra TUTTI gli annunci presenti a DB (anche se storicamente marcati come inattivi/scaduti)
     }
 
     if (category && category !== 'ALL') {
@@ -108,10 +103,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const whereNormal: any = {
       ...whereBase,
-      OR: [
-        // mantieni la regola di scadenza
-        ...(Array.isArray(whereBase.OR) ? whereBase.OR : []),
-      ],
       AND: [
         {
           OR: [

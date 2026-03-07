@@ -93,8 +93,7 @@ class AutoBumpSystem {
         bumpCount: ad.bumpCount + 1,
         lastBumpAt: now,
         nextBumpAt: nextBumpAt,
-        // Se ha raggiunto il massimo, disattiva
-        isActive: ad.bumpCount + 1 < ad.maxBumps
+        // Non disattivare mai automaticamente gli annunci
       }
     });
 
@@ -169,24 +168,8 @@ class AutoBumpSystem {
       console.log('🧹 Pulizia annunci scaduti...');
       
       const now = new Date();
-      const result = await prisma.quickMeeting.updateMany({
-        where: {
-          OR: [
-            { expiresAt: { lte: now } },
-            { 
-              AND: [
-                { bumpCount: { gte: prisma.quickMeeting.fields.maxBumps } },
-                { maxBumps: { gt: 0 } }
-              ]
-            }
-          ]
-        },
-        data: {
-          isActive: false
-        }
-      });
-
-      console.log(`🗑️ Disattivati ${result.count} annunci scaduti`);
+      void now;
+      console.log('ℹ️ Pulizia disattivata: gli annunci non vengono più auto-disattivati/scaduti');
     } catch (error) {
       console.error('❌ Errore pulizia annunci:', error);
     }

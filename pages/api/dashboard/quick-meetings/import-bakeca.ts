@@ -57,7 +57,8 @@ async function scrapeBakecaincontrii(userId: number) {
         
         // Accetta cookie
         try {
-          await page.click('button[class*="accept"]', { timeout: 3000 });
+          await page.waitForSelector('button[class*="accept"]', { timeout: 3000 });
+          await page.click('button[class*="accept"]');
           await sleep(1000);
         } catch (e) {}
         

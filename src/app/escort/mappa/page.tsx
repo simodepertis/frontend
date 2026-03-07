@@ -16,6 +16,8 @@ type MapEscort = {
   city?: string;
   // Street Fireflies: id logico del profilo speciale
   streetId?: number;
+  avgRating?: number | null;
+  reviewCount?: number;
 };
 
 export default function EscortMapPage() {
@@ -124,9 +126,11 @@ export default function EscortMapPage() {
               lat: Number.isFinite(latNum) ? latNum : null,
               lon: Number.isFinite(lonNum) ? lonNum : null,
               category: it.category || "ESCORT",
-              coverUrl: null,
+              coverUrl: typeof it.coverUrl === "string" ? it.coverUrl : null,
               city: it.city || selectedCity,
               streetId: it.id,
+              avgRating: typeof it.avgRating === "number" ? it.avgRating : null,
+              reviewCount: typeof it.reviewCount === "number" ? it.reviewCount : 0,
             };
           });
           setEscorts(mappedStreet);
@@ -250,6 +254,22 @@ export default function EscortMapPage() {
 
       const coords: [number, number][] = [];
 
+      const escapeHtml = (s: string) =>
+        String(s || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+
+      const formatStars = (avgRating?: number | null) => {
+        const r = typeof avgRating === 'number' && Number.isFinite(avgRating) ? avgRating : 0;
+        const full = Math.max(0, Math.min(5, Math.round(r)));
+        const stars = Array.from({ length: 5 }).map((_, i) => (i < full ? '★' : '☆')).join('');
+        const color = '#fbbf24';
+        return `<span style="color:${color};font-size:14px;letter-spacing:1px;">${stars}</span>`;
+      };
+
       const getIconForCategory = (category: string) => {
         let bg = '#ec4899'; // escort: rosa
         let symbol = '&#9792;'; // ♀
@@ -286,12 +306,31 @@ export default function EscortMapPage() {
           const href = token
             ? redirectTo
             : `/autenticazione?redirect=${encodeURIComponent(redirectTo)}`;
+
+          const title = escapeHtml(String(e.name || 'Street Firefly'));
+          const zone = e.city ? escapeHtml(String(e.city)) : '';
+          const reviews = typeof e.reviewCount === 'number' ? e.reviewCount : 0;
+          const ratingHtml = reviews > 0 ? formatStars(e.avgRating) : `<span style="opacity:.75;font-size:12px;">Nessuna recensione</span>`;
+          const reviewsHtml = reviews > 0 ? `<span style="font-size:12px;opacity:.85;">${reviews} recensioni</span>` : '';
+          const imgUrl = e.coverUrl ? String(e.coverUrl) : '';
+          const imgHtml = imgUrl
+            ? `<img src="${escapeHtml(imgUrl)}" alt="${title}" style="width:54px;height:54px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:#111827;" />`
+            : `<div style="width:54px;height:54px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:#111827;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-weight:700;">SF</div>`;
           const popupHtml = `
-            <div style="min-width:220px;max-width:260px;">
-              <div style="font-weight:700;margin-bottom:4px;">${String(e.name || 'Street Firefly')}</div>
-              ${e.city ? `<div style="font-size:12px;opacity:.85;">Zona: ${String(e.city)}</div>` : ''}
-              <div style="margin-top:8px;">
-                <a href="${href}" style="display:inline-block;padding:8px 10px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;border:1px solid #374151;font-size:12px;font-weight:600;">
+            <div style="min-width:240px;max-width:300px;">
+              <div style="display:flex;gap:10px;align-items:flex-start;">
+                ${imgHtml}
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:800;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
+                  ${zone ? `<div style="font-size:12px;opacity:.85;margin-bottom:6px;">Zona: ${zone}</div>` : '<div style="height:6px;"></div>'}
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    ${ratingHtml}
+                    ${reviewsHtml}
+                  </div>
+                </div>
+              </div>
+              <div style="margin-top:10px;">
+                <a href="${href}" style="display:inline-block;padding:8px 10px;border-radius:10px;background:#111827;color:#fff;text-decoration:none;border:1px solid #374151;font-size:12px;font-weight:700;">
                   Apri profilo
                 </a>
               </div>
