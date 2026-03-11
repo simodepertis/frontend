@@ -85,6 +85,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Mostra TUTTI gli annunci presenti a DB (anche se storicamente marcati come inattivi/scaduti)
     }
 
+    const superTopPurchaseWhere: any = {
+      status: 'ACTIVE',
+      expiresAt: { gt: now },
+      OR: [
+        { product: { code: 'SUPERTOP' } },
+        { product: { code: { startsWith: 'SUPERTOP_' } } },
+      ],
+    }
+
+    const superTopVisibleClause: any = {
+      isActive: true,
+      OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
+    }
+
     if (category && category !== 'ALL') {
       whereBase.category = category
     }
@@ -96,9 +110,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // SuperTop in vetrina SOLO se ha un acquisto SuperTop attivo (così quando scade sparisce)
+    // + deve rispettare i criteri di visibilità storici (attivo e non scaduto)
     const whereSuperTop: any = {
       ...whereBase,
-      bumpPackage: 'SUPERTOP',
+      ...superTopVisibleClause,
+      quickMeetingPurchases: { some: superTopPurchaseWhere },
     }
 
     const whereNormal: any = {
@@ -174,10 +191,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }),
     ])
 
-    const meetings = [...superTopMeetings, ...normalMeetings].map((m: any) => ({
-      ...m,
-      photos: sanitizePhotos(m?.photos),
-    }))
+    const meetings = [...superTopMeetings, ...normalMeetings].map((m: any) => {
+      const isSuperTop = superTopMeetings.some((s: any) => s?.id === m?.id)
+      return {
+        ...m,
+        bumpPackage: isSuperTop ? 'SUPERTOP' : m?.bumpPackage,
+        photos: sanitizePhotos(m?.photos),
+      }
+    })
 
     // Statistiche per categoria
     const categoryStats = await prisma.quickMeeting.groupBy({
@@ -202,6 +223,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     })
 
+    res.setHeader('x-qm-api', 'pages/api/quick-meetings.ts supertop=purchase_only')
     return res.json({
       meetings,
       pagination: {
