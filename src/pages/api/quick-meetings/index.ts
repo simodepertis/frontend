@@ -7,6 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const { category, city, phone, limit = '20', page = '1' } = req.query;
+      const now = new Date();
 
       const normalizePhoneQuery = (raw: unknown) => {
         const s = String(raw || '').trim();
@@ -67,8 +68,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
       const take = parseInt(limit as string);
 
-      const superTopWhere = { ...where, bumpPackage: 'SUPERTOP' as const };
-      const normalWhere = { ...where, NOT: { bumpPackage: 'SUPERTOP' as const } };
+      const superTopPurchaseWhere: any = {
+        status: 'ACTIVE',
+        expiresAt: { gt: now },
+        OR: [
+          { product: { code: 'SUPERTOP' } },
+          { product: { code: { startsWith: 'SUPERTOP_' } } },
+        ],
+      };
+
+      const superTopClause: any = {
+        // In vetrina SOLO se c'è un acquisto SuperTop attivo: quando scade, sparisce.
+        quickMeetingPurchases: { some: superTopPurchaseWhere },
+      };
+
+      const visibleClause: any = {
+        isActive: true,
+        OR: [{ expiresAt: null }, { expiresAt: { gte: now } }],
+      };
+
+      // SuperTop deve seguire la logica storica (visibile/attivo + pacchetto SuperTop valido)
+      const superTopWhere: any = {
+        AND: [where, visibleClause, superTopClause],
+      };
+
+      // I normali restano con la logica attuale, ma non devono includere record con pacchetti SuperTop attivi
+      const normalWhere: any = {
+        ...where,
+        AND: [
+          {
+            OR: [{ bumpPackage: null }, { bumpPackage: { not: 'SUPERTOP' as const } }],
+          },
+          {
+            quickMeetingPurchases: {
+              none: superTopPurchaseWhere,
+            },
+          },
+        ],
+      };
 
       const [superTopMeetings, meetings, total] = await Promise.all([
         prisma.quickMeeting.findMany({
