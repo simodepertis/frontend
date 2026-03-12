@@ -799,10 +799,17 @@ async function runOnceFor(city, category) {
       break;
     }
 
+    const beforeLen = links.length;
+
     for (const href of pageLinks) {
       if (!links.includes(href) && links.length < maxAds) {
         links.push(href);
       }
+    }
+
+    if (links.length === beforeLen) {
+      console.log(`ℹ️ Pagina ${page}: nessun link nuovo (probabile pagina duplicata/blocco), stop paginazione`);
+      break;
     }
   }
 

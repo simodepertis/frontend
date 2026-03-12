@@ -583,6 +583,62 @@ export default function EscortDetailPage() {
     return undefined;
   }
 
+  function normalizePhone(raw?: string | null) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    const digits = v.replace(/[^0-9+]/g, '');
+    if (!digits) return null;
+    if (digits.startsWith('+')) return digits;
+    if (digits.startsWith('39') && digits.length >= 11 && digits.length <= 13) return `+${digits}`;
+    if (digits.length >= 8 && digits.length <= 11) return `+39${digits}`;
+    return `+${digits}`;
+  }
+
+  function extractWhatsAppNumber(raw?: string | null) {
+    const v = String(raw || '').trim();
+    if (!v) return null;
+    if (/^https?:\/\//i.test(v)) {
+      const m = v.match(/(\+?\d[0-9]{7,14})/);
+      return m ? m[1] : null;
+    }
+    return normalizePhone(v);
+  }
+
+  function buildWhatsAppHref(phoneRaw?: string | null, whatsappRaw?: string | null) {
+    const wa = extractWhatsAppNumber(whatsappRaw) || normalizePhone(phoneRaw);
+    if (!wa) return null;
+    const digitsOnly = wa.replace(/\D/g, '');
+    if (!digitsOnly) return null;
+    const text = encodeURIComponent('Ciao ti ho vista su incontriescort.org');
+    return `https://wa.me/${digitsOnly}?text=${text}`;
+  }
+
+  const contactPhone = useMemo(() => {
+    try {
+      const raw =
+        pick((data as any)?.contacts, ['phone', 'telefono', 'cell', 'mobile']) ||
+        pick((data as any), ['phone', 'telefono', 'cell', 'mobile']);
+      return normalizePhone(raw || null);
+    } catch {
+      return null;
+    }
+  }, [data]);
+
+  const contactWhatsAppHref = useMemo(() => {
+    try {
+      const rawWa =
+        pick((data as any)?.contacts, ['whatsapp', 'wa', 'whatsApp']) ||
+        pick((data as any), ['whatsapp', 'wa', 'whatsApp']);
+      return buildWhatsAppHref(contactPhone, rawWa || null);
+    } catch {
+      return null;
+    }
+  }, [data, contactPhone]);
+
+  const contactTelHref = useMemo(() => {
+    return contactPhone ? `tel:${contactPhone}` : null;
+  }, [contactPhone]);
+
   return (
     <main className="container mx-auto px-4 py-8">
       <Breadcrumbs items={[{ label: "Home", href: "/" }, { label: "Escort", href: "/escort" }, { label: escort.nome }]} />
@@ -645,15 +701,19 @@ export default function EscortDetailPage() {
           
 
           {/* Contatti sintetici sotto galleria */}
-          {data?.contacts?.phone && (
+          {contactPhone && (
             <div className="mt-4 border border-gray-700 bg-gray-900 rounded-lg p-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-white">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-blue-400"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.05-.24c1.12.37 2.33.57 3.54.57a1 1 0 011 1V21a1 1 0 01-1 1C10.85 22 2 13.15 2 2a1 1 0 011-1h3.5a1 1 0 011 1c0 1.21.2 2.42.57 3.54a1 1 0 01-.24 1.05l-2.2 2.2z"/></svg>
-                <a href={`tel:${data.contacts.phone}`} className="hover:underline">{data.contacts.phone}</a>
+                {contactTelHref ? (
+                  <a href={contactTelHref} className="hover:underline">{contactPhone}</a>
+                ) : (
+                  <span>{contactPhone}</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                {Array.isArray(data.contacts.apps) && data.contacts.apps.includes('whatsapp') && (
-                  <a href={`https://wa.me/${String((data.contacts.whatsapp || data.contacts.phone) || '').replace(/\D/g,'')}?text=${encodeURIComponent('Ciao ti ho vista su incontriescort.org')}`} target="_blank" className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-1.5 text-sm">
+                {contactWhatsAppHref && (
+                  <a href={contactWhatsAppHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md px-3 py-1.5 text-sm">
                     <FontAwesomeIcon icon={faWhatsapp} /> WhatsApp
                   </a>
                 )}
@@ -725,13 +785,13 @@ export default function EscortDetailPage() {
           <div className="text-2xl font-bold text-white">€ {escort.prezzo}</div>
           <div className="mt-2 text-xs text-gray-400">Tariffa indicativa</div>
           {/* Contatti */}
-          {data?.contacts && (
+          {(contactWhatsAppHref || contactTelHref || data?.contacts) && (
             <div className="mt-4 space-y-2">
-              {data.contacts.whatsapp && (
-                <a href={`https://wa.me/${String(data.contacts.whatsapp).replace(/\D/g,'')}?text=${encodeURIComponent('Ciao ti ho vista su incontriescort.org')}`} target="_blank" className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2.5 font-semibold text-center">WhatsApp</a>
+              {contactWhatsAppHref && (
+                <a href={contactWhatsAppHref} target="_blank" rel="noopener noreferrer" className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-md py-2.5 font-semibold text-center">WhatsApp</a>
               )}
-              {data.contacts.phone && (
-                <a href={`tel:${data.contacts.phone}`} className="block w-full bg-red-600 hover:bg-red-700 text-white rounded-md py-2.5 font-semibold text-center">Chiama</a>
+              {contactTelHref && (
+                <a href={contactTelHref} className="block w-full bg-red-600 hover:bg-red-700 text-white rounded-md py-2.5 font-semibold text-center">Chiama</a>
               )}
               <button
                 onClick={toggleFavorite}
