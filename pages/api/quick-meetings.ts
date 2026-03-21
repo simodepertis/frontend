@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 function normalizeUploadUrl(u: string | null | undefined): string {
   const s = String(u || '').trim()
@@ -46,12 +47,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { category, city, page = '1', limit = '50' } = req.query
+    const { category, city, phone, page = '1', limit = '50' } = req.query
     
     const pageNum = Math.max(1, parseInt(page as string))
     const limitNum = Math.min(100, Math.max(1, parseInt(limit as string)))
     const offset = (pageNum - 1) * limitNum
     const now = new Date()
+
+    const normalizePhoneQuery = (raw: unknown) => {
+      const s = String(raw || '').trim()
+      if (!s) return ''
+      return s.replace(/\D/g, '')
+    }
 
     // Auto-heal: se esistono acquisti SuperTop attivi, assicura bumpPackage='SUPERTOP' sul meeting.
     // Serve per correggere acquisti storici quando il codice prodotto era 'SUPERTOP' (senza underscore)
@@ -108,6 +115,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         equals: city,
         mode: 'insensitive'
       }
+    }
+
+    const phoneDigits = normalizePhoneQuery(phone)
+    if (phoneDigits && phoneDigits.length >= 2) {
+      const q = `%${phoneDigits}%`
+
+      const andSql: any[] = []
+      if (category && category !== 'ALL') {
+        andSql.push({ sql: Prisma.sql`"category" = ${category as any}` })
+      }
+      if (city && city !== 'ALL') {
+        andSql.push({ sql: Prisma.sql`lower("city") = lower(${city as any})` })
+      }
+
+      const andWhere = andSql.length
+        ? andSql
+            .map((x) => x.sql)
+            .reduce((acc, cur, idx) => {
+              if (idx === 0) return cur
+              return Prisma.sql`${acc} AND ${cur}`
+            }, Prisma.sql``)
+        : Prisma.sql`TRUE`
+
+      const rows = await prisma.$queryRaw<{ id: number }[]>(
+        Prisma.sql`
+          SELECT "id"
+          FROM "QuickMeeting"
+          WHERE ${andWhere}
+          AND (
+            regexp_replace(COALESCE("phone", ''), '\\D', '', 'g') LIKE ${q}
+            OR regexp_replace(COALESCE("whatsapp", ''), '\\D', '', 'g') LIKE ${q}
+          )
+        `
+      )
+
+      const ids = rows.map((r) => r.id)
+      whereBase.id = ids.length ? { in: ids } : { in: [-1] }
     }
 
     // SuperTop in vetrina SOLO se ha un acquisto SuperTop attivo (così quando scade sparisce)
@@ -191,13 +235,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }),
     ])
 
-    const meetings = [...superTopMeetings, ...normalMeetings].map((m: any) => {
-      const isSuperTop = superTopMeetings.some((s: any) => s?.id === m?.id)
+    const superTopMeetingsOut = superTopMeetings.map((m: any) => {
       return {
         ...m,
-        bumpPackage: isSuperTop ? 'SUPERTOP' : m?.bumpPackage,
+        bumpPackage: 'SUPERTOP',
         photos: sanitizePhotos(m?.photos),
       }
+    })
+
+    const normalMeetingsOut = normalMeetings.map((m: any) => {
+      return {
+        ...m,
+        photos: sanitizePhotos(m?.photos),
+      }
+    })
+
+    // Backward compat: merged list (SuperTop first) without duplicates
+    const seen = new Set<number>()
+    const meetings = [...superTopMeetingsOut, ...normalMeetingsOut].filter((m: any) => {
+      const id = Number(m?.id)
+      if (!Number.isFinite(id)) return false
+      if (seen.has(id)) return false
+      seen.add(id)
+      return true
     })
 
     // Statistiche per categoria
@@ -225,7 +285,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.setHeader('x-qm-api', 'pages/api/quick-meetings.ts supertop=purchase_only')
     return res.json({
-      meetings,
+      superTopMeetings: superTopMeetingsOut,
+      meetings: normalMeetingsOut,
+      mergedMeetings: meetings,
       pagination: {
         page: pageNum,
         limit: limitNum,
