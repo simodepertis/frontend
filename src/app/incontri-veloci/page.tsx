@@ -167,24 +167,24 @@ interface CityContent { title?: string | null; introText?: string | null; faqs?:
 function FaqAccordion({ faqs }: { faqs: CityFaq[] }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <div className="divide-y divide-gray-200">
+    <div className="divide-y divide-gray-700">
       {faqs.map((f, i) => (
         <div key={i}>
           <button
             type="button"
-            className="w-full flex items-center justify-between py-5 px-1 text-left text-[15px] font-medium text-gray-900 hover:text-gray-700 transition-colors group"
+            className="w-full flex items-center justify-between py-5 px-1 text-left text-[15px] font-medium text-gray-100 hover:text-white transition-colors group"
             onClick={() => setOpen(open === i ? null : i)}
           >
             <span className="pr-6">{f.question}</span>
             <span
-              className={`flex-shrink-0 w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-transform duration-200 ${open === i ? 'rotate-90' : ''}`}
-              style={{ fontSize: 18 }}
+              className={`flex-shrink-0 text-gray-400 group-hover:text-gray-200 transition-transform duration-200 inline-block ${open === i ? 'rotate-90' : ''}`}
+              style={{ fontSize: 20, lineHeight: 1 }}
             >
               ›
             </span>
           </button>
           {open === i && (
-            <div className="pb-5 px-1 text-[14px] text-gray-600 leading-relaxed whitespace-pre-wrap">
+            <div className="pb-5 px-1 text-[14px] text-gray-400 leading-relaxed whitespace-pre-wrap">
               {f.answer}
             </div>
           )}
@@ -634,13 +634,13 @@ export default function IncontriVelociPage() {
 
       {/* Sezione SEO città */}
       {cityContent && (cityContent.introText || (Array.isArray(cityContent.faqs) && cityContent.faqs.length > 0)) && (
-        <div className="mt-16 bg-white rounded-2xl shadow-sm">
-          <div className="max-w-3xl mx-auto px-8 py-10">
+        <div className="mt-16 border-t border-gray-700 pt-12">
+          <div className="max-w-3xl">
             {cityContent.title && (
-              <h2 className="text-[22px] font-bold text-gray-900 mb-4">{cityContent.title}</h2>
+              <h2 className="text-xl font-bold text-white mb-4">{cityContent.title}</h2>
             )}
             {cityContent.introText && (
-              <p className="text-[15px] text-gray-600 leading-relaxed mb-8 whitespace-pre-wrap">{cityContent.introText}</p>
+              <p className="text-[15px] text-gray-400 leading-relaxed mb-8 whitespace-pre-wrap">{cityContent.introText}</p>
             )}
             {Array.isArray(cityContent.faqs) && cityContent.faqs.length > 0 && (
               <FaqAccordion faqs={cityContent.faqs} />
