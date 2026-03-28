@@ -161,6 +161,34 @@ function formatLocation(city: string, zone?: string | null) {
   return `${c} · ${z}`;
 }
 
+interface CityFaq { question: string; answer: string }
+interface CityContent { title?: string | null; introText?: string | null; faqs?: CityFaq[] }
+
+function FaqAccordion({ faqs }: { faqs: CityFaq[] }) {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <div className="space-y-2">
+      {faqs.map((f, i) => (
+        <div key={i} className="border border-gray-700 rounded-lg overflow-hidden">
+          <button
+            type="button"
+            className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white hover:bg-gray-750 bg-gray-800 transition-colors"
+            onClick={() => setOpen(open === i ? null : i)}
+          >
+            <span>{f.question}</span>
+            <span className="ml-4 flex-shrink-0 text-gray-400">{open === i ? '▲' : '▼'}</span>
+          </button>
+          {open === i && (
+            <div className="px-5 py-4 bg-gray-900 text-sm text-gray-300 whitespace-pre-wrap">
+              {f.answer}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function IncontriVelociPage() {
   const [meetings, setMeetings] = useState<QuickMeeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,10 +199,19 @@ export default function IncontriVelociPage() {
   const [selectedCity, setSelectedCity] = useState<string>('ALL');
   const [phoneQ, setPhoneQ] = useState<string>('');
   const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [cityContent, setCityContent] = useState<CityContent | null>(null);
 
   useEffect(() => {
     loadMeetings();
   }, [selectedCategory, selectedCity, phoneQ, page]);
+
+  useEffect(() => {
+    const city = selectedCity !== 'ALL' ? selectedCity : 'ALL';
+    fetch(`/api/city-page-content?city=${encodeURIComponent(city)}&pageType=INCONTRI_VELOCI`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setCityContent(d?.item || null))
+      .catch(() => setCityContent(null));
+  }, [selectedCity]);
 
   // Aggiorna le città disponibili quando cambia la nazione
   useEffect(() => {
@@ -589,6 +626,21 @@ export default function IncontriVelociPage() {
           </div>
         )}
       </div>
+
+      {/* Sezione SEO città */}
+      {cityContent && (cityContent.introText || (Array.isArray(cityContent.faqs) && cityContent.faqs.length > 0)) && (
+        <div className="max-w-4xl mx-auto mt-16 space-y-8">
+          {cityContent.title && (
+            <h2 className="text-2xl font-bold text-white">{cityContent.title}</h2>
+          )}
+          {cityContent.introText && (
+            <p className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap">{cityContent.introText}</p>
+          )}
+          {Array.isArray(cityContent.faqs) && cityContent.faqs.length > 0 && (
+            <FaqAccordion faqs={cityContent.faqs} />
+          )}
+        </div>
+      )}
     </main>
     </>
   );

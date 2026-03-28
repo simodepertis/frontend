@@ -799,3 +799,18 @@ model StreetFireflyReview {
   @@index([createdAt(sort: Desc)])
   @@index([isApproved])
 }
+
+// Contenuto SEO per pagina per città (testo intro + FAQ accordion)
+model CityPageContent {
+  id        Int      @id @default(autoincrement())
+  city      String   // es: MILANO, ROMA, ALL
+  pageType  String   // es: INCONTRI_VELOCI
+  title     String?
+  introText String?
+  faqs      Json     @default("[]") // [{question: String, answer: String}]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([city, pageType])
+  @@index([city, pageType])
+}

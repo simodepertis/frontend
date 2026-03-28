@@ -193,6 +193,11 @@ export default function AdminDashboardPage() {
                 <FontAwesomeIcon icon={faUsers} className="text-2xl text-white mb-2" />
                 <p className="text-white font-semibold">Statistiche Dettagliate</p>
               </a>
+
+              <a href="/dashboard/admin/incontri-veloci/seo-city" className="bg-yellow-600 hover:bg-yellow-700 rounded-lg p-4 text-center transition-colors">
+                <FontAwesomeIcon icon={faBolt} className="text-2xl text-white mb-2" />
+                <p className="text-white font-semibold">SEO Incontri Veloci per Città</p>
+              </a>
             </div>
           </div>
         </>
