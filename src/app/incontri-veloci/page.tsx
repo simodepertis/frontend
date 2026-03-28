@@ -167,19 +167,24 @@ interface CityContent { title?: string | null; introText?: string | null; faqs?:
 function FaqAccordion({ faqs }: { faqs: CityFaq[] }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <div className="space-y-2">
+    <div className="divide-y divide-gray-200">
       {faqs.map((f, i) => (
-        <div key={i} className="border border-gray-700 rounded-lg overflow-hidden">
+        <div key={i}>
           <button
             type="button"
-            className="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-medium text-white hover:bg-gray-750 bg-gray-800 transition-colors"
+            className="w-full flex items-center justify-between py-5 px-1 text-left text-[15px] font-medium text-gray-900 hover:text-gray-700 transition-colors group"
             onClick={() => setOpen(open === i ? null : i)}
           >
-            <span>{f.question}</span>
-            <span className="ml-4 flex-shrink-0 text-gray-400">{open === i ? '▲' : '▼'}</span>
+            <span className="pr-6">{f.question}</span>
+            <span
+              className={`flex-shrink-0 w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-transform duration-200 ${open === i ? 'rotate-90' : ''}`}
+              style={{ fontSize: 18 }}
+            >
+              ›
+            </span>
           </button>
           {open === i && (
-            <div className="px-5 py-4 bg-gray-900 text-sm text-gray-300 whitespace-pre-wrap">
+            <div className="pb-5 px-1 text-[14px] text-gray-600 leading-relaxed whitespace-pre-wrap">
               {f.answer}
             </div>
           )}
@@ -629,16 +634,18 @@ export default function IncontriVelociPage() {
 
       {/* Sezione SEO città */}
       {cityContent && (cityContent.introText || (Array.isArray(cityContent.faqs) && cityContent.faqs.length > 0)) && (
-        <div className="max-w-4xl mx-auto mt-16 space-y-8">
-          {cityContent.title && (
-            <h2 className="text-2xl font-bold text-white">{cityContent.title}</h2>
-          )}
-          {cityContent.introText && (
-            <p className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap">{cityContent.introText}</p>
-          )}
-          {Array.isArray(cityContent.faqs) && cityContent.faqs.length > 0 && (
-            <FaqAccordion faqs={cityContent.faqs} />
-          )}
+        <div className="mt-16 bg-white rounded-2xl shadow-sm">
+          <div className="max-w-3xl mx-auto px-8 py-10">
+            {cityContent.title && (
+              <h2 className="text-[22px] font-bold text-gray-900 mb-4">{cityContent.title}</h2>
+            )}
+            {cityContent.introText && (
+              <p className="text-[15px] text-gray-600 leading-relaxed mb-8 whitespace-pre-wrap">{cityContent.introText}</p>
+            )}
+            {Array.isArray(cityContent.faqs) && cityContent.faqs.length > 0 && (
+              <FaqAccordion faqs={cityContent.faqs} />
+            )}
+          </div>
         </div>
       )}
     </main>
