@@ -14,27 +14,18 @@ export default function PubblicitaPage() {
   const [spending, setSpending] = useState<string>("");
   const [daysByCode, setDaysByCode] = useState<Record<string, number>>({});
   const [escortUserId, setEscortUserId] = useState<number>(0);
-  const [docsVerified, setDocsVerified] = useState<boolean | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
         const token = localStorage.getItem('auth-token') || '';
-        const [c, w, d] = await Promise.all([
+        const [c, w] = await Promise.all([
           fetch('/api/credits/catalog'),
           fetch('/api/credits/wallet', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }),
-          fetch('/api/escort/documents', { headers: token ? { 'Authorization': `Bearer ${token}` } : undefined }),
         ]);
         if (c.ok) { const { products } = await c.json(); setCatalog(products || []); }
         if (w.status === 401) { window.location.href = '/autenticazione?redirect=/dashboard/pubblicita'; return; }
         if (w.ok) { const { wallet } = await w.json(); setBalance(wallet?.balance || 0); }
-        if (d.ok) {
-          const { documents } = await d.json();
-          const hasApproved = Array.isArray(documents) && documents.some((doc: any) => doc.status === 'APPROVED');
-          setDocsVerified(hasApproved);
-        } else {
-          setDocsVerified(false);
-        }
       } catch {}
     })();
   }, [escortUserId]);
@@ -141,18 +132,6 @@ export default function PubblicitaPage() {
         <EscortPicker value={escortUserId} onChange={setEscortUserId} />
       </div>
 
-      {docsVerified === false && (
-        <div className="rounded-xl border-2 border-yellow-500/50 bg-yellow-900/20 p-6 text-center space-y-3">
-          <div className="text-yellow-400 text-lg font-bold">⚠️ Documenti non ancora verificati</div>
-          <p className="text-gray-300 text-sm">Per acquistare pacchetti pubblicitari, i tuoi documenti devono essere prima verificati e approvati dall&apos;amministratore.</p>
-          <Link href="/dashboard/verifica-foto" className="inline-block px-5 py-2 rounded-md bg-yellow-500 hover:bg-yellow-600 text-black text-sm font-semibold">
-            Vai alla Verifica Documenti
-          </Link>
-        </div>
-      )}
-
-      {docsVerified !== false && (
-      <>
       <div className="rounded-lg border border-gray-600 bg-gray-800 p-4 flex items-center justify-between">
         <div className="text-sm text-gray-300">Saldo crediti: <strong className="text-white">{balance}</strong></div>
         <Link href="/dashboard/crediti" className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">Ricarica crediti</Link>
@@ -216,8 +195,6 @@ export default function PubblicitaPage() {
             );
           })}
         </div>
-      )}
-      </>
       )}
     </div>
   );
