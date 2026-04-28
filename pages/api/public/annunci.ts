@@ -318,7 +318,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // PUBBLICAZIONE aggiornata:
       // - Mostra SEMPRE chi ha almeno un documento APPROVED
       // - Se manca cover APPROVED, usa placeholder ma con priorità bassa
-      const approvedEscorts = withMeta.filter(x => x.hasApprovedDoc)
+      // Mostra SOLO escort con pacchetto attivo (non STANDARD) + ragazza del giorno
+      const approvedEscorts = withMeta.filter(x => x.hasApprovedDoc && (x.tier !== 'STANDARD' || x.girlOfTheDay))
       const agencyEscortsCount = approvedEscorts.filter(x => x.isAgencyEscort).length
       const independentEscortsCount = approvedEscorts.filter(x => !x.isAgencyEscort).length
       

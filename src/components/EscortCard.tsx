@@ -107,7 +107,9 @@ export default function EscortCard({ escort }: { escort: Escort }) {
               <span>{escort.commentCount ?? 0}</span>
             </div>
           </div>
-          <span className="text-lg font-semibold text-white">€ {escort.prezzo}</span>
+          {escort.prezzo > 0 && (
+            <span className="text-lg font-semibold text-white">€ {escort.prezzo}</span>
+          )}
         </div>
       </div>
     </div>

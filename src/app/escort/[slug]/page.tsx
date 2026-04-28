@@ -40,7 +40,7 @@ export default function EscortDetailPage() {
       nome: slug.split("-")[0]?.toUpperCase() || "Modella",
       eta: 25,
       citta: "Milano",
-      prezzo: 150,
+      prezzo: 0,
       descrizione: "",
       foto: ["/placeholder.svg"],
       videos: [],
@@ -747,9 +747,11 @@ export default function EscortDetailPage() {
             <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">
               <FontAwesomeIcon icon={faBirthdayCake} className="text-gray-200" /> {escort.eta} anni
             </span>
-            <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">
-              <FontAwesomeIcon icon={faEuroSign} className="text-gray-200" /> € {escort.prezzo}
-            </span>
+            {escort.prezzo > 0 && (
+              <span className="inline-flex items-center gap-2 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1">
+                <FontAwesomeIcon icon={faEuroSign} className="text-gray-200" /> € {escort.prezzo}
+              </span>
+            )}
             {/* Bio info chips se presenti (slogan/sesso/tipo profilo/nazionalità) */}
             {(() => {
               try {
@@ -782,8 +784,12 @@ export default function EscortDetailPage() {
               👁️ {(data as any).profileViews}
             </div>
           )}
-          <div className="text-2xl font-bold text-white">€ {escort.prezzo}</div>
-          <div className="mt-2 text-xs text-gray-400">Tariffa indicativa</div>
+          {escort.prezzo > 0 && (
+            <>
+              <div className="text-2xl font-bold text-white">€ {escort.prezzo}</div>
+              <div className="mt-2 text-xs text-gray-400">Tariffa indicativa</div>
+            </>
+          )}
           {/* Contatti */}
           {(contactWhatsAppHref || contactTelHref || data?.contacts) && (
             <div className="mt-4 space-y-2">

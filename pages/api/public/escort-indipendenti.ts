@@ -119,7 +119,23 @@ export default async function handler(
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
 
-    const escortsFormatted = sortedEscorts.map((u) => {
+    // Filtra: mostra SOLO escort con pacchetto attivo (non STANDARD)
+    const now = new Date()
+    const activeOnly = sortedEscorts.filter((u) => {
+      const tier = u.escortProfile?.tier || 'STANDARD'
+      const tierExpiresAt = u.escortProfile?.tierExpiresAt
+      const isExpired = !tierExpiresAt || new Date(tierExpiresAt) <= now
+      const girl = (() => {
+        const d: any = u.escortProfile?.girlOfTheDayDate
+        if (!d) return false
+        const today = new Date().toISOString().slice(0,10)
+        return new Date(d).toISOString().slice(0,10) === today
+      })()
+      // Mantieni solo chi ha pacchetto attivo o è ragazza del giorno
+      return (!isExpired && tier !== 'STANDARD') || girl
+    })
+
+    const escortsFormatted = activeOnly.map((u) => {
       const cities = (() => {
         const raw = (u.escortProfile as any)?.cities
         const obj = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {}
@@ -186,9 +202,9 @@ export default async function handler(
         try {
           const rates: any = (u.escortProfile as any)?.rates
           const num = pickPriceFromRates(rates)
-          return num !== null ? num : 150
+          return num !== null ? num : 0
         } catch {
-          return 150
+          return 0
         }
       })()
       return {
